@@ -51,30 +51,36 @@ function loadFile(file) {
 function parseMC(ws) {
   const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
   const pallets = [];
-  let curCodigo=null, curProducto=null, curLote=null, curFechaProd=null;
-  for (const row of rows) {
+  if (!rows.length) return pallets;
+  const headers = rows[0].map(h => (h==null?'':String(h).trim()));
+  const idx = {
+    producto:  headers.indexOf('Producto'),
+    lote:      headers.indexOf('Marea/lote'),
+    fechaProd: headers.indexOf('Fecha Producci\u00f3n'),
+    fechaVen:  headers.indexOf('Fecha Vencimiento'),
+    sBultos:   headers.indexOf('S.Bultos'),
+    sPNeto:    headers.indexOf('S.P. Neto'),
+    sPBruto:   headers.indexOf('S.P. Bruto'),
+  };
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
     if (!row || !row.some(v=>v!==null)) continue;
-    const c0=row[0], c1=row[1], c2=row[2], c3=row[3];
-    if (c0==='-' && typeof c1==='string' && c1.includes('Producto :')) {
-      const m = c1.match(/Producto\s*:\s*\(([^)]+)\)\s*(.+)/);
-      if(m){ curCodigo=m[1].trim(); curProducto=m[2].trim(); }
-      curLote=null; curFechaProd=null; continue;
-    }
-    if (c1==='-' && typeof c2==='string' && c2.includes('Marea/lote :')) {
-      const m=c2.match(/Marea\/lote\s*:\s*(\S+)/);
-      if(m) curLote=m[1].trim(); curFechaProd=null; continue;
-    }
-    if (c2==='-' && typeof c3==='string' && c3.includes('Fecha Producción :')) {
-      const m=c3.match(/Fecha Producción\s*:\s*(.+)/);
-      if(m) curFechaProd=normDateStr(m[1].trim()); continue;
-    }
-    if (typeof c3==='number' && isFinite(c3) && row[4]!=null && curLote) {
-      const sb = parseFloat(row[14]);
-      if(isFinite(sb) && sb>0) {
-        pallets.push({ codigo:curCodigo, producto:curProducto, lote:curLote,
-          fechaProd:curFechaProd, fechaVen:fmtDate(row[5]),
-          sBultos:sb, sPNeto:numOr0(row[15]), sPBruto:numOr0(row[16]) });
-      }
+    const productoRaw = row[idx.producto];
+    const lote = row[idx.lote];
+    if (!productoRaw || !lote) continue;
+    const m = String(productoRaw).match(/^\s*\(([^)]+)\)\s*(.+)$/);
+    const codigo = m ? m[1].trim() : null;
+    const producto = m ? m[2].trim() : String(productoRaw).trim();
+    const sb = parseFloat(row[idx.sBultos]);
+    if (isFinite(sb) && sb > 0) {
+      pallets.push({
+        codigo, producto, lote: String(lote).trim(),
+        fechaProd: fmtDate(row[idx.fechaProd]),
+        fechaVen: fmtDate(row[idx.fechaVen]),
+        sBultos: sb,
+        sPNeto: numOr0(row[idx.sPNeto]),
+        sPBruto: numOr0(row[idx.sPBruto]),
+      });
     }
   }
   return pallets;
@@ -486,6 +492,7 @@ function makeDLSheet(pallets, h) {
 function makeCASheet(g, h) {
   const b = new WSBuilder();
 
+  b.set(0,4,`CA L${g.lote}`,S.caCert);
   b.set(1,4,'McCain Argentina S.A.',S.caHeaderBig);
   b.set(3,4,'Ruta 226, km 61.5, 7620 Balcarce',S.caHeaderSmall);
   b.set(4,4,'Argentina ',S.caHeaderSmall);
