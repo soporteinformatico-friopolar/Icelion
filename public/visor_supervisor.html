@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Visor Supervisor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#eef2f7; --panel:#ffffff; --panel2:#f4f7fb; --panel3:#eef2f7;
+      --border:rgba(0,0,0,0.07); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    }
+    body.light .navbar { box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    body.light .section-header { background:var(--panel2); }
+    body.light .mov-row:hover { background:rgba(0,0,0,.03); }
+    body.light .toast.ok  { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+    body.light .toast.err { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+    .hidden{display:none!important;}
+
+    /* NAVBAR */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:var(--radius);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);}
+
+    /* LAYOUT */
+    .page{padding:12px 16px;max-width:100%;margin:0 auto;}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+    .page-title{font-size:20px;font-weight:700;}
+    .page-sub{font-size:12px;color:var(--muted);}
+
+    /* DIA NAV */
+    .dia-nav{display:flex;align-items:center;gap:8px;}
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-ghost{background:var(--panel2);border:1px solid var(--border);color:var(--text);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-sm{padding:4px 10px;font-size:11px;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{opacity:.9;}
+
+    /* BUSCADOR */
+    .search-bar{display:flex;gap:8px;margin-bottom:16px;}
+    .search-input{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:var(--radius);font-family:var(--font);font-size:13px;width:280px;outline:none;transition:border-color .2s;}
+    .search-input:focus{border-color:var(--accent);}
+
+    /* SECCIONES */
+    .section{margin-bottom:24px;}
+    .section-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none;}
+    .section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+    .section-count{font-size:11px;color:var(--muted);font-family:var(--mono);}
+    .section-dot{width:8px;height:8px;border-radius:50%;}
+    .dot-pendiente{background:#6b7f99;}
+    .dot-planta{background:var(--ok);}
+    .dot-espontaneo{background:#a855f7;}
+
+    /* TABLA */
+    .mov-table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);overflow:hidden;}
+    .mov-table th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;}
+    .mov-table td{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    .mov-table tr:last-child td{border-bottom:none;}
+    .mov-row{cursor:default;transition:background .12s;}
+    .mov-row:hover{background:var(--panel2);}
+    .td-mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+    .td-ref{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:600;}
+    .td-time{font-family:var(--mono);font-size:11px;font-weight:600;}
+    .td-trunc{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+    .badge-planificado{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-agregado{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-sinidentif{background:rgba(239,68,68,.15);color:#ef4444;}
+    .badge-arribado{background:rgba(251,191,36,.15);color:#fbbf24;}
+    .badge-dock{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-atracado{background:rgba(245,158,11,.15);color:#f64dfc;}
+    .badge-encurso{background:rgba(34,197,94,.15);color:#4ade80;}
+    .badge-pausado{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-liberado{background:rgba(34,211,238,.15);color:#67e8f9;}
+    .badge-finalizado{background:rgba(34,197,94,.2);color:#22c55e;}
+    .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+
+    /* NRO ARRIBO */
+    .nro-badge{display:inline-block;min-width:20px;text-align:center;background:rgba(59,130,246,.2);color:var(--accent2);border-radius:5px;font-size:10px;font-weight:700;padding:1px 5px;margin-left:3px;}
+
+
+    /* COLAPSABLE SECCIONES */
+    .section-header { cursor:pointer; user-select:none; }
+    .section-header:hover { background:var(--panel2); }
+    .section-chevron { margin-left:auto; font-size:12px; color:var(--muted); transition:transform .2s; display:inline-block; }
+    .section-chevron.up { transform:rotate(-90deg); }
+    .section-body.hidden { display:none!important; }
+
+    /* SUBGRUPOS ESTADO */
+    .egroup-header {
+      display:flex; align-items:center; gap:8px;
+      padding:7px 14px; background:var(--panel2);
+      border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+    }
+    .egroup-header:hover { background:var(--panel3); }
+    .egroup-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .egroup-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+    .egroup-count { font-size:10px; color:var(--muted); font-family:var(--mono);
+      background:var(--panel); padding:1px 7px; border-radius:20px; border:1px solid var(--border); }
+    .egroup-chev { margin-left:auto; font-size:11px; color:var(--muted); transition:transform .2s; display:inline-block; }
+    .egroup-chev.up { transform:rotate(-90deg); }
+    .egroup-body.hidden { display:none!important; }
+    .egroup-body table { border-radius:0; border-top:none; }
+
+    /* NOTAS BTN */
+    .btn-notas{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:6px;transition:all .2s;line-height:1;}
+    .btn-notas.tiene-notas{filter:none;}
+    .btn-notas.sin-notas{opacity:.3;filter:grayscale(1);}
+    .dot-alerta{display:inline-block;width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+    .dot-alerta.none    {background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);}
+    .dot-alerta.amarillo{background:#facc15;box-shadow:0 0 5px rgba(250,204,21,.6);}
+    .dot-alerta.rojo    {background:#ef4444;box-shadow:0 0 5px rgba(239,68,68,.6);}
+    .btn-notas.pendiente{color:#ef4444!important;filter:drop-shadow(0 0 4px rgba(239,68,68,.5));}
+    .btn-notas:hover{opacity:1;filter:none;transform:scale(1.15);}
+
+    /* EMPTY */
+    .empty-row td{text-align:center;color:var(--muted);font-size:12px;padding:20px;font-style:italic;}
+
+    /* MODAL NOTAS */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-notas-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:500px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:85vh;overflow:hidden;}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);}
+    .modal-header h2{font-size:15px;font-weight:700;}
+    .modal-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+    .modal-body{padding:16px 20px;overflow-y:auto;flex:1;}
+    .modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;}
+    .btn-close-modal{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+    .btn-close-modal:hover{color:var(--text);background:var(--panel2);}
+
+    /* NOTAS HISTORIAL */
+    .notas-historial{display:flex;flex-direction:column;gap:8px;}
+    .nota-item{border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;border:1px solid var(--border);background:var(--panel2);}
+    .nota-item.resuelta{opacity:.4;}
+    .nota-meta{font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .nota-rol{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;background:rgba(59,130,246,.15);color:var(--accent2);}
+    .nota-rol.guardia{background:rgba(245,158,11,.15);color:#fcd34d;}
+    .nota-rol.calidad{background:rgba(34,197,94,.15);color:#86efac;}
+    .nota-rol.supervisor{background:rgba(168,85,247,.15);color:#d8b4fe;}
+    .nota-rol.consolidador{background:rgba(236,72,153,.15);color:#f9a8d4;}
+    .nota-texto{color:var(--text);white-space:pre-wrap;word-break:break-word;}
+    .nota-resuelta-badge{font-size:9px;color:var(--ok);margin-left:auto;}
+    .notas-empty{color:var(--muted);font-style:italic;font-size:13px;text-align:center;padding:16px 0;}
+
+    /* SIDE PANEL */
+    .side-panel{position:fixed;top:0;right:0;height:100vh;width:420px;background:var(--panel);border-left:1px solid var(--border);z-index:300;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 32px rgba(0,0,0,.4);}
+    .side-panel.open{transform:translateX(0);}
+    .side-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:299;opacity:0;pointer-events:none;transition:opacity .25s;}
+    .side-panel-overlay.open{opacity:1;pointer-events:all;}
+    .side-panel-header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .side-panel-title{font-size:15px;font-weight:700;line-height:1.3;}
+    .side-panel-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+    .side-panel-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;}
+    .sp-section{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+    .sp-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;}
+    .sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .sp-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+    .sp-field{display:flex;flex-direction:column;gap:2px;}
+    .sp-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .sp-val{font-size:13px;font-weight:600;word-break:break-word;}
+    .sp-val.mono{font-family:var(--mono);font-size:12px;}
+    .sp-val.accent{color:var(--accent2);}
+    .sp-val.muted{color:var(--muted);font-weight:400;}
+    .sp-full{grid-column:1/-1;}
+    .sp-hora-row{display:flex;flex-wrap:wrap;gap:6px;}
+    .sp-hora-chip{display:inline-flex;flex-direction:column;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:4px 10px;min-width:60px;}
+    .sp-hora-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+    .sp-hora-val{font-family:var(--mono);font-size:13px;font-weight:700;}
+    .nota-sp{border-radius:8px;padding:8px 10px;font-size:12px;border:1px solid var(--border);background:var(--panel);}
+    .nota-sp.resuelta{opacity:.4;}
+    .nota-sp-meta{font-size:10px;color:var(--muted);margin-bottom:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+    .nota-sp-rol{display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;text-transform:uppercase;background:rgba(59,130,246,.15);color:var(--accent2);}
+    .nota-sp-rol.guardia{background:rgba(245,158,11,.15);color:#fcd34d;}
+    .nota-sp-rol.calidad{background:rgba(34,197,94,.15);color:#86efac;}
+    .nota-sp-rol.supervisor{background:rgba(168,85,247,.15);color:#d8b4fe;}
+    .mov-row.selected{background:rgba(59,130,246,.08);outline:1px solid rgba(59,130,246,.3);}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:13px;z-index:999;display:none;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+    .toast.ok{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08);}
+    .toast.err{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08);}
+    #toastTitle{font-weight:700;margin-bottom:2px;}
+
+    /* SPINNER */
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading-row td{text-align:center;padding:20px;color:var(--muted);}
+
+    /* HORARIOS GRID */
+    .horas-row{display:flex;gap:6px;flex-wrap:wrap;}
+    .hora-chip{display:inline-flex;flex-direction:column;align-items:center;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;min-width:52px;}
+    .hora-chip-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+    .hora-chip-val{font-family:var(--mono);font-size:11px;font-weight:600;}
+
+    /* SERVICIOS */
+    .badge-srv-pendiente{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-srv-proceso{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-srv-pausado{background:rgba(239,68,68,.12);color:#f87171;}
+    .badge-srv-finalizado{background:rgba(34,197,94,.2);color:#4ade80;}
+    .badge-srv-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-alta{background:rgba(239,68,68,.12);color:#fca5a5;}
+    .badge-media{background:rgba(251,191,36,.12);color:#fbbf24;}
+    .badge-baja{background:rgba(107,127,153,.12);color:#6b7f99;}
+
+    /* MODAL SERVICIOS */
+    .modal-srv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;}
+    .modal-srv-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:92vh;}
+    .modal-srv-header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-srv-body{padding:16px 20px;overflow-y:auto;flex:1;}
+    .modal-srv-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;flex-shrink:0;}
+    .srv-item-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+    .srv-item-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+    .srv-item-nombre{font-size:13px;font-weight:700;flex:1;}
+    .srv-item-detail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;color:var(--muted);}
+    .srv-item-detail span strong{color:var(--text);}
+    .btn-habilitar{padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;border:none;transition:all .2s;}
+    .btn-habilitar.off{background:var(--panel3);border:1px solid var(--border);color:var(--muted);}
+    .btn-habilitar.off:hover{border-color:var(--ok);color:var(--ok);}
+    .btn-habilitar.on{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:var(--ok);}
+    .btn-habilitar.on:hover{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#f87171;}
+    .srv-estado-tarea{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:5px;background:var(--panel);border:1px solid var(--border);}
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <img src="logo.png" style="width:28px;height:28px;border-radius:6px;">
+    IceLion
+    <div class="nav-module">VISOR SUPERVISOR</div>
+  </div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn btn-ghost btn-sm" onclick="imprimirMovimientos()">🖨 Imprimir</button>
+    <button class="btn-theme" id="btnTema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Salir</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Visor Supervisor</div>
+      <div class="page-sub" id="pageSub">Cargando...</div>
+    </div>
+    <div class="dia-nav">
+      <button class="btn btn-ghost btn-sm" id="btnDiaAnterior">◀</button>
+      <span id="labelDia" style="font-size:13px;font-weight:600;min-width:120px;text-align:center;"></span>
+      <button class="btn btn-ghost btn-sm" id="btnDiaSiguiente">▶</button>
+      <button class="btn btn-ghost btn-sm" id="btnHoy">Hoy</button>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="search-input" id="campoBuscar" placeholder="Buscar por cliente, referencia, patente, transporte...">
+  </div>
+
+  <!-- PENDIENTES -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secPendientes','chevPendientes')">
+      <div class="section-dot dot-pendiente"></div>
+      <div class="section-title">Pendientes</div>
+      <div class="section-count" id="countPendientes">—</div>
+      <span class="section-chevron" id="chevPendientes">▼</span>
+    </div>
+    <div id="secPendientes">
+    <table class="mov-table">
+      <thead>
+        <tr>
+                    <th>Est.</th>
+          <th>Hora Est.</th>
+          <th title="Alerta">!</th>
+          <th>Cliente</th>
+          <th>Movimiento</th>
+          <th>Transporte</th>
+          <th>Referencia</th>
+          <th>Destino</th>
+          <th>Patentes</th>
+          <th>Booking</th>
+          <th>Dock</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyPendientes">
+        <tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- EN PLANTA -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secPlanta','chevPlanta')">
+      <div class="section-dot dot-planta"></div>
+      <div class="section-title">En Planta</div>
+      <div class="section-count" id="countPlanta">—</div>
+      <span class="section-chevron" id="chevPlanta">▼</span>
+    </div>
+    <div id="secPlanta">
+      <!-- contenido generado por renderPlanta() -->
+    </div>
+  </div>
+
+  <!-- LIBERADOS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secLiberados','chevLiberados')">
+      <div class="section-dot" style="background:#67e8f9;"></div>
+      <div class="section-title">Liberados</div>
+      <div class="section-count" id="countLiberados">—</div>
+      <span class="section-chevron" id="chevLiberados">▼</span>
+    </div>
+    <div id="secLiberados">
+      <!-- contenido generado por renderLiberados() -->
+    </div>
+  </div>
+
+  <!-- SIN IDENTIFICAR -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secCancelados','chevCancelados')">
+      <div class="section-dot" style="background:#6b7f99;"></div>
+      <div class="section-title">Cancelados</div>
+      <div class="section-count" id="countCancelados">—</div>
+      <span class="section-chevron" id="chevCancelados">▼</span>
+    </div>
+    <div id="secCancelados"></div>
+  </div>
+
+  <!-- SERVICIOS ADICIONALES -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secServicios','chevServicios')">
+      <div class="section-dot" style="background:#a78bfa;"></div>
+      <div class="section-title">Servicios Adicionales</div>
+      <div class="section-count" id="countServicios">—</div>
+      <span class="section-chevron" id="chevServicios">▼</span>
+    </div>
+    <div id="secServicios">
+      <table class="mov-table">
+        <thead><tr>
+          <th>Nro Orden</th>
+          <th>F. Pedido</th>
+          <th>F. Necesidad</th>
+          <th>Cliente</th>
+          <th>Servicios</th>
+          <th>Packing</th>
+          <th>Controlado por</th>
+          <th>Prioridad</th>
+          <th>Estado</th>
+        </tr></thead>
+        <tbody id="tbodyServicios">
+          <tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secEsp','chevEsp')">
+      <div class="section-dot dot-espontaneo"></div>
+      <div class="section-title">Sin Identificar / Espontáneos</div>
+      <div class="section-count" id="countEsp">—</div>
+      <span class="section-chevron" id="chevEsp">▼</span>
+    </div>
+    <div id="secEsp">
+      <table class="mov-table">
+        <thead>
+          <tr>
+            <th>Estado</th>
+            <th>Hora Arribo</th>
+            <th title="Alerta">!</th>
+            <th>Cliente</th>
+            <th>Transporte</th>
+            <th>Patentes</th>
+            <th>Chofer</th>
+            <th>Movimiento</th>
+            <th>Booking</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyEsp">
+          <tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SIDE PANEL OVERLAY -->
+<div class="side-panel-overlay" id="sidePanelOverlay" onclick="cerrarPanel()"></div>
+
+<!-- SIDE PANEL -->
+<div class="side-panel" id="sidePanel">
+  <div class="side-panel-header">
+    <div>
+      <div class="side-panel-title" id="spTitle">—</div>
+      <div class="side-panel-sub" id="spSub">—</div>
+    </div>
+    <button class="btn-close-modal" onclick="cerrarPanel()">✕</button>
+  </div>
+  <div class="side-panel-body" id="spBody"></div>
+</div>
+
+<!-- MODAL NOTAS (solo lectura) -->
+<div class="modal-overlay hidden" id="modalNotas">
+  <div class="modal-notas-box">
+    <div class="modal-header">
+      <div>
+        <h2>📝 Notas del movimiento</h2>
+        <div class="modal-sub" id="notasSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarNotas">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="notas-historial" id="notasHistorial"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" id="btnCerrarNotas2">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SERVICIOS -->
+<div class="modal-srv-overlay hidden" id="modalSrv">
+  <div class="modal-srv-box">
+    <div class="modal-srv-header">
+      <div>
+        <div style="font-size:15px;font-weight:700;" id="srvModalTitulo">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="srvModalSub">—</div>
+      </div>
+      <button class="btn-close-modal" onclick="cerrarModalSrv()">✕</button>
+    </div>
+    <div class="modal-srv-body" id="srvModalBody"></div>
+    <div class="modal-srv-footer">
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalSrv()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div id="toastTitle"></div><div id="toastMsg"></div></div>
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { collection, doc, onSnapshot, getDocs, updateDoc, orderBy, query, where, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, fmtFecha, fmtTimestamp, badgeEstado } from "./js/utils.js";
+
+initTema();
+initSesion();
+
+// ── ESTADOS ────────────────────────────────────────────────────
+const ESTADOS_PENDIENTES  = ["PLANIFICADO","AGREGADO"];
+const ESTADOS_PLANTA      = ["ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO"];
+const ESTADOS_LIBERADO    = ["LIBERADO"];
+const ESTADOS_CANCELADOS  = ["CANCELADO","CANCELA MOVIMIENTO"];
+
+// ── DATOS ──────────────────────────────────────────────────────
+let docsCache = [];
+let diaActual = hoy();
+let terminoBusqueda = "";
+let _unsub = null;
+let _unsubSrv = null;
+let srvCache = [];
+let srvActual = null;
+
+function cargarServicios(fecha) {
+  if (_unsubSrv) _unsubSrv();
+  // Query: fecha_necesidad >= fecha (filtra en Firestore) + fecha_pedido <= fecha (filtra en cliente)
+  const q = query(
+    collection(db, "servicios_adicionales"),
+    where("fecha_necesidad", ">=", fecha),
+    where("estado", "not-in", ["FINALIZADO", "CANCELADO"])
+  );
+  _unsubSrv = onSnapshot(q, snap => {
+    srvCache = snap.docs.filter(d => {
+      const fp = d.data().fecha_pedido || "";
+      return fp <= fecha;
+    });
+    renderServicios();
+  }, err => console.error("servicios:", err));
+}
+
+function renderServicios() {
+  const tbody = document.getElementById("tbodyServicios");
+  document.getElementById("countServicios").textContent = `${srvCache.length} servicio${srvCache.length!==1?"s":""}`;
+  if (!srvCache.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Sin servicios activos para este día</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = srvCache.map(d => {
+    const id = d.id, data = d.data();
+    const svcs = [...new Set((data.items||[]).map(i=>i.servicio).filter(Boolean))];
+    const svcsHtml = svcs.slice(0,2).map(s=>`<span style="font-size:10px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;">${s}</span>`).join(" ")
+      + (svcs.length>2?`<span style="font-size:10px;color:var(--muted);"> +${svcs.length-2}</span>`:"");
+    const prioMap = {ALTA:"badge-alta",MEDIA:"badge-media",BAJA:"badge-baja"};
+    const estMap  = {PENDIENTE:"badge-srv-pendiente","EN PROCESO":"badge-srv-proceso",PAUSADO:"badge-srv-pausado",FINALIZADO:"badge-srv-finalizado",CANCELADO:"badge-srv-cancelado"};
+    const itemControl = (data.items||[]).find(i => i.servicio === "CONTROL" && (i.link_packing || i.nombre_control));
+    const packingHtml = itemControl && itemControl.link_packing
+      ? `<a href="${itemControl.link_packing}" target="_blank" onclick="event.stopPropagation();"
+           style="display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
+      : `<span style="color:var(--muted);">—</span>`;
+    const controladoPorHtml = itemControl && itemControl.nombre_control
+      ? itemControl.nombre_control
+      : `<span style="color:var(--muted);">—</span>`;
+    return `<tr class="mov-row" onclick="abrirModalSrv('${id}')">
+      <td class="td-ref">${data.nro_orden||"—"}</td>
+      <td class="td-mono">${data.fecha_pedido||"—"}</td>
+      <td class="td-mono">${data.fecha_necesidad||"—"}</td>
+      <td><strong>${data.cliente||"—"}</strong></td>
+      <td>${svcsHtml||"—"}</td>
+      <td style="text-align:center;">${packingHtml}</td>
+      <td>${controladoPorHtml}</td>
+      <td><span class="badge ${prioMap[data.prioridad]||"badge-baja"}">${data.prioridad||"—"}</span></td>
+      <td><span class="badge ${estMap[data.estado]||"badge-srv-pendiente"}">${data.estado||"—"}</span></td>
+    </tr>`;
+  }).join("");
+}
+
+window.abrirModalSrv = function(id) {
+  const d = srvCache.find(x => x.id === id);
+  if (!d) return;
+  srvActual = d;
+  const data = d.data();
+  document.getElementById("srvModalTitulo").textContent = `${data.nro_orden||id} — ${data.cliente||"—"}`;
+  document.getElementById("srvModalSub").textContent    = `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${data.estado||"—"}`;
+  renderModalSrvBody(data);
+  document.getElementById("modalSrv").classList.remove("hidden");
+};
+
+function renderModalSrvBody(data) {
+  const items = data.items || [];
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  const hoyStr = hoy();
+  const body = document.getElementById("srvModalBody");
+  if (!items.length) { body.innerHTML = `<p style="color:var(--muted);text-align:center;padding:20px;">Sin ítems cargados</p>`; return; }
+
+  body.innerHTML = `
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">
+      ${items.length} ítem${items.length!==1?"s":""} · Habilitá los que el equipo debe realizar hoy
+    </div>
+    ${items.map((it, idx) => {
+      const hab   = it.habilitado === true;
+      const estado= it.estado_tarea || "pendiente";
+      const estBadge = {pendiente:"badge-srv-pendiente","en_proceso":"badge-srv-proceso",pausado:"badge-srv-pausado",finalizado:"badge-srv-finalizado"}[estado]||"badge-srv-pendiente";
+      return `<div class="srv-item-card" id="srvCard-${idx}">
+        <div class="srv-item-top">
+          <div class="srv-item-nombre">${it.servicio||"—"}</div>
+          <span class="badge ${estBadge}">${estado.replace("_"," ")}</span>
+          <button class="btn-habilitar ${hab?"on":"off"}" id="btnHab-${idx}"
+            onclick="toggleHabilitar(${idx})">
+            ${hab?"✓ Habilitado":"Habilitar"}
+          </button>
+        </div>
+        <div class="srv-item-detail">
+          ${it.servicio === "CONTROL" ? `
+            <span>Controlado por: <strong>${it.nombre_control||"—"}</strong></span>
+            ${it.link_packing ? `<a href="${it.link_packing}" target="_blank" onclick="event.stopPropagation();"
+                style="display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
+              : `<span style="color:var(--muted);">Sin link de packing</span>`}
+          ` : `
+            <span>A fact.: <strong>${it.a_facturar||"—"}</strong></span>
+            <span>Cantidad: <strong>${it.cantidad||"—"}</strong></span>
+            <span>Insumo: <strong>${it.insumo||"—"}</strong></span>
+          `}
+        </div>
+      </div>`;
+    }).join("")}
+    ${data.observacion ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:10px 12px;background:var(--panel2);border-radius:8px;border:1px solid var(--border);">${data.observacion}</div>` : ""}
+  `;
+}
+
+// Deriva el estado global de la orden a partir del estado de sus items
+function calcularEstadoOrden(items) {
+  const habilitados = (items||[]).filter(i => i.habilitado === true);
+  if (items.some(i => i.estado_tarea === "en_proceso")) return "EN PROCESO";
+  if (items.some(i => i.estado_tarea === "pausado"))    return "PAUSADO";
+  if (habilitados.length && habilitados.every(i => i.estado_tarea === "finalizado")) return "FINALIZADO";
+  return "PENDIENTE";
+}
+
+window.toggleHabilitar = async function(idx) {
+  if (!srvActual) return;
+  const data  = srvActual.data();
+  const items = JSON.parse(JSON.stringify(data.items || []));
+  if (!items[idx]) return;
+  const habActual  = items[idx].habilitado === true;
+  items[idx].habilitado       = !habActual;
+  items[idx].habilitado_fecha = !habActual ? hoy() : "";
+  const nuevoEstado = calcularEstadoOrden(items);
+
+  // ── Optimista: pintamos el cambio antes de que responda el servidor ──
+  const btn = document.getElementById(`btnHab-${idx}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.toggle("on", !habActual);
+    btn.classList.toggle("off", habActual);
+    btn.textContent = !habActual ? "✓ Habilitado" : "Habilitar";
+  }
+  const datosOptimistas = { ...data, items, estado: nuevoEstado };
+  renderModalSrvBody(datosOptimistas);
+  document.getElementById("srvModalSub").textContent =
+    `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${nuevoEstado}`;
+
+  try {
+    await updateDoc(doc(db, "servicios_adicionales", srvActual.id), {
+      items,
+      estado: nuevoEstado,
+      modificado_por: sessionStorage.getItem("icelion_nombre")||"—",
+      modificado_en:  serverTimestamp()
+    });
+    // El onSnapshot de cargarServicios() actualizará srvCache/srvActual con el dato real
+  } catch(err) {
+    toast("err","Error",err.message);
+    // Revertir vista optimista al fallar
+    renderModalSrvBody(data);
+    document.getElementById("srvModalSub").textContent =
+      `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${data.estado||"—"}`;
+  }
+};
+
+window.cerrarModalSrv = function() {
+  document.getElementById("modalSrv").classList.add("hidden");
+  srvActual = null;
+};
+
+function cargarDia(fecha) {
+  diaActual = fecha;
+  cargarServicios(fecha);
+  document.getElementById("labelDia").textContent = fmtLabel(fecha);
+  if (_unsub) _unsub();
+  const q = query(
+    collection(db, COL),
+    where("planificacion.fecha_prevista", "==", fecha),
+    orderBy("planificacion.hora_estipulada", "asc")
+  );
+  _unsub = onSnapshot(q, snap => {
+    docsCache = snap.docs;
+    renderAll();
+    // Refresh panel if open
+    if (panelDocId) {
+      const fresh = snap.docs.find(x=>x.id===panelDocId);
+      if (fresh) renderPanel(fresh);
+    }
+    document.getElementById("pageSub").textContent =
+      `${snap.docs.length} movimiento${snap.docs.length!==1?"s":""} · ${fmtLabel(fecha)}`;
+  }, err => toast("err","Error",err.message));
+}
+
+// ── FILTRO BUSQUEDA ────────────────────────────────────────────
+function filtrar(docs) {
+  if (!terminoBusqueda) return docs;
+  const t = terminoBusqueda.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const norm = s => (s||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  return docs.filter(d => {
+    const p = d.data().planificacion||{}, g = d.data().guardia||{};
+    return [p.cliente, p.referencia, p.transporte, p.patente_tractor, p.patente_semi,
+            p.booking, p.destino, g.patente_tractor, g.patente_semi, g.chofer]
+      .some(v => norm(v).includes(t));
+  });
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+function badgeEstadoLocal(e) {
+  const map = {
+    "PLANIFICADO":"badge-planificado","AGREGADO":"badge-agregado",
+    "SIN IDENTIFICAR":"badge-sinidentif","ARRIBADO":"badge-arribado",
+    "EN ESPERA":"badge-dock","DOCK ASIGNADO":"badge-dock",
+    "ATRACADO":"badge-atracado","INICIO MOVIMIENTO":"badge-encurso",
+    "PAUSADO":"badge-pausado","FIN MOVIMIENTO":"badge-finalizado",
+    "CANCELA MOVIMIENTO":"badge-cancelado","CANCELADO":"badge-cancelado",
+    "LIBERADO":"badge-liberado"
+  };
+  return `<span class="badge ${map[e]||"badge-planificado"}">${e||"—"}</span>`;
+}
+
+function chip(label, val) {
+  if (!val) return "";
+  return `<div class="hora-chip"><span class="hora-chip-label">${label}</span><span class="hora-chip-val">${val}</span></div>`;
+}
+
+function horariosCell(data) {
+  const p = data.planificacion||{}, g = data.guardia||{};
+  const sv = data.supervisor||{}, pl = data.planillero||{}, py = data.playero||{};
+  const chips = [
+    chip("Est.", p.hora_estipulada),
+    chip("Arribo", g.hora_arribo),
+    chip("Dock", sv.hora_ingreso),
+    chip("Inicio", pl.hora_inicio),
+    chip(pl.pausa ? "Pausa" : "", pl.pausa),
+    chip("Fin", pl.hora_finalizado),
+    chip("Egreso", py.hora_egreso || sv.hora_egreso),
+  ].filter(Boolean).join("");
+  return `<div class="horas-row">${chips||"—"}</div>`;
+}
+
+function patentes(data) {
+  const p = data.planificacion||{}, g = data.guardia||{};
+  const t = g.patente_tractor||p.patente_tractor||"";
+  const s = g.patente_semi||p.patente_semi||"";
+  return [t,s].filter(Boolean).join(" / ") || "—";
+}
+
+function getNotas(data) {
+  const notas = Array.isArray(data.planificacion?.notas) ? [...data.planificacion.notas] : [];
+  const obs = data.planificacion?.observaciones;
+  if (obs && obs.trim() && !notas.length)
+    notas.push({id:"legacy",texto:obs,autor:"Sistema",rol:"sistema",fecha:null,resuelta:false});
+  return notas;
+}
+function tienePendientes(data) { return getNotas(data).some(n=>!n.resuelta); }
+
+// ── RENDER ─────────────────────────────────────────────────────
+function renderAll() {
+  const all = filtrar(docsCache);
+
+  const pendientes = all.filter(d => ESTADOS_PENDIENTES.includes(d.data().estado||""));
+  const planta     = all.filter(d => ESTADOS_PLANTA.includes(d.data().estado||""));
+  const liberados   = all.filter(d => ESTADOS_LIBERADO.includes(d.data().estado||""));
+  const cancelados  = all.filter(d => ESTADOS_CANCELADOS.includes(d.data().estado||"")).sort((a,b)=>(a.data().planificacion?.hora_estipulada||"").localeCompare(b.data().planificacion?.hora_estipulada||""));
+  const esps       = all.filter(d => d.data().estado === "SIN IDENTIFICAR");
+
+  document.getElementById("countPendientes").textContent = `${pendientes.length} mov.`;
+  document.getElementById("countPlanta").textContent     = `${planta.length} mov.`;
+  document.getElementById("countLiberados").textContent  = `${liberados.length} mov.`;
+  document.getElementById("countEsp").textContent        = `${esps.length} mov.`;
+
+  renderPendientes(pendientes);
+  renderPlanta(planta);
+  renderLiberados(liberados);
+  document.getElementById("countCancelados").textContent = `${cancelados.length} mov.`;
+  renderCancelados(cancelados);
+  renderEsp(esps);
+}
+
+function renderPendientes(docs) {
+  const tbody = document.getElementById("tbodyPendientes");
+  if (!docs.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Sin movimientos pendientes</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = docs.map((d,i) => {
+    const data=d.data(), p=data.planificacion||{}, sv=data.supervisor||{};
+    const dock = sv.dock ? `D${sv.dock}` : "—";
+    return `<tr class="mov-row" onclick="abrirPanel('${d.id}')">
+      <td>${badgeEstadoLocal(data.estado||"")}</td>
+      <td class="td-time">${p.hora_estipulada||"—"}</td>
+      <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td>
+      <td><strong class="td-trunc" title="${p.cliente||""}">${(p.cliente||"SIN IDENTIFICAR").slice(0,20)}</strong></td>
+      <td style="font-size:11px;">${p.movimiento||"—"}</td>
+      <td class="td-mono td-trunc" title="${p.transporte||""}">${p.transporte||"—"}</td>
+      <td class="td-ref">${p.referencia||"—"}</td>
+      <td class="td-mono td-trunc" title="${p.destino||""}">${(p.destino||"—").slice(0,16)}</td>
+      <td class="td-mono">${patentes(data)}</td>
+      <td class="td-mono">${p.booking||"—"}</td>
+      <td class="td-mono">${dock}</td>
+      <td style="text-align:center;">${(data.penalizado||(data.penalidades?.lista?.length>0)||(data.penalidades?.extra_costos?.some(Boolean)))?`<span title="Penalizado" style="color:#ef4444;font-size:15px;font-weight:900;line-height:1;">!</span>`:""}</td>
+    </tr>`;
+  }).join("");
+}
+
+const ORDEN_PLANTA_EST = ["ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO"];
+const COLOR_EST = {
+  "ARRIBADO":"#fbbf24","EN ESPERA":"#c084fc","DOCK ASIGNADO":"#c084fc",
+  "ATRACADO":"#fcd34d","INICIO MOVIMIENTO":"#4ade80","PAUSADO":"#f87171",
+  "FIN MOVIMIENTO":"#22c55e","LIBERADO":"#6b7f99"
+};
+
+const COLGROUP_PLANTA = `<colgroup>
+  <col style="width:10%"><col style="width:13%"><col style="width:4%"><col style="width:9%">
+  <col style="width:10%"><col style="width:10%"><col style="width:12%">
+  <col style="width:5%"><col style="width:20%"><col style="width:4%"><col style="width:3%">
+</colgroup>`;
+
+function rowPlanta(d) {
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{}, sv=data.supervisor||{};
+  const dock = sv.dock ? `D${sv.dock}` : "—";
+  const nro = g.nro_arribo_cliente ? `<span class="nro-badge">#${g.nro_arribo_cliente}</span>` : "";
+  const pen = (data.penalizado || (data.penalidades?.lista?.length > 0) || (data.penalidades?.extra_costos?.some(Boolean))) ? `<span title="Penalizado" style="color:#ef4444;font-size:15px;font-weight:900;line-height:1;">!</span>` : "";
+  return `<tr class="mov-row" onclick="abrirPanel('${d.id}')">
+    <td>${badgeEstadoLocal(data.estado||"")}</td>
+    <td><strong class="td-trunc" title="${p.cliente||""}">${(p.cliente||"—").slice(0,18)}</strong></td>
+    <td>${nro}</td>
+    <td style="font-size:11px;">${p.movimiento||"—"}</td>
+    <td class="td-mono td-trunc">${p.transporte||"—"}</td>
+    <td class="td-ref">${p.referencia||"—"}</td>
+    <td class="td-mono">${patentes(data)}</td>
+    <td class="td-mono">${dock}</td>
+    <td>${horariosCell(data)}</td>
+    <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td>
+    <td style="text-align:center;">${pen}</td>
+  </tr>`;
+}
+
+function renderPlanta(docs) {
+  const container = document.getElementById("secPlanta");
+  if (!docs.length) {
+    container.innerHTML = `<table class="mov-table"><tbody><tr class="empty-row"><td colspan="10">Sin vehículos en planta</td></tr></tbody></table>`;
+    return;
+  }
+
+  // Ordenar por estado según el circuito
+  docs = [...docs].sort((a, b) => {
+    const ia = ORDEN_PLANTA_EST.indexOf(a.data().estado || "");
+    const ib = ORDEN_PLANTA_EST.indexOf(b.data().estado || "");
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+
+  container.innerHTML = `<table class="mov-table" style="table-layout:fixed;width:100%;">
+    ${COLGROUP_PLANTA}
+    <thead><tr>
+      <th>Estado</th><th>Cliente</th><th>#</th><th>Movimiento</th><th>Transporte</th>
+      <th>Referencia</th><th>Patentes</th><th>Dock</th><th>Horarios</th><th title="Alerta">!</th><th>⚠</th>
+    </tr></thead>
+    <tbody>${docs.map(rowPlanta).join("")}</tbody>
+  </table>`;
+}
+
+// Toggle global para secciones principales
+window.toggleSec = function(secId, chevId) {
+  const sec  = document.getElementById(secId);
+  const chev = document.getElementById(chevId);
+  if (!sec || !chev) return;
+  sec.classList.toggle("hidden");
+  chev.classList.toggle("up");
+};
+
+// Toggle global para subgrupos de estado
+window.toggleGrupo = function(gid) {
+  const body = document.getElementById(gid);
+  const chev = document.getElementById("chev_" + gid);
+  if (!body || !chev) return;
+  const isHidden = body.style.display === "none";
+  body.style.display = isHidden ? "" : "none";
+  chev.textContent = isHidden ? "▼" : "▶";
+};
+
+function renderLiberados(docs) {
+  const container = document.getElementById("secLiberados");
+  if (!docs.length) {
+    container.innerHTML = `<table class="mov-table"><tbody><tr class="empty-row"><td colspan="10">Sin movimientos liberados</td></tr></tbody></table>`;
+    return;
+  }
+  docs = [...docs].sort((a,b) => {
+    const ha=a.data().guardia?.hora_arribo||"", hb=b.data().guardia?.hora_arribo||"";
+    return ha.localeCompare(hb);
+  });
+  container.innerHTML = `<table class="mov-table" style="table-layout:fixed;width:100%;">
+    ${COLGROUP_PLANTA}
+    <thead><tr>
+      <th>Estado</th><th>Cliente</th><th>#</th><th>Movimiento</th><th>Transporte</th>
+      <th>Referencia</th><th>Patentes</th><th>Dock</th><th>Horarios</th><th title="Alerta">!</th><th>⚠</th>
+    </tr></thead>
+    <tbody>${docs.map(rowPlanta).join("")}</tbody>
+  </table>`;
+}
+
+function renderCancelados(docs) {
+  const container = document.getElementById("secCancelados");
+  if (!docs.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:14px 0;color:var(--muted);font-size:13px;font-style:italic;">Sin movimientos cancelados</div>`;
+    return;
+  }
+  container.innerHTML = `<table class="mov-table" style="table-layout:fixed;width:100%;">
+    ${COLGROUP_PLANTA}
+    <thead><tr>
+      <th>Estado</th><th>Cliente</th><th>#</th><th>Movimiento</th><th>Transporte</th>
+      <th>Referencia</th><th>Patentes</th><th>Dock</th><th>Horarios</th><th title="Alerta">!</th><th>⚠</th>
+    </tr></thead>
+    <tbody>${docs.map(rowPlanta).join("")}</tbody>
+  </table>`;
+}
+
+function renderEsp(docs) {
+  const tbody = document.getElementById("tbodyEsp");
+  if (!docs.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Sin movimientos espontáneos</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = docs.map((d,i) => {
+    const data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+    return `<tr class="mov-row" onclick="abrirPanel('${d.id}')">
+      <td>${badgeEstadoLocal(data.estado||"")}</td>
+      <td class="td-time">${g.hora_arribo||"—"}</td>
+      <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td>
+      <td><strong>${(p.cliente||"SIN IDENTIFICAR").slice(0,18)}</strong></td>
+      <td class="td-mono">${p.transporte||"—"}</td>
+      <td class="td-mono">${patentes(data)}</td>
+      <td class="td-mono">${g.chofer||"—"}</td>
+      <td style="font-size:11px;">${p.movimiento||"—"}</td>
+      <td class="td-mono">${p.booking||"—"}</td>
+      <td style="text-align:center;">${(data.penalizado||(data.penalidades?.lista?.length>0)||(data.penalidades?.extra_costos?.some(Boolean)))?`<span title="Penalizado" style="color:#ef4444;font-size:15px;font-weight:900;line-height:1;">!</span>`:""}</td>
+    </tr>`;
+  }).join("");
+}
+
+// ── MODAL NOTAS (solo lectura) ─────────────────────────────────
+function fmtNotaFecha(ts) {
+  if (!ts) return "";
+  try {
+    const d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds*1000) : new Date(ts));
+    return d.toLocaleString("es-AR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  } catch(e) { return ""; }
+}
+
+window.abrirNotas = function(id) {
+  const d = docsCache.find(x=>x.id===id);
+  if (!d) return;
+  const data = d.data(), p = data.planificacion||{};
+  const notas = getNotas(data);
+  document.getElementById("notasSub").textContent =
+    `${p.cliente||"Sin cliente"} · ${p.referencia||"Sin referencia"}`;
+  const h = document.getElementById("notasHistorial");
+  if (!notas.length) {
+    h.innerHTML = `<div class="notas-empty">Sin notas para este movimiento.</div>`;
+  } else {
+    h.innerHTML = notas.map(n => {
+      const cls = n.resuelta ? " resuelta" : "";
+      const rolCls = (n.rol||"").toLowerCase().replace(/[^a-z]/g,"");
+      const badge = n.resuelta ? `<span class="nota-resuelta-badge">✓ resuelta</span>` : "";
+      return `<div class="nota-item${cls}">
+        <div class="nota-meta">
+          <span class="nota-rol ${rolCls}">${n.rol||"sistema"}</span>
+          <strong style="font-size:11px;">${n.autor||"—"}</strong>
+          <span>${fmtNotaFecha(n.fecha)}</span>
+          ${badge}
+        </div>
+        <div class="nota-texto">${n.texto||""}</div>
+      </div>`;
+    }).join("");
+  }
+  document.getElementById("modalNotas").classList.remove("hidden");
+};
+
+function cerrarNotas() { document.getElementById("modalNotas").classList.add("hidden"); }
+document.getElementById("btnCerrarNotas").addEventListener("click",  cerrarNotas);
+document.getElementById("btnCerrarNotas2").addEventListener("click", cerrarNotas);
+document.getElementById("modalNotas").addEventListener("click", e => { if(e.target===e.currentTarget) cerrarNotas(); });
+
+// ── SIDE PANEL ────────────────────────────────────────────────
+let panelDocId = null;
+
+function val(v) { return v && String(v).trim() ? v : null; }
+
+function spField(label, v, cls="") {
+  if (!val(v)) return `<div class="sp-field"><span class="sp-label">${label}</span><span class="sp-val muted">—</span></div>`;
+  return `<div class="sp-field"><span class="sp-label">${label}</span><span class="sp-val ${cls}">${v}</span></div>`;
+}
+
+function spHora(label, v) {
+  if (!val(v)) return "";
+  return `<div class="sp-hora-chip"><span class="sp-hora-label">${label}</span><span class="sp-hora-val">${v}</span></div>`;
+}
+
+window.abrirPanel = function(id) {
+  panelDocId = id;
+  const d = docsCache.find(x=>x.id===id);
+  if (!d) return;
+
+  // Mark selected row
+  document.querySelectorAll(".mov-row").forEach(r => r.classList.remove("selected"));
+  document.querySelectorAll(`.mov-row`).forEach(r => {
+    if (r.getAttribute("onclick")?.includes(id)) r.classList.add("selected");
+  });
+
+  renderPanel(d);
+  document.getElementById("sidePanel").classList.add("open");
+  document.getElementById("sidePanelOverlay").classList.add("open");
+};
+
+window.cerrarPanel = function() {
+  document.getElementById("sidePanel").classList.remove("open");
+  document.getElementById("sidePanelOverlay").classList.remove("open");
+  document.querySelectorAll(".mov-row").forEach(r => r.classList.remove("selected"));
+  panelDocId = null;
+};
+
+function renderPanel(d) {
+  const data = d.data();
+  const p  = data.planificacion||{};
+  const g  = data.guardia||{};
+  const sv = data.supervisor||{};
+  const svw= data.supervisor_web||{};
+  const pl = data.planillero||{};
+  const py = data.playero||{};
+  const cal= data.calidad||{};
+  const cd = data.calidad_desvios||{};
+  const det= data.detalles||[];
+  const est= data.estado||"";
+
+  document.getElementById("spTitle").textContent = p.cliente||"SIN IDENTIFICAR";
+  document.getElementById("spSub").textContent =
+    `${p.referencia||"Sin referencia"} · ${est}`;
+
+  const notas = getNotas(data);
+
+  // Horarios
+  const horasHtml = [
+    spHora("Est.", p.hora_estipulada),
+    spHora("Arribo", g.hora_arribo),
+    spHora("Dock", sv.hora_ingreso),
+    spHora("Inicio", pl.hora_inicio),
+    spHora("Pausa", pl.pausa),
+    spHora("Fin", pl.hora_finalizado),
+    spHora("Egreso", py.hora_egreso||sv.hora_egreso),
+  ].filter(Boolean).join("");
+
+  // Links helper
+  function getUrls(detalles, campo) {
+    const urls=[], seen=new Set();
+    for(const d of (detalles||[])) {
+      const val=d?.[campo];
+      const arr=Array.isArray(val)?val:(val?[val]:[]);
+      arr.forEach(u=>{if(u&&!seen.has(u)){seen.add(u);urls.push(u);}});
+    }
+    return urls;
+  }
+  const valsConc = getVals(det,"conciliacion_stock_url");
+  const valsRec  = getVals(det,"receta_impresa_url");
+  const urlsNota = getUrls(det,"nota_venta_url");
+  const tieneLinks = valsConc.length||valsRec.length||urlsNota.length;
+
+  function renderLinkGroup(vals, label, icon) {
+    const esU = v => /^https?:\/\//i.test(v||"");
+    const allVals = vals.filter(Boolean);
+    if(!allVals.length) return "";
+    return `<div class="sp-field sp-full">
+      <span class="sp-label">${label}</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+        ${allVals.map((v,i)=> esU(v)
+          ? `<a href="${v}" target="_blank"
+              style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;
+              background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);
+              color:var(--accent2);font-size:11px;font-weight:600;text-decoration:none;">
+              ${icon} ${allVals.length>1?`#${i+1}`:"Ver"}
+             </a>`
+          : `<span style="font-size:11px;font-family:var(--mono);color:var(--muted);padding:4px 8px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;user-select:all;">${v}</span>`
+        ).join("")}
+      </div>
+    </div>`;
+  }
+
+  // Productos con links
+  const esUrl = s => /^https?:\/\//i.test(s);
+  const loteGrupo = det.find(x=>x.lote_grupo)?.lote_grupo || "";
+  const loteGrupoHtml = loteGrupo
+    ? `<div style="font-size:11px;padding:3px 0;color:var(--muted);"><span style="font-family:var(--mono);">Lote grupo: </span>${esUrl(loteGrupo)?`<a href="${loteGrupo}" target="_blank" style="color:var(--accent2);font-weight:600;text-decoration:none;">🔗 Ver lote</a>`:`<span style="font-family:var(--mono);">${loteGrupo}</span>`}</div>`
+    : "";
+
+  const prodsHtml = det.length
+    ? loteGrupoHtml + det.map(it => {
+        const _concVal = Array.isArray(it.conciliacion_stock_url)?it.conciliacion_stock_url[0]:it.conciliacion_stock_url;
+        const _recVal  = Array.isArray(it.receta_impresa_url)?it.receta_impresa_url[0]:it.receta_impresa_url;
+        const concUrl = /^https?:\/\//i.test(_concVal||"") ? _concVal : "";
+        const recUrl  = /^https?:\/\//i.test(_recVal||"")  ? _recVal  : "";
+        const concTxt = !concUrl && _concVal ? _concVal : "";
+        const recTxt  = !recUrl  && _recVal  ? _recVal  : "";
+        const notaUrl = Array.isArray(it.nota_venta_url)?it.nota_venta_url[0]:it.nota_venta_url;
+        const loteProd = it.lote && it.lote !== it.lote_grupo ? it.lote : "";
+        const loteProdHtml = loteProd
+          ? (esUrl(loteProd)?`<a href="${loteProd}" target="_blank" style="color:var(--accent2);font-size:10px;font-weight:600;text-decoration:none;">🔗 Lote</a>`:`<span style="color:var(--muted);font-size:10px;font-family:var(--mono);">Lote: ${loteProd}</span>`)
+          : "";
+        return `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <strong>${it.producto||"—"}</strong>
+          <span style="color:var(--muted);">${[it.cantidad,it.unidad,it.calibre].filter(Boolean).join(" ")}</span>
+          ${it.empaque?`<span style="color:var(--muted);font-size:10px;font-family:var(--mono);">${it.empaque}</span>`:""}
+          ${it.total_kg?`<span style="color:var(--muted);font-size:10px;">${it.total_kg}kg</span>`:""}
+          ${it.piso_o_pallet?`<span style="color:var(--accent2);font-size:10px;font-family:var(--mono);">${it.piso_o_pallet}</span>`:""}
+          ${it.elaborador?`<span style="color:var(--muted);font-size:10px;">${it.elaborador}</span>`:""}
+          ${loteProdHtml}
+        </div>`;
+      }).join("")
+    : `<span class="sp-val muted">Sin productos cargados</span>`;
+
+  // Notas
+  const notasHtml = notas.length
+    ? notas.map(n => {
+        const cls = n.resuelta ? " resuelta" : "";
+        const rolCls = (n.rol||"").toLowerCase().replace(/[^a-z]/g,"");
+        return `<div class="nota-sp${cls}">
+          <div class="nota-sp-meta">
+            <span class="nota-sp-rol ${rolCls}">${n.rol||"sistema"}</span>
+            <strong style="font-size:10px;">${n.autor||"—"}</strong>
+            <span style="font-size:10px;">${fmtNotaFecha(n.fecha)}</span>
+            ${n.resuelta?`<span style="font-size:9px;color:var(--ok);margin-left:auto;">✓ resuelta</span>`:""}
+          </div>
+          <div style="font-size:12px;white-space:pre-wrap;">${n.texto||""}</div>
+        </div>`;
+      }).join("")
+    : `<span class="sp-val muted">Sin notas</span>`;
+
+  document.getElementById("spBody").innerHTML = `
+
+    <!-- ESTADO + HORARIOS -->
+    <div class="sp-section">
+      <div class="sp-section-title">Horarios</div>
+      <div class="sp-hora-row">${horasHtml||`<span class="sp-val muted">Sin horarios</span>`}</div>
+    </div>
+
+    <!-- PLANIFICACION -->
+    <div class="sp-section">
+      <div class="sp-section-title">Planificación</div>
+      <div class="sp-grid">
+        ${spField("Movimiento", p.movimiento)}
+        ${spField("Fecha", p.fecha_prevista ? p.fecha_prevista.split("-").reverse().join("/") : null)}
+        ${spField("Transporte", p.transporte, "mono")}
+        ${spField("Referencia", p.referencia, "mono accent")}
+        ${spField("Destino", p.destino)}
+        ${spField("Lugar Carga", p.lugar_carga)}
+        ${spField("Booking", p.booking, "mono")}
+        ${spField("Contenedor", p.contenedor, "mono")}
+        ${spField("Patente Tractor", g.patente_tractor||p.patente_tractor, "mono")}
+        ${spField("Patente Semi", g.patente_semi||p.patente_semi, "mono")}
+        ${spField("Termógrafo", p.termografo, "mono")}
+        ${spField("COT", p.cot, "mono")}
+        ${spField("Soporte Foto", p.soporte_foto)}
+        ${spField("Clasificado", p.necesita_clasificado)}
+        ${det[0]?.rotulo ? spField("Rótulo", det[0].rotulo, "mono") : ""}
+        ${det[0]?.control ? spField("Control", det[0].control, "mono") : ""}
+        ${det[0]?.piso_o_pallet ? spField("Piso / Pallet", det[0].piso_o_pallet, "mono") : ""}
+        ${p.foto_carpeta ? `<div class="sp-full sp-field"><span class="sp-label">Carpeta de Fotos</span><a href="${p.foto_carpeta}" target="_blank" style="font-size:12px;color:var(--accent2);word-break:break-all;">📁 Abrir carpeta</a></div>` : ""}
+      </div>
+    </div>
+
+    <!-- GUARDIA -->
+    <div class="sp-section">
+      <div class="sp-section-title">Guardia</div>
+      <div class="sp-grid">
+        ${spField("Chofer", g.chofer)}
+        ${spField("DNI", g.dni, "mono")}
+        ${spField("Teléfono", g.telefono, "mono")}
+        ${g.nro_arribo_cliente ? spField("Nro. Arribo", `#${g.nro_arribo_cliente}`) : ""}
+      </div>
+    </div>
+
+    <!-- SUPERVISOR -->
+    ${(val(sv.dock)||val(sv.hora_ingreso)||val(svw.solucion_desvio)) ? `
+    <div class="sp-section">
+      <div class="sp-section-title">Supervisor</div>
+      <div class="sp-grid">
+        ${spField("Dock", sv.dock ? `D${sv.dock}` : null, "mono")}
+        ${spField("Abre Contenedor", sv.abre_contenedor)}
+        ${spField("Solución Desvío", svw.solucion_desvio)}
+        ${spField("Personal", svw.personal_implicado)}
+      </div>
+    </div>` : ""}
+
+    <!-- CALIDAD -->
+    ${(val(cal.temperatura)||val(cal.precinto_senasa)||val(cd.desvio)) ? `
+    <div class="sp-section">
+      <div class="sp-section-title">Calidad</div>
+      <div class="sp-grid">
+        ${spField("Temperatura", cal.temperatura, "mono")}
+        ${spField("Tara", cal.tara, "mono")}
+        ${spField("M3", cal.m3, "mono")}
+        ${spField("Precinto SENASA", cal.precinto_senasa, "mono")}
+        ${spField("Nro. Termógrafo", cal.nro_termografo, "mono")}
+        ${spField("Habilitación", cal.habilitacion_senasa, "mono")}
+        ${val(cd.desvio) ? `<div class="sp-full">${spField("Desvío", cd.desvio)}</div>` : ""}
+        ${val(cd.motivo_desvio) ? `<div class="sp-full">${spField("Motivo", cd.motivo_desvio)}</div>` : ""}
+      </div>
+    </div>` : ""}
+
+    <!-- PLANILLERO -->
+    ${(val(pl.nombre)||val(pl.cantidad_operarios)) ? `
+    <div class="sp-section">
+      <div class="sp-section-title">Planillero</div>
+      <div class="sp-grid">
+        ${spField("Nombre", pl.nombre)}
+        ${spField("Operarios", pl.cantidad_operarios, "mono")}
+        ${val(pl.motivo_pausa) ? `<div class="sp-full">${spField("Motivo Pausa", pl.motivo_pausa)}</div>` : ""}
+      </div>
+    </div>` : ""}
+
+    <!-- LINKS -->
+    ${tieneLinks ? `
+    <div class="sp-section">
+      <div class="sp-section-title">Links</div>
+      <div class="sp-grid" style="grid-template-columns:1fr;">
+        ${renderLinkGroup(valsConc,"Conciliación de Stock","🔗")}
+        ${renderLinkGroup(valsRec, "Receta Impresa","🧾")}
+        ${renderLinkGroup(urlsNota,"Nota de Venta","📄")}
+      </div>
+    </div>` : ""}
+
+    <!-- PRODUCTOS -->
+    <div class="sp-section">
+      <div class="sp-section-title">Productos (${det.length})</div>
+      ${prodsHtml}
+    </div>
+
+    <!-- NOTAS -->
+    <div class="sp-section">
+      <div class="sp-section-title">Notas</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">${notasHtml}</div>
+    </div>
+  `;
+}
+
+// ── NAVEGACIÓN ─────────────────────────────────────────────────
+document.getElementById("btnDiaAnterior").addEventListener("click",  () => cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnDiaSiguiente").addEventListener("click", () => cargarDia(sumarDias(diaActual, 1)));
+document.getElementById("btnHoy").addEventListener("click",          () => cargarDia(hoy()));
+
+// ── BUSCADOR ───────────────────────────────────────────────────
+document.getElementById("campoBuscar").addEventListener("input", e => {
+  terminoBusqueda = e.target.value.trim();
+  renderAll();
+});
+
+// ── INICIO ─────────────────────────────────────────────────────
+window.imprimirMovimientos = function() {
+  const docs = docsCache;
+  if (!docs.length) { toast("err","Sin datos","No hay movimientos para imprimir"); return; }
+
+  const label = diaActual;
+  const ahora = new Date().toLocaleString("es-AR");
+
+  function schip(lbl, val) {
+    if (!val || !String(val).trim()) return "";
+    return `<span class="schip"><span class="schip-label">${lbl}: </span>${String(val).trim()}</span>`;
+  }
+
+  const ESTADOS_EXCLUIR_PRINT = new Set(["CANCELADO","CANCELA MOVIMIENTO","VINCULADO","SIN IDENTIFICAR"]);
+  const rowsArr = docs.filter(d => !ESTADOS_EXCLUIR_PRINT.has(d.data().estado||""));
+  const totalMovimientos = rowsArr.length;
+
+  const rows = rowsArr.map((d, idx) => {
+    const data = d.data(), p = data.planificacion||{}, g = data.guardia||{};
+    const sv = data.supervisor||{}, det = data.detalles||[];
+    const esExpo = (p.movimiento||"").toUpperCase().includes("EXPO");
+    const patT = g.patente_tractor||p.patente_tractor||"—";
+    const patS = g.patente_semi||p.patente_semi||"—";
+    const dock = sv.dock ? "D"+sv.dock : "—";
+    const i0 = det[0]||{};
+    const bg = idx%2===0?"#fff":"#f5f5f5";
+    const bgSub = idx%2===0?"#fafafa":"#ececec";
+
+    function truncarLote(val) { const s=String(val||"").trim(); if(!s)return null; return s.length<=25?s:s.slice(0,23)+"…"; }
+
+    const sub = [
+      schip("Cont.", p.contenedor), schip("Estab.", i0.nro_of),
+      schip("Lote", truncarLote(i0.lote_grupo||i0.lote)), schip("COT", p.cot),
+      schip("Termóg.", p.termografo), schip("Soporte", p.soporte_foto),
+      schip("Orden", i0.respetar_orden), schip("Control", i0.control),
+      schip("Rótulo", i0.rotulo), schip("Import.", i0.importador),
+    ].filter(Boolean).join("");
+
+    const prodStr = det.map(it=>[it.producto,it.cantidad,it.unidad,it.calibre,it.empaque].filter(Boolean).join(" ")).filter(Boolean).join(" · ");
+    const todoSub = sub + (prodStr ? schip("Productos", prodStr) : "");
+    const obs = p.observaciones||"";
+
+    const td = (val, opts={}) =>
+      `<td style="padding:5px 6px;font-size:8px;color:#0f172a;background:${bg};border-right:1px solid #e2e8f0;${opts.mono?"font-family:monospace;":""}${opts.bold?"font-weight:700;":""}${opts.blue?"color:#1d4ed8;":""}">${val||"—"}</td>`;
+
+    return `
+      <tbody style="page-break-inside:avoid;">
+        <tr>
+          ${td(p.hora_estipulada, {mono:true, bold:true})}
+          <td style="padding:5px 6px;font-size:8px;background:${bg};"><strong>${p.cliente||"—"}</strong></td>
+          <td style="padding:5px 6px;font-size:8px;background:${bg};">${p.movimiento||"—"} ${esExpo?`<span style="display:inline-block;padding:1px 4px;border-radius:3px;font-size:6px;font-weight:700;background:#fef9c3;color:#854d0e;border:1px solid #fde047;">EXPO</span>`:""}</td>
+          ${td(p.transporte, {mono:true})}
+          ${td(p.destino)}
+          ${td(p.referencia, {mono:true, bold:true, blue:true})}
+          ${td(p.booking, {mono:true})}
+          ${td(p.contenedor, {mono:true})}
+          ${td(p.lugar_carga)}
+          ${td(i0.piso_o_pallet, {mono:true})}
+          ${td(patT, {mono:true})}
+          ${td(patS, {mono:true})}
+          <td style="padding:5px 6px;font-size:8px;font-family:monospace;font-weight:700;background:${bg};">${dock}</td>
+        </tr>
+        ${todoSub ? `<tr>
+          <td style="background:${bgSub};"></td>
+          <td colspan="12" style="padding:3px 6px 4px;font-size:7px;background:${bgSub};">${todoSub}</td>
+        </tr>` : ""}
+        ${obs ? `<tr>
+          <td style="background:${bgSub};"></td>
+          <td colspan="12" style="padding:2px 6px 5px;font-size:7px;font-style:italic;color:#374151;background:${bgSub};">📝 ${obs}</td>
+        </tr>` : ""}
+        <tr><td colspan="13" style="height:2px;padding:0;background:#0f172a;border:none;font-size:0;"></td></tr>
+      </tbody>
+    `;
+  }).join("");
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    body{font-family:'DM Sans',sans-serif;font-size:8px;background:#fff;color:#0f172a;}
+    .header{padding-bottom:7px;margin-bottom:8px;border-bottom:1.5px solid #0f172a;display:flex;justify-content:space-between;align-items:flex-end;}
+    .header h1{font-size:13px;font-weight:700;}
+    .header p{font-size:9px;color:#64748b;margin-top:2px;}
+    .header-right{font-size:8px;color:#64748b;text-align:right;font-family:monospace;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{background:#f1f5f9;color:#374151;font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:5px 6px;border-bottom:1.5px solid #0f172a;border-right:1px solid #cbd5e1;}
+    thead th:last-child{border-right:none;}
+    .schip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:7px;font-weight:700;border:1px solid #cbd5e1;background:#f1f5f9;margin:1px 2px 1px 0;}
+    .schip-label{font-weight:400;color:#64748b;}
+    @page{size:A4 landscape;margin:7mm 8mm;}
+  </style></head><body>
+  <div class="header">
+    <div><h1>IceLion — Movimientos del día</h1><p>${label} · <strong>${totalMovimientos} movimiento${totalMovimientos!==1?"s":""}</strong></p></div>
+    <div class="header-right">Impreso: ${ahora}</div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>Hora</th><th>Cliente</th><th>Movimiento</th><th>Transporte</th>
+      <th>Destino</th><th>Referencia</th><th>Booking</th><th>Contenedor</th><th>Lugar carga</th>
+      <th>Piso/Pallet</th><th>Pat. Tractor</th><th>Pat. Semi</th><th>Dock</th>
+    </tr></thead>
+    ${rows}
+  </table>
+  </body></html>`;
+
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;";
+  document.body.appendChild(iframe);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+  iframe.contentWindow.focus();
+  setTimeout(() => { iframe.contentWindow.print(); setTimeout(() => iframe.remove(), 1000); }, 300);
+};
+
+cargarDia(diaActual);
+
+function renderValorConc(v) {
+  if (!v) return "";
+  const clean = (typeof normalizarUrlDrive === "function") ? normalizarUrlDrive(v) : v;
+  if (/^https?:\/\//i.test(clean))
+    return `<a href="${clean}" target="_blank" style="color:var(--accent2);">🔗</a>`;
+  return `<span style="font-size:10px;font-family:var(--mono);color:var(--muted);" title="${clean}">${clean.length>12?clean.slice(0,12)+"…":clean}</span>`;
+}
+function getVals(detalles, campo) {
+  if(!Array.isArray(detalles)) return [];
+  const vals=[], seen=new Set();
+  for(const d of detalles){
+    const val=d?.[campo];
+    const arr=Array.isArray(val)?val:(val?[val]:[]);
+    for(const v of arr){const t=(v||"").trim();if(t&&!seen.has(t)){seen.add(t);vals.push(t);}}
+  }
+  return vals;
+}
+
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Data Entry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --panel3:#f1f5f9;
+      --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    }
+    body.light .navbar { box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    body.light tbody tr:hover { background:#f0f4ff; }
+    body.light .toast.ok  { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+    body.light .toast.err { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+    body.light .detail-item { background:#f1f5f9; }
+    body.light .copy-btn { background:#fff; border-color:rgba(0,0,0,.1); }
+    body.light .copy-btn:hover { background:#f0f4ff; }
+    body.light .modal-tab-btn { background:#f8fafc; }
+    body.light .modal-tab-btn.activa { background:#fff; }
+    body.light .caratula-hint { background:#f8fafc; }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+    .hidden{display:none!important;}
+
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .btn-theme:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s;}
+    .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+    .main{padding:12px 16px;}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+    .page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{background:var(--accent2);}
+    .btn-print{background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.2);}
+    .btn-print:hover{background:rgba(245,158,11,.2);}
+    .btn-ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.2);}
+    .btn-ok:hover{background:rgba(34,197,94,.2);}
+    .btn-sm{padding:5px 10px;font-size:11px;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* TABS PÁGINA */
+    .tabs{display:flex;gap:6px;margin-bottom:16px;}
+    .tab-btn{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--muted);transition:all .2s;}
+    .tab-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .tab-btn.activa{background:var(--panel2);border-color:var(--accent);color:var(--text);}
+    .tab-count{font-size:11px;font-family:var(--mono);font-weight:700;background:var(--panel3);border:1px solid var(--border);padding:2px 7px;border-radius:999px;min-width:22px;text-align:center;transition:all .2s;}
+    .tab-btn.activa .tab-count{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+    /* FILTROS */
+    .filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;}
+    .filters-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;}
+    .daybar-nav{display:flex;align-items:center;gap:8px;}
+    .day-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .day-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .day-label{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);min-width:130px;text-align:center;}
+    .day-today-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:700;transition:all .2s;}
+    .day-today-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .filters-sep{width:1px;height:28px;background:var(--border);margin:0 2px;}
+    .search-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;min-width:240px;transition:border-color .2s;}
+    .search-input:focus{border-color:var(--accent);}
+    .search-input::placeholder{color:var(--muted);}
+    .read-info{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);white-space:nowrap;}
+
+    /* TABLA */
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:var(--panel2);padding:4px 6px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:var(--panel2);}
+    tbody td{padding:3px 6px;white-space:nowrap;color:var(--text);}
+    .td-mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+    .table-info{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.3px;border:1px solid transparent;white-space:nowrap;}
+    .badge-planificado{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-agregado{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-sinidentif{background:rgba(239,68,68,.15);color:#ef4444;}
+    .badge-esp{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-arribado{background:rgba(251,191,36,.15);color:#fbbf24;}
+    .badge-enespera{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-dock{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-atracado{background:rgba(245,158,11,.15);color:#f64dfc;}
+    .badge-encurso{background:rgba(34,197,94,.15);color:#4ade80;}
+    .badge-iniciomov{background:rgba(134,239,172,.2);color:#4ade80;}
+    .badge-pausado{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-liberado{background:rgba(34,211,238,.15);color:#67e8f9;}
+    .badge-finalizado{background:rgba(34,197,94,.2);color:#22c55e;}
+    .badge-finmov{background:rgba(22,163,74,.2);color:#16a34a;}
+    .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-expo{background:rgba(234,179,8,.15);color:#fde047;}
+    /* LOADING */
+    .loading-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .empty-state{text-align:center;padding:48px 20px;color:var(--muted);}
+    .empty-state .icon{font-size:36px;margin-bottom:12px;}
+    .empty-state p{font-size:13px;}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:840px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 22px 0;flex-shrink:0;}
+    .modal-header h2{font-size:16px;font-weight:700;}
+    .modal-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+    .btn-close-modal{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px;transition:color .2s;}
+    .btn-close-modal:hover{color:var(--text);}
+
+    /* Tabs del modal */
+    .modal-tabs{display:flex;gap:4px;padding:12px 22px 0;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-tab-btn{padding:8px 18px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--muted);border-radius:8px 8px 0 0;border-bottom:none;margin-bottom:-1px;transition:all .2s;}
+    .modal-tab-btn.activa{background:var(--panel);color:var(--text);border-bottom-color:var(--panel);}
+
+    .modal-body{padding:18px 22px;overflow-y:auto;flex:1;}
+    .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-shrink:0;}
+
+    /* Detalle */
+    .section-title-detail{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+    .section-title-detail:first-child{margin-top:0;}
+    .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px 10px;margin-bottom:4px;}
+    .detail-item{background:var(--panel3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:2px;}
+    .detail-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .detail-main{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+    .detail-value{font-size:12px;font-weight:600;font-family:var(--mono);word-break:break-all;}
+    .detail-value.empty{color:var(--muted);font-style:italic;font-weight:400;font-family:var(--font);}
+    .copy-btn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);width:22px;height:22px;border-radius:5px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;}
+    .copy-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .copy-btn.copied{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--ok);}
+
+    /* Productos */
+    .prod-wrap{background:var(--panel3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;margin-bottom:8px;}
+    .prod-head{padding:7px 12px;background:var(--panel2);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);display:flex;justify-content:space-between;}
+    .prod-table{width:100%;border-collapse:collapse;font-size:11px;}
+    .prod-table th{padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--panel2);}
+    .prod-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;}
+    .prod-table tr:last-child td{border-bottom:none;}
+    .prod-empty{padding:12px;font-size:12px;color:var(--muted);font-style:italic;}
+
+    /* Carátula preview */
+    .caratula-preview{background:#fff;color:#000;border:1px solid #ccc;border-radius:8px;padding:0;overflow:hidden;font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;}
+    .car-header{display:grid;grid-template-columns:1fr auto;border-bottom:2px solid #000;flex-shrink:0;}
+    .car-header-title{padding:22px 28px;font-size:36px;font-weight:700;letter-spacing:.5px;text-align:center;display:flex;align-items:center;justify-content:center;}
+    .car-header-logo{padding:10px 20px;display:flex;align-items:center;justify-content:center;border-left:1px solid #ccc;}
+    .car-header-logo img{height:90px;object-fit:contain;}
+    .car-row{display:grid;border-bottom:1px solid #ccc;flex-shrink:0;}
+    .car-row.two{grid-template-columns:1fr 1fr;}
+    .car-row.three{grid-template-columns:1fr 1fr 1fr;}
+    .car-cell{padding:12px 18px;border-right:1px solid #ccc;}
+    .car-cell:last-child{border-right:none;}
+    .car-cell-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#000;margin-bottom:4px;}
+    .car-cell-value{font-size:20px;font-weight:700;color:#000;}
+    .car-cell-value.big{font-size:32px;font-weight:800;text-align:center;padding:10px 0;color:#000;}
+    .car-cell-value.center{text-align:center;}
+    .car-full{grid-column:1/-1;}
+    .car-table{width:100%;border-collapse:collapse;}
+    .car-table th{padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#000;border-bottom:1px solid #ccc;background:#fff;}
+    .car-table td{padding:11px 12px;border-bottom:1px solid #eee;font-size:15px;color:#000;font-weight:600;background:#fff;}
+    .car-table tr:last-child td{border-bottom:none;}
+    .car-obs-row{flex:1;display:flex;flex-direction:column;}
+    .car-obs-row > .car-cell{flex:1;display:flex;flex-direction:column;}
+    .car-obs{flex:1;padding:12px 18px;font-size:14px;min-height:160px;}
+
+    /* Print: solo la carátula */
+    #printCaratula{display:none;}
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm 10mm 10mm 10mm;
+      }
+      body > *:not(#printCaratula){display:none!important;}
+      #printCaratula{
+        display:block!important;
+        font-family:'DM Sans',sans-serif;
+        font-size:12px;color:#000;
+        width:100%; height:100%;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      /* Forzar que la carátula ocupe toda la página */
+      #printCaratula .caratula-preview{
+        width:100%;
+        height:calc(297mm - 20mm);
+        display:flex;
+        flex-direction:column;
+        border:1px solid #ccc;
+        overflow:hidden;
+        box-sizing:border-box;
+      }
+      /* La sección de observaciones crece para llenar el espacio */
+      #printCaratula .car-obs-row{
+        flex:1;
+      }
+      #printCaratula .car-obs{
+        height:100%;
+        min-height:unset;
+      }
+      #printCaratula .car-header{display:grid;grid-template-columns:1fr auto;border-bottom:2px solid #000;}
+      #printCaratula .car-header-title{padding:20px 28px;font-size:34px;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;}
+      #printCaratula .car-header-logo{padding:10px 20px;display:flex;align-items:center;justify-content:center;border-left:1px solid #ccc;}
+      #printCaratula .car-header-logo img{height:86px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      #printCaratula .car-row{display:grid;border-bottom:1px solid #ccc;}
+      #printCaratula .car-row.two{grid-template-columns:1fr 1fr;}
+      #printCaratula .car-row.three{grid-template-columns:1fr 1fr 1fr;}
+      #printCaratula .car-cell{padding:10px 18px;border-right:1px solid #ccc;}
+      #printCaratula .car-cell:last-child{border-right:none;}
+      #printCaratula .car-cell-label{font-size:11px;font-weight:700;text-transform:uppercase;color:#000;}
+      #printCaratula .car-cell-value{font-size:18px;font-weight:700;color:#000;}
+      #printCaratula .car-cell-value.big{font-size:30px;font-weight:800;text-align:center;padding:8px 0;color:#000;}
+      #printCaratula .car-cell-value.center{text-align:center;}
+      #printCaratula .car-full{grid-column:1/-1;}
+      #printCaratula .car-table{width:100%;border-collapse:collapse;}
+      #printCaratula .car-table th{padding:7px 12px;font-size:11px;font-weight:700;text-transform:uppercase;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;border-bottom:1px solid #ccc;color:#000;}
+      #printCaratula .car-table td{padding:10px 12px;border-bottom:1px solid #eee;font-size:14px;color:#000;font-weight:600;background:#fff !important;}
+      #printCaratula .car-obs-row{flex:1;display:flex;flex-direction:column;}
+      #printCaratula .car-obs-row > .car-cell{flex:1;display:flex;flex-direction:column;}
+      #printCaratula .car-obs{flex:1;padding:12px 18px;font-size:14px;}
+    }
+
+    
+    /* SISTEMA DE NOTAS */
+    .modal-notas-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;overflow:hidden;}
+    .notas-historial{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;margin-bottom:12px;padding:4px 2px;}
+    .nota-item{border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;border:1px solid var(--border);position:relative;}
+    .nota-item.resuelta{opacity:.4;}
+    .nota-item.propia{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2);}
+    .nota-item.ajena{background:var(--panel2);}
+    .nota-meta{font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .nota-rol{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;background:rgba(59,130,246,.15);color:var(--accent2);}
+    .nota-rol.guardia{background:rgba(245,158,11,.15);color:#fcd34d;}
+    .nota-rol.calidad{background:rgba(34,197,94,.15);color:#86efac;}
+    .nota-rol.supervisor{background:rgba(168,85,247,.15);color:#d8b4fe;}
+    .nota-rol.consolidador{background:rgba(236,72,153,.15);color:#f9a8d4;}
+    .nota-texto{color:var(--text);white-space:pre-wrap;word-break:break-word;}
+    .nota-resuelta-badge{font-size:9px;color:var(--ok);margin-left:auto;}
+    .btn-resolver{font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac;cursor:pointer;margin-top:6px;font-family:inherit;}
+    .btn-resolver:hover{background:rgba(34,197,94,.2);}
+    .notas-empty{color:var(--muted);font-style:italic;font-size:13px;text-align:center;padding:16px 0;}
+    .btn-notas.pendiente{color:#ef4444 !important;filter:drop-shadow(0 0 4px rgba(239,68,68,.5));}
+
+    /* TOAST */
+    .toast{position:fixed;top:18px;right:18px;z-index:9999;min-width:260px;max-width:400px;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;animation:slideIn .25s ease;}
+    .toast.ok{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .toast-title{font-weight:700;font-size:13px;}
+    .toast-msg{font-size:12px;margin-top:2px;opacity:.85;}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+        /* ── Alerta cambio (read-only) ── */
+    .dot-alerta{display:inline-block;width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+    .dot-alerta.none    {background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);}
+    .dot-alerta.amarillo{background:#facc15;box-shadow:0 0 5px rgba(250,204,21,.6);}
+    .dot-alerta.rojo    {background:#ef4444;box-shadow:0 0 5px rgba(239,68,68,.6);}
+    .btn-notas{background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:6px;transition:all .2s;line-height:1;}
+    th.sortable{cursor:pointer;user-select:none;}
+    th.sortable:hover{color:var(--accent2);}
+    th.sortable .sort-icon{margin-left:3px;opacity:.5;font-size:9px;}
+    th.sortable.asc .sort-icon::after{content:"▲";}
+    th.sortable.desc .sort-icon::after{content:"▼";}
+    th.sortable:not(.asc):not(.desc) .sort-icon::after{content:"⇅";}
+    .btn-notas.tiene-notas{filter:none;}
+    .btn-notas.sin-notas{opacity:.3;filter:grayscale(1);}
+    .btn-notas:hover{opacity:1;filter:none;transform:scale(1.15);}
+    .btn-link-icon{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 3px;border-radius:5px;transition:all .2s;line-height:1;text-decoration:none;display:inline-block;}
+    .lbtn{display:inline-flex;align-items:center;justify-content:space-between;width:72px;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent;text-decoration:none;white-space:nowrap;box-sizing:border-box;transition:all .15s;}
+    .lbtn.has-link{background:rgba(59,130,246,.12);color:var(--accent2);border-color:rgba(59,130,246,.28);}
+    .lbtn.has-link:hover{background:rgba(59,130,246,.2);}
+    .lbtn.no-link{background:var(--panel3);color:var(--muted);border-color:var(--border);cursor:default;opacity:.4;}
+    .lbtn-wrap{position:relative;display:inline-block;}
+    .lbtn-drop{display:none;position:absolute;top:calc(100% + 3px);left:0;z-index:200;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:140px;overflow:hidden;}
+    .lbtn-drop a{display:block;padding:7px 12px;font-size:11px;color:var(--text);text-decoration:none;white-space:nowrap;}
+    .lbtn-drop a:hover{background:var(--panel2);}
+
+    .btn-link-icon.activo{filter:none;opacity:1;}
+    .btn-link-icon.inactivo{filter:grayscale(1);opacity:.25;cursor:default;}
+    .btn-link-icon.activo:hover{transform:scale(1.2);}
+    .notas-current{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;min-height:60px;white-space:pre-wrap;word-break:break-word;}
+    .notas-current.empty{color:var(--muted);font-style:italic;}
+    .form-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;display:block;}
+    .form-group{display:flex;flex-direction:column;gap:4px;}
+    .form-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color .2s;width:100%;}
+    .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+    .form-input::placeholder{color:var(--muted);}
+    textarea.form-input{resize:vertical;min-height:64px;}
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg"   id="toastMsg"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <img src="logo.png" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
+    IceLion
+    <div class="nav-module">DATA ENTRY</div>
+  </div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema" title="Cambiar tema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Visor de Movimientos</div>
+      <div class="page-sub" id="pageSub">Solo lectura</div>
+    </div>
+    
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn activa" id="tabPendientes" onclick="cambiarTab('pendientes')">
+      Pendientes <span class="tab-count" id="countPendientes">0</span>
+    </button>
+    <button class="tab-btn" id="tabActivos" onclick="cambiarTab('activos')">
+      Activos <span class="tab-count" id="countActivos">0</span>
+    </button>
+  </div>
+
+  <div class="filters">
+    <div class="filters-left">
+      <div class="daybar-nav">
+        <button class="day-btn" id="btnDiaAnterior">◀</button>
+        <div class="day-label" id="diaLabel">—</div>
+        <button class="day-btn" id="btnDiaSiguiente">▶</button>
+        <button class="day-today-btn" id="btnHoy">Hoy</button>
+      </div>
+      <div class="filters-sep"></div>
+      <input type="text" class="search-input" id="campoBuscar"
+        placeholder="Buscar por cliente, referencia o patente... (Enter)">
+      <button class="btn btn-ghost btn-sm" id="btnBuscar">Buscar</button>
+      <button class="btn btn-ghost btn-sm" id="btnLimpiar">✕ Limpiar</button>
+    </div>
+    <div class="read-info" id="readInfo">—</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th title="Alerta">⚡</th>
+          <th class="sortable" data-col="hora" onclick="sortTabla('hora')">Hora est.<span class="sort-icon"></span></th>
+          <th class="sortable" data-col="cliente" onclick="sortTabla('cliente')">Cliente<span class="sort-icon"></span></th>
+          <th class="sortable" data-col="referencia" onclick="sortTabla('referencia')">Referencia<span class="sort-icon"></span></th>
+          <th class="sortable" data-col="transporte" onclick="sortTabla('transporte')">Transporte<span class="sort-icon"></span></th>
+          <th class="sortable" data-col="movimiento" onclick="sortTabla('movimiento')">Movimiento<span class="sort-icon"></span></th>
+          <th>Patentes</th>
+          <th class="sortable" data-col="dock" onclick="sortTabla('dock')">Dock<span class="sort-icon"></span></th>
+          <th>Estado</th>
+          <th title="Observaciones">N</th>
+          <th title="Carpeta de fotos">📁</th>
+          <th>Links</th>
+          <th>Ver / Imprimir</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyData">
+        <tr class="loading-row"><td colspan="12"><span class="spinner"></span>Cargando...</td></tr>
+      </tbody>
+    </table>
+    <div class="table-info" id="tableInfo">—</div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modalDetalle">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <h2 id="modalTitulo">Detalle</h2>
+        <div class="modal-sub" id="modalSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarModal">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab-btn activa" id="modalTabDetalle"
+        onclick="cambiarModalTab('detalle')">📋 Detalle completo</button>
+      <button class="modal-tab-btn" id="modalTabCaratula"
+        onclick="cambiarModalTab('caratula')">🖨 Carátula / Imprimir</button>
+    </div>
+    <div class="modal-body" id="modalBodyDetalle"></div>
+    <div class="modal-body hidden" id="modalBodyCaratula">
+      <div id="caratulaPreview"></div>
+    </div>
+    <div class="modal-footer">
+      <div id="footerDetalle" style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" id="btnCerrarDetalle">Cerrar</button>
+      </div>
+      <div id="footerCaratula" class="hidden" style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-ghost" id="btnCerrarCaratula">Cerrar</button>
+        <button class="btn btn-print" id="btnImprimirCaratula">🖨 Imprimir carátula</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<div id="printCaratula"></div>
+
+<!-- MODAL NOTAS -->
+<div class="modal-overlay hidden" id="modalNotas">
+  <div class="modal-notas-box">
+    <div class="modal-header">
+      <div>
+        <h2>📝 Notas del movimiento</h2>
+        <div class="modal-sub" id="notasSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarNotas">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;">
+      <div class="notas-historial" id="notasHistorial"></div>
+      <div class="form-group" style="margin-top:4px;">
+        <label class="form-label">Nueva nota</label>
+        <textarea class="form-input" id="notasTexto" rows="3"
+          placeholder="Escribí una nota... (visible para todos los roles)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancelarNotas">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarNotas">Agregar nota</button>
+    </div>
+  </div>
+</div>
+
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, fmtFecha, fmtTimestamp, badgeEstado, badgeMov, caps, uuid } from "./js/utils.js";
+import { guardarConAuditoria } from "./js/auditoria.js";
+
+initTema();
+
+initSesion();
+
+// ── HELPERS ─────────────────────────────────────────────────
+
+const ESTADOS_PENDIENTES=["PLANIFICADO","AGREGADO","SIN IDENTIFICAR"];
+const ESTADOS_ACTIVOS=["ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO","CANCELA MOVIMIENTO","CANCELADO","LIBERADO"];
+
+// ── ESTADO ────────────────────────────────────────────────────
+let diaActual=hoy(), docsCache=[], modoSearch=false, tabActual="pendientes";
+let docActual=null;
+
+// ── TABS PÁGINA ───────────────────────────────────────────────
+function cambiarTab(tab) {
+  tabActual=tab;
+  document.getElementById("tabPendientes").classList.toggle("activa",tab==="pendientes");
+  document.getElementById("tabActivos").classList.toggle("activa",tab==="activos");
+  aplicarFiltros();
+}
+window.cambiarTab=cambiarTab;
+
+// ── CARGAR DÍA ────────────────────────────────────────────────
+let _unsubDataentry=null;
+function cargarDia(fecha) {
+  diaActual=fecha; modoSearch=false;
+  document.getElementById("campoBuscar").value="";
+  document.getElementById("diaLabel").textContent=fmtLabel(fecha);
+  renderLoading();
+  if(typeof _unsubDataentry !== "undefined" && _unsubDataentry){_unsubDataentry();_unsubDataentry=null;}
+  _unsubDataentry = onSnapshot(query(collection(db,COL),
+    where("planificacion.fecha_prevista","==",fecha),
+    orderBy("planificacion.hora_estipulada","asc"),limit(80)
+  ), snap=>{
+    docsCache=snap.docs;
+    document.getElementById("readInfo").textContent=`${snap.size} doc${snap.size!==1?"s":""} · ${fecha}`;
+    aplicarFiltros();
+  }, err=>{console.error(err);renderError(err.message);});
+}
+
+// ── BÚSQUEDA ──────────────────────────────────────────────────
+async function buscarLibre(texto) {
+  if(!texto.trim()){cargarDia(diaActual);return;}
+  modoSearch=true; renderLoading();
+  const t=texto.trim().toUpperCase();
+  try {
+    const [s1,s2,s3]=await Promise.all([
+      getDocs(query(collection(db,COL),where("planificacion.referencia","==",t),limit(15))),
+      getDocs(query(collection(db,COL),where("planificacion.cliente","==",t),limit(15))),
+      getDocs(query(collection(db,COL),where("planificacion.patente_tractor","==",t),limit(10)))
+    ]);
+    const seen=new Set(),todos=[];
+    [...s1.docs,...s2.docs,...s3.docs].forEach(d=>{if(!seen.has(d.id)){seen.add(d.id);todos.push(d);}});
+    docsCache=todos;
+    document.getElementById("readInfo").textContent=`${s1.size+s2.size+s3.size} lecturas · búsqueda`;
+    document.getElementById("pageSub").textContent=`${todos.length} resultado${todos.length!==1?"s":""} para "${texto}"`;
+    aplicarFiltros();
+  } catch(err){console.error(err);renderError(err.message);}
+}
+
+// ── URL HELPERS ──────────────────────────────────────────────
+function getFirstUrl(detalles, campo) {
+  const arrField = campo + "s";
+  for (const d of (detalles||[])) {
+    if (Array.isArray(d?.[arrField])) { const v = d[arrField].find(Boolean); if(v) return v; }
+    const val = d?.[campo];
+    if (Array.isArray(val)) { const v = val.find(Boolean); if(v) return v; }
+    else if (val) return val;
+  }
+  return "";
+}
+function getAllUrls(detalles, campo) {
+  const urls = [], seen = new Set();
+  const arrField = campo + "s";
+  for (const d of (detalles||[])) {
+    const arr = Array.isArray(d?.[arrField]) ? d[arrField]
+              : Array.isArray(d?.[campo]) ? d[campo]
+              : (d?.[campo] ? [d[campo]] : []);
+    arr.forEach(v => { if(v && !seen.has(v)) { seen.add(v); urls.push(v); } });
+  }
+  return urls;
+}
+
+// ── SORT ────────────────────────────────────────────────────
+let sortCol = null, sortDir = 1;
+window.sortTabla = function(col) {
+  if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  document.querySelectorAll("th.sortable").forEach(th=>{
+    th.classList.remove("asc","desc");
+    if(th.dataset.col===col) th.classList.add(sortDir===1?"asc":"desc");
+  });
+  aplicarFiltros();
+};
+function aplicarSort(docs) {
+  if(!sortCol) return docs;
+  return [...docs].sort((a,b)=>{
+    const da=a.data(), dbb=b.data();
+    const pa=da.planificacion||{}, pb=dbb.planificacion||{};
+    let va="", vb="";
+    if(sortCol==="hora")       { va=pa.hora_estipulada||""; vb=pb.hora_estipulada||""; }
+    if(sortCol==="arribo")     { va=da.guardia?.hora_arribo||""; vb=dbb.guardia?.hora_arribo||""; }
+    if(sortCol==="cliente")    { va=pa.cliente||""; vb=pb.cliente||""; }
+    if(sortCol==="transporte") { va=pa.transporte||""; vb=pb.transporte||""; }
+    if(sortCol==="referencia") { va=pa.referencia||""; vb=pb.referencia||""; }
+    if(sortCol==="movimiento") { va=pa.movimiento||""; vb=pb.movimiento||""; }
+    if(sortCol==="dock")       { va=da.supervisor?.dock||""; vb=dbb.supervisor?.dock||""; }
+    return va.localeCompare(vb)*sortDir;
+  });
+}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function aplicarFiltros() {
+  const estadosTab=tabActual==="pendientes"?ESTADOS_PENDIENTES:ESTADOS_ACTIVOS;
+  const filtered=docsCache.filter(d=>estadosTab.includes(d.data().estado||"PLANIFICADO"));
+  document.getElementById("countPendientes").textContent=docsCache.filter(d=>ESTADOS_PENDIENTES.includes(d.data().estado||"PLANIFICADO")).length;
+  document.getElementById("countActivos").textContent=docsCache.filter(d=>ESTADOS_ACTIVOS.includes(d.data().estado||"")).length;
+  renderTabla(aplicarSort(filtered));
+  document.getElementById("tableInfo").textContent=`${filtered.length} movimiento${filtered.length!==1?"s":""}`;
+  if(!modoSearch) document.getElementById("pageSub").textContent=`${tabActual==="pendientes"?"Pendientes":"Activos"} · ${fmtLabel(diaActual)}`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderLoading(){document.getElementById("tbodyData").innerHTML=`<tr class="loading-row"><td colspan="12"><span class="spinner"></span>Cargando...</td></tr>`;}
+function renderError(msg){document.getElementById("tbodyData").innerHTML=`<tr class="loading-row"><td colspan="12" style="color:var(--err)">Error: ${msg}</td></tr>`;}
+
+
+function renderLinksDE(detalles) {
+  const esUrl = s => /^https?:\/\//i.test(s);
+  const getAllU = (campo) => {
+    const seen = new Set(); const res = [];
+    for (const it of (detalles||[])) {
+      const v = it[campo]; const arr = Array.isArray(v)?v:(v?[v]:[]);
+      arr.forEach(u=>{const t=(u||"").trim();if(t&&!seen.has(t)){seen.add(t);res.push(t);}});
+    } return res;
+  };
+  const lotesRaw = [...new Set((detalles||[]).map(x=>x.lote||x.lote_grupo||"").filter(Boolean))];
+  const urlsCS  = getAllU("conciliacion_stock_url");
+  const urlsR   = getAllU("receta_impresa_url");
+  const urlsNV  = getAllU("nota_venta_url");
+
+  const WRAP = (icon, label, inner, arrow) =>
+    `<span class="lbtn-wrap">
+      <span class="lbtn has-link" onclick="event.stopPropagation();">${icon} ${label}${arrow?' <span style="font-size:9px;">▾</span>':'<span style="width:8px;"></span>'}</span>
+      <div class="lbtn-drop" onclick="event.stopPropagation();">${inner}</div>
+    </span>`;
+
+  const btn = (vals, label, icon) => {
+    if (!vals.length) return `<span class="lbtn no-link">${icon} ${label}</span>`;
+    const renderVal = (v, lbl) => esUrl(v)
+      ? `<a href="${v}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">${icon} ${lbl}</a>`
+      : `<span style="display:block;padding:7px 12px;font-size:11px;color:var(--text);font-family:var(--mono);user-select:all;" onclick="event.stopPropagation();">${v}</span>`;
+    if (vals.length === 1) {
+      const v = vals[0];
+      if (esUrl(v)) return `<a class="lbtn has-link" href="${v}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">${icon} ${label}<span style="width:8px;"></span></a>`;
+      const short = v.length > 6 ? v.slice(0,6)+"…" : v;
+      return WRAP(icon, short, renderVal(v, label), false);
+    }
+    const items = vals.map((v,i) => renderVal(v, `${label} ${i+1}`)).join("");
+    return WRAP(icon, label, items, true);
+  };
+
+  const btnLote = () => {
+    if (!lotesRaw.length) return `<span class="lbtn no-link">🏷️ L</span>`;
+    const items = lotesRaw.map((l,i) => {
+      const lbl = lotesRaw.length>1 ? `Lote ${i+1}` : "Lote";
+      return esUrl(l)
+        ? `<a href="${l}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">🔗 ${lbl}</a>`
+        : `<span style="display:block;padding:7px 12px;font-size:11px;color:var(--text);font-family:var(--mono);user-select:all;">${l}</span>`;
+    }).join("");
+    return WRAP("🏷️", "L", items, lotesRaw.length>1);
+  };
+
+  return `<div style="display:flex;gap:3px;flex-wrap:nowrap;">${btnLote()}${btn(urlsCS,"CS","🔗")}${btn(urlsR,"R","🧾")}${btn(urlsNV,"NV","📄")}</div>`;
+}
+function renderTabla(docs) {
+  const tbody=document.getElementById("tbodyData");
+  if(!docs.length){
+    tbody.innerHTML=`<tr class="loading-row"><td colspan="12"><div class="empty-state"><div class="icon">📋</div><p>No hay movimientos</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML=docs.map(d=>{
+    const id=d.id,data=d.data(),p=data.planificacion||{},g=data.guardia||{},pl=data.playero||{},sv=data.supervisor||{};
+    const est=data.estado||"PLANIFICADO";
+    const pat=[g.patente_tractor||p.patente_tractor,g.patente_semi||p.patente_semi].filter(Boolean).join(" / ")||"—";
+    const tieneFoto = !!(p.foto_carpeta && p.foto_carpeta.trim());
+    return `<tr onclick="abrirModal('${id}')" title="Click para ver detalle e imprimir">
+      <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td>
+      <td class="td-mono">${p.hora_estipulada||"—"}</td>
+      <td><strong>${p.cliente||"—"}</strong></td>
+      <td class="td-ref">${p.referencia||"—"}</td>
+      <td class="td-mono">${p.transporte||"—"}</td>
+      <td>${badgeMov(p.movimiento)}</td>
+      <td class="td-mono">${pat}</td>
+      <td>${sv.dock||"—"}</td>
+      <td>${badgeEstado(est)}</td>
+      <td style="text-align:center;"><button class="btn-notas ${tienePendientes(d.data()) ? 'pendiente tiene-notas' : (getNotas(d.data()).length ? 'tiene-notas' : 'sin-notas')}" onclick="event.stopPropagation();abrirNotas('${id}')" title="Notas del movimiento">📝</button></td>
+      <td style="text-align:center;">${tieneFoto
+        ? `<a href="${p.foto_carpeta}" target="_blank" onclick="event.stopPropagation()" class="btn-link-icon activo" title="Abrir carpeta de fotos">📁</a>`
+        : `<span class="btn-link-icon inactivo" title="Sin carpeta de fotos">📁</span>`
+      }</td>
+      <td onclick="event.stopPropagation();">${renderLinksDE(data.detalles)}</td>
+      <td style="display:flex;gap:4px;align-items:center;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();abrirModal('${id}')">Ver / Imprimir</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();abrirModalFoto('${id}')" title="Asignar carpeta de fotos">📁+</button></td>
+    </tr>`;
+  }).join("");
+}
+
+// ── SISTEMA DE NOTAS ─────────────────────────────────────────
+let notasDocId = null;
+
+function fmtNotaFecha(ts) {
+  if (!ts) return "";
+  try {
+    const d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds*1000) : new Date(ts));
+    return d.toLocaleString("es-AR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  } catch(e) { return ""; }
+}
+
+function getNotas(data) {
+  const notas = Array.isArray(data.planificacion?.notas) ? [...data.planificacion.notas] : [];
+  const obsLegacy = data.planificacion?.observaciones;
+  if (obsLegacy && obsLegacy.trim() && !notas.length) {
+    notas.push({ id:"legacy", texto:obsLegacy, autor:"Sistema", rol:"sistema", fecha:null, resuelta:false });
+  }
+  // Solo mostrar notas de planificacion + propias
+  const miNombre = sessionStorage.getItem("icelion_nombre")||"—";
+  return notas.filter(n => n.rol === "planificacion" || n.rol === "sistema" || n.autor === miNombre);
+}
+
+function tienePendientes(data) {
+  return getNotas(data).some(n => !n.resuelta);
+}
+
+function renderHistorial(notas, miNombre) {
+  const h = document.getElementById("notasHistorial");
+  if (!h) return;
+  if (!notas || !notas.length) {
+    h.innerHTML = '<div class="notas-empty">Sin notas aún.</div>';
+    return;
+  }
+  h.innerHTML = notas.map((n,i) => {
+    const esPropia = n.autor === miNombre;
+    const cls = (n.resuelta ? " resuelta" : "") + (esPropia ? " propia" : " ajena");
+    const rolCls = (n.rol||"").toLowerCase().replace(/[^a-z]/g,"");
+    const btnResolver = "";
+    const badge = n.resuelta ? '<span class="nota-resuelta-badge">✓ resuelta</span>' : "";
+    return `<div class="nota-item${cls}">
+      <div class="nota-meta">
+        <span class="nota-rol ${rolCls}">${n.rol||"sistema"}</span>
+        <strong style="font-size:11px;">${n.autor||"—"}</strong>
+        <span>${fmtNotaFecha(n.fecha)}</span>
+        ${badge}
+      </div>
+      <div class="nota-texto">${n.texto||""}</div>
+      ${btnResolver}
+    </div>`;
+  }).join("");
+}
+
+window.abrirNotas = function(id) {
+  notasDocId = id;
+  const d = docsCache.find(x=>x.id===id);
+  if (!d) return;
+  const data = d.data();
+  const p = data.planificacion||{};
+  const miNombre = sessionStorage.getItem("icelion_nombre")||"—";
+  document.getElementById("notasSub").textContent =
+    `${p.cliente||"Sin cliente"} · ${p.referencia||"Sin referencia"}`;
+  document.getElementById("notasTexto").value = "";
+  renderHistorial(getNotas(data), miNombre);
+  document.getElementById("modalNotas").classList.remove("hidden");
+};
+
+window.resolverNota = async function(idx) {
+  if (!notasDocId) return;
+  const d = docsCache.find(x=>x.id===notasDocId);
+  if (!d) return;
+  const notas = getNotas(d.data());
+  notas[idx] = {...notas[idx], resuelta:true};
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  try {
+    await updateDoc(doc(db,COL,notasDocId), {
+      "planificacion.notas": notas,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en":  serverTimestamp()
+    });
+    renderHistorial(notas, nombre);
+    toast("ok","Nota resuelta","");
+  } catch(err) { toast("err","Error",err.message); }
+};
+
+function cerrarNotas() {
+  document.getElementById("modalNotas").classList.add("hidden");
+  notasDocId = null;
+}
+document.getElementById("btnCerrarNotas").addEventListener("click", cerrarNotas);
+document.getElementById("btnCancelarNotas").addEventListener("click", cerrarNotas);
+
+document.getElementById("btnGuardarNotas").addEventListener("click", async () => {
+  if (!notasDocId) return;
+  const texto = document.getElementById("notasTexto").value.trim();
+  if (!texto) return;
+  const btn = document.getElementById("btnGuardarNotas");
+  btn.disabled=true; btn.textContent="Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  const d = docsCache.find(x=>x.id===notasDocId);
+  const notas = d ? getNotas(d.data()) : [];
+  notas.push({
+    id: crypto.randomUUID ? crypto.randomUUID() : "n"+Date.now(),
+    texto,
+    autor: nombre,
+    rol: "dataentry",
+    fecha: new Date(),
+    resuelta: false
+  });
+  try {
+    await updateDoc(doc(db,COL,notasDocId), {
+      "planificacion.notas": notas,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en":  serverTimestamp()
+    });
+    toast("ok","Nota agregada","");
+    document.getElementById("notasTexto").value = "";
+    renderHistorial(notas, nombre);
+  } catch(err) {
+    toast("err","Error",err.message);
+  } finally {
+    btn.disabled=false; btn.textContent="Agregar nota";
+  }
+});
+
+
+
+window.abrirModalFoto = async function(id) {
+  // Abrir el modal directamente con foco en el campo de carpeta
+  await window.abrirModal(id);
+  setTimeout(()=>{ document.getElementById("inputFotoCarpeta")?.focus(); }, 300);
+};
+
+// ── MODAL ─────────────────────────────────────────────────────
+window.abrirModal=function(id) {
+  const d=docsCache.find(x=>x.id===id); if(!d) return;
+  docActual=d;
+  const data=d.data(),p=data.planificacion||{};
+  document.getElementById("modalTitulo").textContent=`${p.movimiento||"—"} — ${p.cliente||"—"}`;
+  document.getElementById("modalSub").textContent=`${p.referencia||"—"} · ${fmtFecha(p.fecha_prevista)} · ${data.estado||"—"}`;
+  document.getElementById("modalBodyDetalle").innerHTML=renderDetalle(d);
+  document.getElementById("caratulaPreview").innerHTML="";
+  cambiarModalTab("detalle");
+  document.getElementById("modalDetalle").classList.remove("hidden");
+};
+
+function cerrarModal() {
+  document.getElementById("modalDetalle").classList.add("hidden");
+  docActual=null;
+}
+["btnCerrarModal","btnCerrarDetalle","btnCerrarCaratula"].forEach(id=>
+  document.getElementById(id).addEventListener("click",cerrarModal));
+document.getElementById("modalDetalle").addEventListener("click",e=>{
+  if(e.target===document.getElementById("modalDetalle")) cerrarModal();
+});
+
+// ── TABS MODAL ────────────────────────────────────────────────
+window.cambiarModalTab=function(tab) {
+  const esD=tab==="detalle";
+  document.getElementById("modalTabDetalle").classList.toggle("activa",esD);
+  document.getElementById("modalTabCaratula").classList.toggle("activa",!esD);
+  document.getElementById("modalBodyDetalle").classList.toggle("hidden",!esD);
+  document.getElementById("modalBodyCaratula").classList.toggle("hidden",esD);
+  document.getElementById("footerDetalle").classList.toggle("hidden",!esD);
+  document.getElementById("footerCaratula").classList.toggle("hidden",esD);
+  // Renderizar carátula al cambiar a esa tab
+  if(!esD && docActual) {
+    document.getElementById("caratulaPreview").innerHTML = renderCaratula(docActual);
+  }
+};
+
+// ── RENDER CARÁTULA ───────────────────────────────────────────
+function renderCaratula(d) {
+  const data=d.data();
+  const p  = data.planificacion||{};
+  const g  = data.guardia||{};
+  const det= data.detalles||[];
+
+  // Título según tipo de movimiento
+  const mov = (p.movimiento||"").toUpperCase();
+  const titulo = mov.includes("EXPO") ? "EXPORTACION" : mov.includes("MI") ? "MI" : mov || "EXPORTACION";
+
+  // PISO o PALLET — tomar el valor más frecuente en detalles
+  const pisoPallet = (() => {
+    const vals = (data.detalles||[]).map(d => (d.piso_o_pallet||"").toUpperCase()).filter(Boolean);
+    if(!vals.length) return "—";
+    return vals.sort((a,b) => vals.filter(v=>v===b).length - vals.filter(v=>v===a).length)[0];
+  })();
+
+  // Fecha formateada DD/MM/YYYY
+  const fecha = fmtFecha(p.fecha_prevista);
+
+  // Hora estipulada
+  const hora = p.hora_estipulada||"—";
+
+  // Cliente
+  const cliente = (p.cliente||"—").toUpperCase();
+
+  // Destino
+  const destino = (p.destino||"—").toUpperCase();
+
+  // Observaciones
+  const obs = p.observaciones||"";
+
+  // Productos — hasta 11 filas fijas
+  const MAX_ROWS = 11;
+  const prodRows = [];
+  if(det.length) {
+    det.forEach(item => {
+      const cant = item.cantidad ? `${item.cantidad}${item.unidad ? " "+item.unidad : ""}` : "—";
+      prodRows.push([
+        item.producto||"—",
+        item.calibre||"—",
+        cant,
+        item.empaque||"—",
+        item.total_kg||""
+      ]);
+    });
+  } else {
+    prodRows.push(["VARIOS","—","1 SEMI","—",""]);
+  }
+  // Rellenar hasta MAX_ROWS
+  while(prodRows.length < MAX_ROWS) prodRows.push(["","","","",""]);
+
+  // B/P - LOTE: agrupar por elaborador, uno por grupo
+  const gruposElab = [];
+  {
+    const seen = {}, orden = [];
+    det.forEach(item => {
+      const k = item.elaborador||"SIN ELABORADOR";
+      if(!seen[k]){ seen[k]={elaborador:k, nro_of:item.nro_of||"", lote:item.lote_grupo||item.lote||""}; orden.push(k); }
+    });
+    orden.forEach(k => gruposElab.push(seen[k]));
+  }
+  if(!det.length) gruposElab.push({elaborador:"—", nro_of:"", lote:""});
+
+  function truncarLote(val) {
+    const s = String(val||"").trim();
+    if(!s) return "—";
+    if(s.length <= 30) return s;
+    return s.slice(0,28) + "…";
+  }
+
+  const filasElab = gruposElab.map(g => `<tr style="border-bottom:1px solid #ddd;">
+    <td style="padding:6px 12px;font-size:15px;font-weight:700;width:55%;border-right:1px solid #ddd;color:#000;background:#fff;">${g.elaborador}</td>
+    <td style="padding:6px 12px;font-size:15px;font-weight:700;width:22%;border-right:1px solid #ddd;color:#000;background:#fff;">${g.nro_of||"—"}</td>
+    <td style="padding:6px 12px;font-size:13px;font-weight:600;width:23%;word-break:break-word;color:#000;background:#fff;">${truncarLote(g.lote)}</td>
+  </tr>`).join("");
+
+  // Rótulo, termógrafo, soporte foto
+  const rotulo      = det.length ? (det[0].rotulo||"") : "";
+  const termografo  = (p.termografo||"NO").toUpperCase();
+  const soporteFoto = (p.soporte_foto||"NO").toUpperCase();
+
+  const filasProd = prodRows.map(r=>`<tr>
+    <td style="width:35%;color:#000;background:#fff;">${r[0]}</td>
+    <td style="width:12%;text-align:center;color:#000;background:#fff;">${r[1]}</td>
+    <td style="width:18%;text-align:center;color:#000;background:#fff;">${r[2]}</td>
+    <td style="width:20%;color:#000;background:#fff;">${r[3]}</td>
+    <td style="width:15%;text-align:right;color:#000;background:#fff;">${r[4]}</td>
+  </tr>`).join("");
+
+  const logoUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "/") + "logofrio.png";
+
+  return `<div class="caratula-preview">
+    <!-- HEADER: título + logo -->
+    <div class="car-header">
+      <div class="car-header-title">${titulo}</div>
+      <div class="car-header-logo">
+        <img src="${logoUrl}" alt="FríoPolar">
+      </div>
+    </div>
+
+    <!-- FECHA | HORA -->
+    <div class="car-row two">
+      <div class="car-cell">
+        <div class="car-cell-label">Fecha</div>
+        <div class="car-cell-value center">${fecha}</div>
+      </div>
+      <div class="car-cell">
+        <div class="car-cell-label">Hora</div>
+        <div class="car-cell-value center">${hora}</div>
+      </div>
+    </div>
+
+    <!-- CLIENTE -->
+    <div class="car-row">
+      <div class="car-cell car-full">
+        <div class="car-cell-label" style="text-align:center">Cliente</div>
+        <div class="car-cell-value big">${cliente}</div>
+      </div>
+    </div>
+
+    <!-- PRODUCTO - CANTIDAD -->
+    <div class="car-row">
+      <div class="car-cell car-full" style="padding:0;">
+        <div style="padding:6px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center;border-bottom:1px solid #ccc;background:#fff;color:#000;">
+          Producto - Cantidad
+        </div>
+        <table class="car-table">
+          <thead>
+            <tr>
+              <th style="width:35%">Producto</th>
+              <th style="width:12%;text-align:center">Calibre</th>
+              <th style="width:18%;text-align:center">Cantidad</th>
+              <th style="width:20%">Empaque</th>
+              <th style="width:15%;text-align:right">Total</th>
+            </tr>
+          </thead>
+          <tbody>${filasProd}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- B/P - LOTE -->
+    <div class="car-row">
+      <div class="car-cell car-full" style="padding:5px 12px;font-size:11px;font-weight:700;text-transform:uppercase;text-align:center;background:#fff;color:#000;border-bottom:1px solid #ccc;">
+        B/P - Lote
+      </div>
+    </div>
+    <div class="car-row">
+      <div class="car-cell car-full" style="padding:0;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#fff;border-bottom:1px solid #ddd;">
+              <th style="padding:4px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:#000;width:55%;border-right:1px solid #ddd;text-align:left;background:#fff;">Elaborador</th>
+              <th style="padding:4px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:#000;width:22%;border-right:1px solid #ddd;text-align:left;background:#fff;">NRO Oficial</th>
+              <th style="padding:4px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:#000;width:23%;text-align:left;background:#fff;">Lote</th>
+            </tr>
+          </thead>
+          <tbody>${filasElab}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ROTULO | TERMOGRAFO | SOPORTE FOTOGRAFICO -->
+    <div class="car-row three">
+      <div class="car-cell">
+        <div class="car-cell-label">Rótulo</div>
+        <div class="car-cell-value center">${rotulo||"—"}</div>
+      </div>
+      <div class="car-cell">
+        <div class="car-cell-label" style="text-align:center">Termógrafo</div>
+        <div class="car-cell-value center">${termografo}</div>
+      </div>
+      <div class="car-cell">
+        <div class="car-cell-label" style="text-align:center">Soporte Fotográfico</div>
+        <div class="car-cell-value center">${soporteFoto}</div>
+      </div>
+    </div>
+
+    <!-- DESTINO -->
+    <div class="car-row">
+      <div class="car-cell car-full">
+        <div class="car-cell-label" style="text-align:center">Destino</div>
+        <div class="car-cell-value big">${destino}</div>
+      </div>
+    </div>
+
+    <!-- OBSERVACIONES -->
+    <div class="car-row car-obs-row">
+      <div class="car-cell car-full">
+        <div class="car-cell-label" style="text-align:center">Observaciones</div>
+        <div class="car-obs">${obs}</div>
+      </div>
+    </div>
+    <!-- REFERENCIA + PISO/PALLET -->
+    <div class="car-row two">
+      <div class="car-cell">
+        <div class="car-cell-label">Referencia</div>
+        <div class="car-cell-value">${p.referencia||"—"}</div>
+      </div>
+      <div class="car-cell" style="text-align:right;">
+        <div class="car-cell-label">Piso / Pallet</div>
+        <div class="car-cell-value" style="font-size:22px;font-weight:800;">${pisoPallet}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── IMPRIMIR CARÁTULA ─────────────────────────────────────────
+document.getElementById("btnImprimirCaratula").addEventListener("click", () => {
+  if(!docActual) return;
+  // Copiar el HTML de la carátula al div de impresión
+  document.getElementById("printCaratula").innerHTML =
+    document.getElementById("caratulaPreview").innerHTML;
+  window.print();
+});
+
+// ── RENDER DETALLE ────────────────────────────────────────────
+function renderDetalle(d) {
+  const data=d.data();
+  const p=data.planificacion||{}, g=data.guardia||{}, sv=data.supervisor||{};
+  const pl=data.playero||{}, pln=data.planillero||{}, cal=data.calidad||{};
+  const cd=data.calidad_desvios||{}, svw=data.supervisor_web||{};
+  const det=data.detalles||[];
+  const expo=(p.movimiento||"").toUpperCase().includes("EXPO");
+
+  function c(label,val) {
+    const v=val&&String(val).trim()?String(val):"";
+    return `<div class="detail-item">
+      <div class="detail-label">${label}</div>
+      <div class="detail-main">
+        <div class="detail-value${!v?" empty":""}">${v||"—"}</div>
+        ${v?`<button class="copy-btn" onclick="copiarCampo(this,'${encodeURIComponent(v)}')" title="Copiar">📋</button>`:""}
+      </div>
+    </div>`;
+  }
+
+  let html=`
+    <div class="section-title-detail">Planificación</div>
+    <div class="detail-grid">
+      ${c("Fecha",fmtFecha(p.fecha_prevista))}${c("Hora estipulada",p.hora_estipulada)}
+      ${c("Movimiento",p.movimiento)}${c("Lugar de carga",p.lugar_carga)}
+      ${c("Cliente",p.cliente)}${c("Transporte",p.transporte)}
+      ${c("Destino",p.destino)}${c("Referencia",p.referencia)}
+      ${c("Booking",p.booking)}${c("Contenedor",p.contenedor)}
+      ${c("Pat. Tractor",p.patente_tractor)}${c("Pat. Semi",p.patente_semi)}
+      ${c("Termógrafo",p.termografo)}${c("Soporte foto",p.soporte_foto)}
+      ${c("Nec. clasificado",p.necesita_clasificado)}${c("COT",p.cot)}
+      ${c("Observaciones",p.observaciones)}
+    </div>
+
+    <div class="section-title-detail">Carpeta de Fotos</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+      ${p.foto_carpeta
+        ? `<a href="${p.foto_carpeta}" target="_blank"
+             style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
+             background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#fcd34d;
+             font-size:13px;font-weight:600;text-decoration:none;">
+             📁 Abrir carpeta de fotos
+           </a>`
+        : `<span style="font-size:12px;color:var(--muted);font-style:italic;">Sin carpeta asignada</span>`
+      }
+    </div>
+    <div id="fotoEditWrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="inputFotoCarpeta" class="search-input"
+        style="flex:1;min-width:300px;text-transform:none;"
+        placeholder="https://drive.google.com/drive/folders/..."
+        value="${p.foto_carpeta||""}">
+      <button class="btn btn-primary btn-sm" onclick="guardarFoto()">Guardar</button>
+    </div>
+    <div class="section-title-detail">Guardia</div>
+    <div class="detail-grid">
+      ${c("Chofer",g.chofer)}${c("DNI",g.dni)}${c("Teléfono",g.telefono)}
+      ${c("Hora arribo",g.hora_arribo)}${c("Pat. Tractor",g.patente_tractor)}
+      ${c("Pat. Semi",g.patente_semi)}${c("Obs. guardia",g.observaciones_guardia)}
+    </div>
+    <div class="section-title-detail">Operativa</div>
+    <div class="detail-grid">
+      ${c("Dock",sv.dock)}${c("Hora ingreso",sv.hora_ingreso)}
+      ${c("Planillero",pln.nombre)}${c("Operarios",pln.cantidad_operarios)}
+      ${c("Hora inicio",pln.hora_inicio)}${c("Hora finalizado",pln.hora_finalizado)}
+      ${c("Hora atraco",pl.hora_atraco)}${c("Hora egreso",pl.hora_egreso)}
+    </div>
+    <div class="section-title-detail">Calidad</div>
+    <div class="detail-grid">
+      ${c("Tara",cal.tara)}${c("M3",cal.m3)}
+      ${c("Precinto SENASA",cal.precinto_senasa)}${c("Nº Termógrafo",cal.nro_termografo)}
+      ${c("Hab. SENASA",cal.habilitacion_senasa)}${c("Temperatura °C",cal.temperatura)}
+    </div>`;
+
+  if(expo) html+=`
+    <div class="section-title-detail">Exportación</div>
+    <div class="detail-grid">
+      ${c("Código carga",cal.codigo_carga)}${c("Permiso embarque",cal.permiso_embarque)}
+      ${c("Exportador",cal.exportador)}${c("Despachante",cal.despachante)}
+      ${c("ATA",cal.ata)}${c("Buque",cal.buque)}
+      ${c("Puerto salida",cal.puerto_salida)}${c("Canje",cal.canje)}${c("Payload",cal.payload)}
+    </div>`;
+
+  if(cd.desvio||svw.solucion_desvio) html+=`
+    <div class="section-title-detail">Desvío</div>
+    <div class="detail-grid">
+      ${c("Desvío",cd.desvio)}${c("Motivo",cd.motivo_desvio)}
+      ${c("Notas",cd.notas_desvio)}${c("Solución",svw.solucion_desvio)}
+      ${c("Personal impl.",svw.personal_implicado)}
+    </div>`;
+
+  html+=`<div class="section-title-detail">Productos</div>`;
+  if(!det.length) {
+    html+=`<div class="prod-wrap"><div class="prod-empty">Sin productos cargados</div></div>`;
+  } else {
+    const grupos={};
+    det.forEach(item=>{const k=item.elaborador||"SIN ELABORADOR";if(!grupos[k])grupos[k]=[];grupos[k].push(item);});
+    html+=Object.entries(grupos).map(([elab,items])=>`
+      <div class="prod-wrap">
+        <div class="prod-head"><span>${elab}</span><span>${items.length} ítem${items.length!==1?"s":""}</span></div>
+        <table class="prod-table">
+          <thead><tr><th>Producto</th><th>Cant.</th><th>Unidad</th><th>Calibre</th><th>Empaque</th><th>Total KG</th><th>Concil.</th><th>Receta</th><th>Nota Venta</th></tr></thead>
+          <tbody>${items.map(it=>`<tr>
+            <td>${it.producto||"—"}</td><td>${it.cantidad||"—"}</td><td>${it.unidad||"—"}</td>
+            <td>${it.calibre||"—"}</td><td>${it.empaque||"—"}</td><td>${it.total_kg||"—"}</td>
+            <td>${getVals([it],"conciliacion_stock_url").map(v=>/^https?:\/\//i.test(v)?`<a href="${v}" target="_blank" style="color:var(--accent2);">🔗</a>`:`<span style="font-size:10px;font-family:var(--mono);color:var(--muted);" title="${v}">${v.length>10?v.slice(0,10)+"…":v}</span>`).join(" ")||"—"}</td>
+            <td>${getVals([it],"receta_impresa_url").map(v=>/^https?:\/\//i.test(v)?`<a href="${v}" target="_blank" style="color:var(--accent2);">🔗</a>`:`<span style="font-size:10px;font-family:var(--mono);color:var(--muted);" title="${v}">${v.length>10?v.slice(0,10)+"…":v}</span>`).join(" ")||"—"}</td>
+            <td>${getAllUrls([it],"nota_venta_url").map((u,i)=>`<a href="${u}" target="_blank" style="color:var(--accent2);display:inline-block;margin-right:4px;" title="NV ${i+1}">📋</a>`).join("")||"—"}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>`).join("");
+  }
+  return html;
+}
+
+// ── CARPETA DE FOTOS ──────────────────────────────────────────
+window.toggleEditFoto = function() {
+  const wrap = document.getElementById("fotoEditWrap");
+  if(!wrap) return;
+  wrap.classList.toggle("hidden");
+  if(!wrap.classList.contains("hidden")) {
+    document.getElementById("inputFotoCarpeta").focus();
+  }
+};
+
+window.guardarFoto = async function() {
+  if(!docActual) return;
+  const url = document.getElementById("inputFotoCarpeta").value.trim();
+  const urlActual = docActual.data().planificacion?.foto_carpeta || "";
+  const nombre = sessionStorage.getItem("icelion_nombre") || "—";
+
+  // Confirmación si hay un link existente y se va a borrar o reemplazar
+  if (urlActual && urlActual !== url) {
+    const accion = url ? "reemplazar" : "borrar";
+    const confirma = confirm(`¿Estás seguro de que querés ${accion} el link de fotos existente?`);
+    if (!confirma) return;
+  }
+
+  try {
+    await guardarConAuditoria(doc(db, COL, docActual.id), {
+      "planificacion.foto_carpeta": url
+    }, nombre, "Actualizó carpeta de fotos");
+    toast("ok","Carpeta guardada","Link de fotos actualizado");
+    // Refrescar docActual desde Firestore para que el re-render sea correcto
+    const snap = await getDoc(doc(db, COL, docActual.id));
+    if (snap.exists()) docActual = snap;
+    document.getElementById("modalBodyDetalle").innerHTML = renderDetalle(docActual);
+  } catch(err) {
+    toast("err","Error",err.message);
+  }
+}
+
+// ── COPIAR ────────────────────────────────────────────────────
+window.copiarCampo=function(btn,encoded) {
+  const texto=decodeURIComponent(encoded);
+  navigator.clipboard.writeText(texto)
+    .then(()=>{btn.classList.add("copied");btn.textContent="✔";setTimeout(()=>{btn.classList.remove("copied");btn.textContent="📋";},1200);})
+    .catch(()=>toast("err","No se pudo copiar","Revisá los permisos del navegador"));
+};
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────
+document.getElementById("btnDiaAnterior").addEventListener("click",  ()=>cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnDiaSiguiente").addEventListener("click", ()=>cargarDia(sumarDias(diaActual, 1)));
+document.getElementById("btnHoy").addEventListener("click",          ()=>cargarDia(hoy()));
+
+document.getElementById("btnBuscar").addEventListener("click",       ()=>buscarLibre(document.getElementById("campoBuscar").value));
+document.getElementById("campoBuscar").addEventListener("keydown",   e=>{if(e.key==="Enter")buscarLibre(e.target.value);});
+document.getElementById("btnLimpiar").addEventListener("click",      ()=>{document.getElementById("campoBuscar").value="";modoSearch=false;cargarDia(diaActual);});
+
+cargarDia(hoy());
+
+function renderValorConc(v) {
+  if (!v) return "";
+  const clean = (typeof normalizarUrlDrive === "function") ? normalizarUrlDrive(v) : v;
+  if (/^https?:\/\//i.test(clean))
+    return `<a href="${clean}" target="_blank" style="color:var(--accent2);">🔗</a>`;
+  return `<span style="font-size:10px;font-family:var(--mono);color:var(--muted);" title="${clean}">${clean.length>12?clean.slice(0,12)+"…":clean}</span>`;
+}
+function getVals(detalles, campo) {
+  if(!Array.isArray(detalles)) return [];
+  const vals=[], seen=new Set();
+  for(const d of detalles){
+    const val=d?.[campo];
+    const arr=Array.isArray(val)?val:(val?[val]:[]);
+    for(const v of arr){const t=(v||"").trim();if(t&&!seen.has(t)){seen.add(t);vals.push(t);}}
+  }
+  return vals;
+}
+
+</script>
+
+<script type="module" src="./js/nav.js"></script>
+<script>
+(function() {
+  var _closeTimer = null;
+  var _openDrop = null;
+
+  function openDrop(wrap) {
+    if (_openDrop && _openDrop !== wrap) closeDrop(_openDrop, true);
+    _openDrop = wrap;
+    var drop = wrap.querySelector(".lbtn-drop");
+    if (drop) drop.style.display = "block";
+    clearTimeout(_closeTimer);
+  }
+
+  function closeDrop(wrap, immediate) {
+    var drop = wrap ? wrap.querySelector(".lbtn-drop") : null;
+    if (!drop) return;
+    if (immediate) {
+      drop.style.display = "none";
+      if (_openDrop === wrap) _openDrop = null;
+    } else {
+      _closeTimer = setTimeout(function() {
+        drop.style.display = "none";
+        if (_openDrop === wrap) _openDrop = null;
+      }, 300);
+    }
+  }
+
+  document.addEventListener("mouseover", function(e) {
+    var wrap = e.target.closest(".lbtn-wrap");
+    if (wrap) { openDrop(wrap); }
+    else if (_openDrop) {
+      clearTimeout(_closeTimer);
+      _closeTimer = setTimeout(function() {
+        if (_openDrop) { closeDrop(_openDrop, true); }
+      }, 300);
+    }
+  });
+
+  document.addEventListener("mouseout", function(e) {
+    var wrap = e.target.closest(".lbtn-wrap");
+    if (wrap && !wrap.contains(e.relatedTarget)) {
+      closeDrop(wrap, false);
+    }
+  });
+})();
+</script>
+</body>
+</html>

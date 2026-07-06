@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IceLion | Impresión de Movimientos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#f1f5f9; --panel:#fff; --panel2:#f8fafc; --panel3:#f1f5f9;
+      --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+
+    /* ── NAVBAR ── */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 20px;height:50px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .nav-brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;}
+    .nav-right{display:flex;align-items:center;gap:8px;}
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{opacity:.9;}
+    .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;}
+
+    /* ── CONTROLES ── */
+    .controls{display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+    .day-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .day-btn:hover{border-color:var(--accent);}
+    .day-label{font-family:var(--mono);font-size:12px;font-weight:700;min-width:130px;text-align:center;}
+    .day-today-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:7px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:700;transition:all .2s;}
+    .sep{width:1px;height:24px;background:var(--border);}
+    .info-count{font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:auto;}
+
+    /* ── TABLA COMPACTA ── */
+    .main{padding:16px 20px;}
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:var(--panel2);padding:8px 10px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+    .mov-row{border-bottom:1px solid var(--border);transition:background .12s;}
+    .mov-row:last-child{border-bottom:none;}
+    .mov-row:hover .main-row td{background:var(--panel2);}
+    .main-row td{padding:7px 10px;vertical-align:middle;white-space:nowrap;}
+    .sub-row td{padding:3px 10px 7px;background:var(--panel2);font-size:10px;color:var(--muted);vertical-align:top;}
+    .sub-row.hidden-row{display:none;}
+    .td-mono{font-family:var(--mono);font-size:11px;}
+    .td-ref{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:700;}
+    .badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.2px;border:1px solid transparent;white-space:nowrap;}
+    .badge-planificado{background:rgba(148,163,184,.12);color:#94a3b8;border-color:rgba(148,163,184,.3);}
+    .badge-agregado{background:rgba(100,116,139,.15);color:#cbd5e1;border-color:rgba(100,116,139,.35);}
+    .badge-arribado{background:rgba(134,239,172,.12);color:#86efac;border-color:rgba(134,239,172,.3);}
+    .badge-sinidentif{background:rgba(192,132,252,.12);color:#c084fc;border-color:rgba(192,132,252,.3);}
+    .badge-dock{background:rgba(190,18,60,.18);color:#fb7185;border-color:rgba(190,18,60,.35);}
+    .badge-pausado{background:rgba(167,139,250,.13);color:#a78bfa;border-color:rgba(167,139,250,.3);}
+    .badge-atracado{background:rgba(34,211,238,.12);color:#22d3ee;border-color:rgba(34,211,238,.28);}
+    .badge-encurso{background:rgba(251,146,60,.12);color:#fb923c;border-color:rgba(251,146,60,.28);}
+    .badge-finalizado{background:rgba(21,128,61,.2);color:#4ade80;border-color:rgba(21,128,61,.4);}
+    .badge-liberado{background:rgba(109,40,217,.18);color:#a78bfa;border-color:rgba(109,40,217,.35);}
+    .badge-cancelado{background:rgba(239,68,68,.15);color:#fca5a5;border-color:rgba(239,68,68,.25);}
+    .badge-enespera{background:rgba(234,179,8,.13);color:#fde047;border-color:rgba(234,179,8,.3);}
+    .badge-expo{background:rgba(245,158,11,.12);color:#fcd34d;border-color:rgba(245,158,11,.25);font-size:8px;}
+
+    /* sub-chips */
+    .schip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;font-family:var(--mono);border:1px solid var(--border);background:var(--panel);margin:1px 2px 1px 0;}
+    .schip-label{font-weight:400;color:var(--muted);}
+
+    .empty-state{text-align:center;padding:48px;color:var(--muted);font-size:13px;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── PRINT ── */
+    @media print {
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+      body{background:#fff!important;color:#0f172a!important;font-size:8px;}
+      .navbar,.controls,.no-print{display:none!important;}
+      .main{padding:0!important;}
+      .table-wrap{border:none!important;border-radius:0!important;background:#fff!important;}
+      .print-header{display:block!important;}
+      table{background:#fff!important;font-size:8px!important;}
+      thead tr{background:#f1f5f9!important;}
+      thead th{background:#f1f5f9!important;color:#374151!important;font-size:7px!important;padding:5px 6px!important;border-bottom:1.5px solid #94a3b8!important;border-right:1px solid #cbd5e1!important;}
+      thead th:last-child{border-right:none!important;}
+      .main-row td{background:#fff!important;color:#0f172a!important;padding:5px 6px!important;font-size:8px!important;border-bottom:none!important;border-right:1px solid #e2e8f0!important;}
+      .main-row td:last-child{border-right:none!important;}
+      .group-odd .main-row td{background:#f5f5f5!important;}
+      .group-odd .sub-row td{background:#ececec!important;}
+      .sub-row td{background:#fafafa!important;color:#374151!important;padding:3px 6px 5px!important;font-size:7px!important;border-bottom:none!important;}
+      .divider-row td{height:2px!important;padding:0!important;background:#0f172a!important;border:none!important;font-size:0!important;}
+      .td-ref{color:#1d4ed8!important;}
+      .td-mono{color:#0f172a!important;font-family:monospace!important;}
+      .badge{font-size:7px!important;padding:1px 5px!important;border:1px solid!important;}
+      .badge-planificado{background:#f1f5f9!important;color:#374151!important;border-color:#94a3b8!important;}
+      .badge-agregado{background:#e2e8f0!important;color:#1e293b!important;border-color:#64748b!important;}
+      .badge-arribado{background:#dcfce7!important;color:#166534!important;border-color:#86efac!important;}
+      .badge-dock{background:#ffe4e6!important;color:#be123c!important;border-color:#fca5a5!important;}
+      .badge-atracado{background:#cffafe!important;color:#0e7490!important;border-color:#67e8f9!important;}
+      .badge-encurso{background:#ffedd5!important;color:#c2410c!important;border-color:#fdba74!important;}
+      .badge-pausado{background:#ede9fe!important;color:#6d28d9!important;border-color:#c4b5fd!important;}
+      .badge-finalizado{background:#dcfce7!important;color:#166534!important;border-color:#86efac!important;}
+      .badge-cancelado{background:#fee2e2!important;color:#991b1b!important;border-color:#fca5a5!important;}
+      .badge-sinidentif{background:#f3e8ff!important;color:#7e22ce!important;border-color:#d8b4fe!important;}
+      .badge-enespera{background:#fef9c3!important;color:#854d0e!important;border-color:#fde047!important;}
+      .badge-expo{background:#fef9c3!important;color:#854d0e!important;border-color:#fde047!important;font-size:6px!important;}
+      .schip{background:#f1f5f9!important;border:1px solid #cbd5e1!important;color:#0f172a!important;font-size:7px!important;}
+      .schip-label{color:#64748b!important;}
+      .main-row{break-inside:avoid;page-break-inside:avoid;}
+      @page{size:A4 landscape;margin:7mm 8mm;}
+    }
+
+    .print-header{
+      display:none;
+      padding-bottom:8px;
+      margin-bottom:8px;
+      border-bottom:1.5px solid #0f172a;
+    }
+    .print-header-row{display:flex;justify-content:space-between;align-items:flex-end;}
+    .print-header h1{font-size:13px;font-weight:700;color:#0f172a;}
+    .print-header p{font-size:9px;color:#64748b;margin-top:2px;}
+    .print-header-right{font-size:8px;color:#64748b;text-align:right;font-family:monospace;}
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <img src="logo.png" style="width:26px;height:26px;border-radius:5px;object-fit:cover;">
+    IceLion
+    <span style="font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;">IMPRESIÓN</span>
+  </div>
+  <div class="nav-right">
+    <span id="navUser" style="font-size:12px;color:var(--muted);"></span>
+    <button class="btn-theme" id="btnTema">🌙</button>
+    <button class="btn btn-ghost no-print" onclick="window.history.back()">← Volver al visor</button>
+    <button class="btn btn-primary no-print" onclick="imprimir()">🖨 Imprimir</button>
+  </div>
+</nav>
+
+<div class="controls no-print">
+  <button class="day-btn" id="btnAnterior">◀</button>
+  <div class="day-label" id="diaLabel">—</div>
+  <button class="day-btn" id="btnSiguiente">▶</button>
+  <button class="day-today-btn" id="btnHoy">Hoy</button>
+  <div class="sep"></div>
+  <span class="info-count" id="infoCount">—</span>
+</div>
+
+<div class="main">
+  <div class="print-header" id="printHeader">
+    <div class="print-header-row">
+      <div>
+        <h1>IceLion — Movimientos del día</h1>
+        <p id="printSub">—</p>
+      </div>
+      <div class="print-header-right" id="printRight">—</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="tablaMovimientos">
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Cliente</th>
+          <th>Movimiento</th>
+          <th>Transporte</th>
+          <th>Destino</th>
+          <th>Referencia</th>
+          <th>Booking</th>
+          <th>Lugar carga</th>
+          <th>Piso/Pallet</th>
+          <th>Pat. Tractor</th>
+          <th>Pat. Semi</th>
+          <th>Dock</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="13" class="empty-state"><span class="spinner"></span>Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script type="module">
+import { db, COL } from "./js/firebase.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { collection, getDocs, query, where, orderBy, limit }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, hoy, sumarDias, fmtLabel } from "./js/utils.js";
+
+initTema();
+initSesion();
+
+let diaActual = hoy();
+
+function badgeEst(e) {
+  const m={
+    "PLANIFICADO":"badge-planificado","AGREGADO":"badge-agregado",
+    "SIN IDENTIFICAR":"badge-sinidentif","ARRIBADO":"badge-arribado",
+    "EN ESPERA":"badge-enespera","DOCK ASIGNADO":"badge-dock",
+    "ATRACADO":"badge-atracado","INICIO MOVIMIENTO":"badge-iniciomov",
+    "PAUSADO":"badge-pausado","FIN MOVIMIENTO":"badge-finmov",
+    "CANCELA MOVIMIENTO":"badge-cancelado","CANCELADO":"badge-cancelado",
+    "LIBERADO":"badge-liberado"
+  };
+  return `<span class="badge ${m[e]||"badge-planificado"}">${e||"—"}</span>`;
+}
+
+function v(x){ return (x===undefined||x===null||String(x).trim()==="")?null:String(x).trim(); }
+
+function schip(label, val) {
+  if (!v(val)) return "";
+  return `<span class="schip"><span class="schip-label">${label}: </span>${val}</span>`;
+}
+
+async function cargarDia(fecha) {
+  diaActual = fecha;
+  document.getElementById("diaLabel").textContent = fmtLabel(fecha);
+  document.getElementById("tbody").innerHTML =
+    `<tr><td colspan="13" class="empty-state"><span class="spinner"></span>Cargando...</td></tr>`;
+
+  try {
+    const snap = await getDocs(query(
+      collection(db, COL),
+      where("planificacion.fecha_prevista","==",fecha),
+      orderBy("planificacion.hora_estipulada","asc"),
+      limit(100)
+    ));
+
+    document.getElementById("infoCount").textContent =
+      `${snap.size} movimiento${snap.size!==1?"s":""} · ${fecha}`;
+
+    if (!snap.size) {
+      document.getElementById("tbody").innerHTML =
+        `<tr><td colspan="13" class="empty-state">No hay movimientos para este día</td></tr>`;
+      return;
+    }
+
+      document.getElementById("tbody").innerHTML = snap.docs.map((d, idx) => {
+      const data = d.data();
+      const p    = data.planificacion||{};
+      const g    = data.guardia||{};
+      const sv   = data.supervisor||{};
+      const det  = data.detalles||[];
+      const est  = data.estado||"PLANIFICADO";
+      const esExpo = (p.movimiento||"").toUpperCase().includes("EXPO");
+
+      const patT = v(g.patente_tractor||p.patente_tractor);
+      const patS = v(g.patente_semi||p.patente_semi);
+      const dock = v(sv.dock);
+
+      const i0 = det[0]||{};
+      const sub = [
+        schip("Cont.",     p.contenedor),
+        schip("Estab.",    i0.nro_of),
+        schip("Lote",      i0.lote),
+        schip("COT",       p.cot),
+        schip("Termóg.",   p.termografo),
+        schip("Soporte",   p.soporte_foto),
+        schip("Orden",     i0.respetar_orden),
+        schip("Control",   i0.control),
+        schip("Rótulo",    i0.rotulo),
+        schip("Import.",   i0.importador),
+      ].filter(Boolean).join("");
+
+      const prodStr = det.map(it =>
+        [it.producto, it.cantidad, it.unidad, it.calibre].filter(Boolean).join(" ")
+      ).filter(Boolean).join(" · ");
+      const productosSub = prodStr ? schip("Productos", prodStr) : "";
+      const todoSub = sub + productosSub;
+
+      const oddCls = idx % 2 === 0 ? "" : "group-odd";
+
+      return `
+        <tr class="main-row ${oddCls}">
+          <td class="td-mono" style="font-weight:700;">${p.hora_estipulada||"—"}</td>
+          <td><strong>${p.cliente||"—"}</strong></td>
+          <td>${p.movimiento||"—"} ${esExpo?`<span class="badge badge-expo">EXPO</span>`:""}</td>
+          <td class="td-mono">${p.transporte||"—"}</td>
+          <td>${p.destino||"—"}</td>
+          <td class="td-ref">${p.referencia||"—"}</td>
+          <td class="td-mono">${p.booking||"—"}</td>
+          <td>${p.lugar_carga||"—"}</td>
+          <td class="td-mono">${i0.piso_o_pallet||"—"}</td>
+          <td class="td-mono">${patT||"—"}</td>
+          <td class="td-mono">${patS||"—"}</td>
+          <td style="font-family:monospace;font-weight:700;">${dock?"D"+dock:"—"}</td>
+          <td>${badgeEst(est)}</td>
+        </tr>
+        ${todoSub ? `<tr class="sub-row ${oddCls}">
+          <td></td>
+          <td colspan="12" style="padding-bottom:5px;">${todoSub}</td>
+        </tr>` : ""}
+        <tr class="divider-row"><td colspan="13"></td></tr>
+      `;
+    }).join("");
+
+  } catch(err) {
+    document.getElementById("tbody").innerHTML =
+      `<tr><td colspan="13" class="empty-state" style="color:var(--err)">Error: ${err.message}</td></tr>`;
+  }
+}
+
+window.imprimir = function() {
+  const label = fmtLabel(diaActual);
+  const count = document.getElementById("infoCount").textContent;
+  document.getElementById("printSub").textContent  = label + " · " + count;
+  document.getElementById("printRight").textContent =
+    "Impreso: " + new Date().toLocaleString("es-AR");
+  window.print();
+};
+
+document.getElementById("btnAnterior").addEventListener("click", ()=> cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnSiguiente").addEventListener("click",()=> cargarDia(sumarDias(diaActual, 1)));
+document.getElementById("btnHoy").addEventListener("click",       ()=> cargarDia(hoy()));
+
+cargarDia(new URLSearchParams(window.location.search).get("fecha") || hoy());
+</script>
+
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

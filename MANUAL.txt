@@ -1,0 +1,89 @@
+MANUAL CORTO - ICELION + FIREBASE
+
+PROYECTO
+- Firebase: friopolar-gestion
+- Web: https://friopolar-gestion.web.app
+
+ESTRUCTURA
+- public = todo lo que se publica
+- raiz = archivos de configuracion
+
+EN PUBLIC DEBE ESTAR
+- index.html
+- planificacion.html
+- guardia.html
+- calidad.html
+- calidad_desvios.html
+- consolidador.html
+- dataentry.html
+- supervisor_web.html
+- visor_completo.html
+- listas.html
+- logo.png
+- logofrio.png
+- js/firebase.js
+- js/auth.js
+
+EN LA RAIZ DEBE ESTAR
+- firebase.json
+- .firebaserc
+- package.json
+
+ARCHIVOS DE CONFIG
+firebase.json
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
+
+.firebaserc
+{
+  "projects": {
+    "default": "friopolar-gestion"
+  }
+}
+
+COMANDOS IMPORTANTES
+
+1) USAR PROYECTO
+firebase.cmd use friopolar-gestion
+
+2) SUBIR CAMBIOS DEL SITIO
+firebase.cmd deploy --only hosting
+
+3) SUBIR TODO
+firebase.cmd deploy
+
+4) PROBAR LOCAL
+firebase.cmd emulators:start --only hosting
+
+5) DEPLOY CON DEBUG
+firebase.cmd deploy --only hosting --debug
+
+REGLA BASICA
+- Si cambio algo en public, tengo que volver a ejecutar:
+  firebase.cmd deploy --only hosting
+
+FLUJO DE TRABAJO
+1. Abrir proyecto en VS Code
+2. Editar archivos
+3. Guardar
+4. Ejecutar:
+   firebase.cmd deploy --only hosting
+5. Refrescar la web
+
+NOTAS
+- Guardar en VS Code no actualiza Firebase solo
+- app.js no lo usa ninguno de los html actuales
+- Si un html usa un js, ese js debe estar dentro de public
+- En PowerShell usar firebase.cmd si firebase da error
+
+URLS UTILES
+- Web: https://friopolar-gestion.web.app
+- Consola: https://console.firebase.google.com/project/friopolar-gestion/overview

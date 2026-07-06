@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Listas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --panel3:#f1f5f9;
+      --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    }
+    body.light .navbar     { box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    body.light .toast.ok   { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+    body.light .toast.err  { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+    body.light .item-row   { background:#f8fafc; }
+    body.light .item-row:hover { background:#f0f4ff; }
+    body.light .item-input { color:var(--text); background:#fff; }
+    body.light .confirm-box { background:#fff; }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+    .hidden{display:none!important;}
+
+    /* NAVBAR */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-brand span{font-size:20px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .btn-theme:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s;}
+    .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+    /* MAIN */
+    .main{padding:24px;max-width:1200px;margin:0 auto;}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+    .page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    /* GRID DE LISTAS */
+    .listas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;}
+
+    /* CARD DE LISTA */
+    /* TABS SECCIÓN */
+    .section-tabs{display:flex;gap:8px;margin-bottom:20px;}
+    .section-tab{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--muted);transition:all .2s;}
+    .section-tab:hover{border-color:var(--accent);color:var(--accent2);}
+    .section-tab.activa{background:var(--panel3);border-color:var(--accent);color:var(--text);}
+
+    /* USUARIOS */
+    .usuarios-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead th{background:var(--panel2);padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover td{background:var(--panel2);}
+    tbody td{padding:11px 14px;color:var(--text);}
+    .rol-badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(59,130,246,.25);}
+    .mod-badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.25);margin-left:5px;}
+
+    /* MODAL USUARIO */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);}
+    .modal-header h2{font-size:16px;font-weight:700;}
+    .modal-body{padding:20px;display:flex;flex-direction:column;gap:14px;}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);}
+    .form-group{display:flex;flex-direction:column;gap:5px;}
+    .form-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .form-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s;width:100%;}
+    .form-input:focus{border-color:var(--accent);}
+    .btn-close-modal{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;line-height:1;}
+    .btn-close-modal:hover{color:var(--text);}
+    .check-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;cursor:pointer;}
+    .check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+    .check-label{font-size:13px;font-weight:600;}
+    .lista-card-header{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .lista-card-title{display:flex;align-items:center;gap:8px;}
+    .lista-icon{font-size:18px;}
+    .lista-nombre{font-size:14px;font-weight:700;}
+    .lista-count{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;}
+
+    /* BUSCADOR dentro de la lista */
+    .lista-search{padding:10px 14px;border-bottom:1px solid var(--border);}
+    .lista-search input{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;}
+    .lista-search input:focus{border-color:var(--accent);}
+    .lista-search input::placeholder{color:var(--muted);}
+
+    /* ITEMS */
+    .lista-items{flex:1;overflow-y:auto;max-height:320px;}
+    .item-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);transition:background .15s;}
+    .item-row:last-child{border-bottom:none;}
+    .item-row:hover{background:var(--panel2);}
+    .item-num{font-size:10px;font-family:var(--mono);color:var(--muted);min-width:22px;text-align:right;}
+    .item-text{flex:1;font-size:13px;font-weight:500;font-family:var(--mono);}
+    .item-input{flex:1;background:var(--panel3);border:1px solid var(--accent);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:4px 8px;outline:none;}
+    .item-actions{display:flex;gap:4px;flex-shrink:0;}
+
+    /* Estado vacío / cargando */
+    .lista-empty{padding:28px 14px;text-align:center;color:var(--muted);font-size:12px;}
+    .lista-loading{padding:28px 14px;text-align:center;color:var(--muted);font-size:12px;}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* AGREGAR */
+    .lista-add{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;}
+    .lista-add input{flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 10px;outline:none;transition:border-color .2s;}
+    .lista-add input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+    .lista-add input::placeholder{color:var(--muted);}
+
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{background:var(--accent2);}
+    .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-icon{background:transparent;border:1px solid transparent;color:var(--muted);width:28px;height:28px;padding:0;border-radius:6px;font-size:13px;display:flex;align-items:center;justify-content:center;}
+    .btn-icon:hover{background:var(--panel3);border-color:var(--border);color:var(--text);}
+    .btn-icon.edit:hover{color:var(--accent2);border-color:rgba(59,130,246,.3);}
+    .btn-icon.save{color:var(--ok);}
+    .btn-icon.save:hover{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--ok);}
+    .btn-icon.cancel-edit:hover{color:var(--warn);border-color:rgba(245,158,11,.3);}
+    .btn-icon.del:hover{color:var(--err);border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* CONFIRM inline */
+    .confirm-inline{display:flex;align-items:center;gap:6px;flex:1;}
+    .confirm-msg{font-size:11px;color:var(--err);font-weight:600;flex:1;}
+
+    /* TOAST */
+    .toast{position:fixed;top:18px;right:18px;z-index:9999;min-width:260px;max-width:400px;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;animation:slideIn .25s ease;}
+    .toast.ok{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .toast-title{font-weight:700;font-size:13px;}
+    .toast-msg{font-size:12px;margin-top:2px;opacity:.85;}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+    /* Acceso denegado */
+    .acceso-denegado{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px;text-align:center;}
+    .acceso-denegado .icon{font-size:48px;}
+    .acceso-denegado h2{font-size:20px;font-weight:700;}
+    .acceso-denegado p{font-size:13px;color:var(--muted);}
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg"   id="toastMsg"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand"><img src="logo.png" style="width:28px;height:28px;border-radius:6px;"> IceLion <div class="nav-module">LISTAS</div></div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema" title="Cambiar tema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title" id="pageTitle">Gestión de Listas</div>
+      <div class="page-sub" id="pageSub">Listas de autocompletado usadas en todo el sistema</div>
+    </div>
+  </div>
+
+  <div class="section-tabs">
+    <button class="section-tab activa" id="tabListas" onclick="cambiarSeccion('listas')">📋 Listas</button>
+    <button class="section-tab hidden" id="tabUsuarios" onclick="cambiarSeccion('usuarios')">👤 Usuarios</button>
+  </div>
+
+  <div class="acceso-denegado hidden" id="accesoDenegado">
+    <div class="icon">🔒</div>
+    <h2>Acceso restringido</h2>
+    <p>Esta sección es solo para administradores y moderadores.</p>
+  </div>
+
+  <div id="panelListas">
+    <div class="listas-grid" id="listasGrid"></div>
+  </div>
+
+  <div id="panelUsuarios" class="hidden">
+    <div class="usuarios-header">
+      <div>
+        <div style="font-size:15px;font-weight:700;">Usuarios del sistema</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">Creá y gestioná usuarios y sus roles</div>
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalUsuario()">+ Nuevo usuario</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Nombre</th><th>Email</th><th>Rol</th><th>Moderador</th><th>Acciones</th>
+        </tr></thead>
+        <tbody id="tbodyUsuarios">
+          <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted);">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="modal-overlay hidden" id="modalUsuario">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modalUsuarioTitulo">Nuevo usuario</h2>
+      <button class="btn-close-modal" onclick="cerrarModalUsuario()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre completo *</label>
+        <input type="text" class="form-input" id="uNombre" placeholder="Ej: Juan Pérez">
+      </div>
+      <div class="form-group" id="emailGroup">
+        <label class="form-label">Email *</label>
+        <input type="email" class="form-input" id="uEmail" placeholder="usuario (sin @icelion.com)">
+        <span style="font-size:11px;color:var(--muted);">Se agregará @icelion.com automáticamente</span>
+      </div>
+      <div class="form-group" id="passGroup">
+        <label class="form-label">Contraseña temporal *</label>
+        <input type="password" class="form-input" id="uPassword" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Roles * <span style="font-weight:400;color:var(--muted);">(Ctrl+click para seleccionar varios)</span></label>
+        <select class="form-input" id="uRoles" multiple size="8" style="height:auto;padding:4px;">
+          <option value="planificacion">Planificación</option>
+          <option value="guardia">Guardia</option>
+          <option value="calidad">Calidad</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="consolidador">Consolidador</option>
+          <option value="dataentry">Data Entry</option>
+          <option value="moderador">Moderador</option>
+          <option value="admin">Admin</option>
+          <option value="comercial">Comercial</option>
+          <option value="facturacion">Facturación</option>
+        </select>
+      </div>
+      <label class="check-row" for="uModerador">
+        <input type="checkbox" id="uModerador">
+        <div>
+          <div class="check-label">Acceso a Listas</div>
+          <div style="font-size:11px;color:var(--muted);">Puede editar listas además de su rol principal</div>
+        </div>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModalUsuario()">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarUsuario">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db } from "./js/firebase.js";
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, caps } from "./js/utils.js";
+
+const COL     = "listas";
+const API_KEY = "AIzaSyCFw6jdf8Q8iE9wLWDAnKMRX6QAi3Ba1hA";
+let esAdmin   = false;
+let uidEditando = null;
+
+// ── DEFINICIÓN DE LISTAS ──────────────────────────────────────
+const LISTAS = [
+  { id:"clientes",       nombre:"Clientes",        icon:"🏢" },
+  { id:"transportes",    nombre:"Transportes",      icon:"🚛" },
+  { id:"productos",      nombre:"Productos",        icon:"📦" },
+  { id:"desvios",        nombre:"Desvíos",          icon:"⚠️" },
+  { id:"motivos_desvio", nombre:"Motivos de Desvío",icon:"📋" },
+  { id:"penalidades",    nombre:"Penalidades",       icon:"🚨" },
+  { id:"servicios_tipos",  nombre:"Tipos de Servicio Adicional", icon:"🔧" },
+  { id:"servicios_insumos",nombre:"Insumos de Servicios", icon:"📦" }
+];
+
+initTema();
+
+initSesion(u => {
+  const rol  = sessionStorage.getItem("icelion_rol") || "";
+  let roles  = [];
+  try { roles = JSON.parse(sessionStorage.getItem("icelion_roles") || "[]"); } catch(e) {}
+  if (!roles.length) roles = [rol];
+
+  esAdmin = roles.includes("admin");
+  const esMod = roles.includes("moderador") || sessionStorage.getItem("icelion_moderador") === "1";
+  const tieneAcceso = esAdmin || esMod;
+
+  if (esAdmin) document.getElementById("tabUsuarios").classList.remove("hidden");
+
+  if (!tieneAcceso) {
+    document.getElementById("accesoDenegado").classList.remove("hidden");
+    document.getElementById("panelListas").classList.add("hidden");
+    document.getElementById("tabListas").classList.add("hidden");
+    return;
+  }
+  inicializar();
+});
+
+// ── TABS SECCIÓN ──────────────────────────────────────────────
+window.cambiarSeccion = function(sec) {
+  const esListas = sec === "listas";
+  document.getElementById("tabListas").classList.toggle("activa",    esListas);
+  document.getElementById("tabUsuarios").classList.toggle("activa",  !esListas);
+  document.getElementById("panelListas").classList.toggle("hidden",  !esListas);
+  document.getElementById("panelUsuarios").classList.toggle("hidden", esListas);
+  document.getElementById("pageTitle").textContent = esListas ? "Gestión de Listas" : "Gestión de Usuarios";
+  document.getElementById("pageSub").textContent   = esListas
+    ? "Listas de autocompletado usadas en todo el sistema"
+    : "Creá, editá y gestioná los roles de los usuarios";
+  if (!esListas) cargarUsuarios();
+};
+
+// ── CARGAR USUARIOS ───────────────────────────────────────────
+async function cargarUsuarios() {
+  const tbody = document.getElementById("tbodyUsuarios");
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted);">Cargando...</td></tr>`;
+  try {
+    const snap = await getDocs(collection(db, "usuarios"));
+    if (snap.empty) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted);">No hay usuarios registrados</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = snap.docs.map(d => {
+      const u = d.data();
+      const esActual = d.id === sessionStorage.getItem("icelion_uid");
+      const roles = Array.isArray(u.roles) && u.roles.length ? u.roles : (u.rol ? [u.rol] : ["—"]);
+      const rolesBadges = roles.map(r => `<span class="rol-badge">${r}</span>`).join(" ");
+      return `<tr>
+        <td><strong>${u.nombre||"—"}</strong>${esActual?' <span style="font-size:10px;color:var(--muted);">(vos)</span>':""}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--muted);">${u.email||"—"}</td>
+        <td>${rolesBadges}${u.moderador?'<span class="mod-badge">listas</span>':""}</td>
+        <td style="text-align:center;">${u.moderador?"✅":"—"}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="abrirModalUsuario('${d.id}')">Editar</button></td>
+      </tr>`;
+    }).join("");
+  } catch(err) { toast("err","Error",err.message); }
+}
+
+// ── MODAL USUARIO ─────────────────────────────────────────────
+window.abrirModalUsuario = async function(uid) {
+  uidEditando = uid || null;
+  const esNuevo = !uid;
+  document.getElementById("modalUsuarioTitulo").textContent = esNuevo ? "Nuevo usuario" : "Editar usuario";
+  document.getElementById("emailGroup").classList.toggle("hidden", !esNuevo);
+  document.getElementById("passGroup").classList.toggle("hidden",  !esNuevo);
+  document.getElementById("uEmail").value       = "";
+  document.getElementById("uPassword").value    = "";
+  document.getElementById("uNombre").value      = "";
+  document.getElementById("uModerador").checked = false;
+  // Deseleccionar todos los roles
+  Array.from(document.getElementById("uRoles").options).forEach(o => o.selected = false);
+
+  if (!esNuevo) {
+    try {
+      const snap = await getDoc(doc(db,"usuarios",uid));
+      if (snap.exists()) {
+        const u = snap.data();
+        document.getElementById("uNombre").value      = u.nombre||"";
+        document.getElementById("uModerador").checked = !!u.moderador;
+        // Soporte roles[] y rol string legacy
+        const roles = Array.isArray(u.roles) && u.roles.length ? u.roles : (u.rol ? [u.rol] : []);
+        Array.from(document.getElementById("uRoles").options).forEach(o => {
+          o.selected = roles.includes(o.value);
+        });
+      }
+    } catch(err) { toast("err","Error",err.message); return; }
+  }
+  document.getElementById("modalUsuario").classList.remove("hidden");
+};
+
+window.cerrarModalUsuario = function() {
+  document.getElementById("modalUsuario").classList.add("hidden");
+  uidEditando = null;
+};
+
+document.getElementById("btnGuardarUsuario").addEventListener("click", async () => {
+  const nombre    = document.getElementById("uNombre").value.trim();
+  const roles     = Array.from(document.getElementById("uRoles").selectedOptions).map(o => o.value);
+  const moderador = document.getElementById("uModerador").checked;
+  const btn       = document.getElementById("btnGuardarUsuario");
+  if (!nombre) { toast("err","Faltan datos","Completá el nombre"); return; }
+  if (!roles.length) { toast("err","Faltan datos","Seleccioná al menos un rol"); return; }
+  btn.disabled = true; btn.textContent = "Guardando...";
+  try {
+    if (!uidEditando) {
+      const emailInput = document.getElementById("uEmail").value.trim();
+      const password   = document.getElementById("uPassword").value;
+      if (!emailInput) throw new Error("Completá el email");
+      if (!password || password.length < 6) throw new Error("La contraseña debe tener al menos 6 caracteres");
+      const email = emailInput.includes("@") ? emailInput : emailInput + "@icelion.com";
+      const res  = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ email, password, returnSecureToken:true })
+      });
+      const data = await res.json();
+      if (data.error) {
+        const errMap = {
+          "EMAIL_EXISTS": "Ese email ya está registrado",
+          "WEAK_PASSWORD": "Contraseña muy corta (mínimo 6 caracteres)",
+          "INVALID_EMAIL": "Email inválido"
+        };
+        throw new Error(errMap[data.error.message] || data.error.message);
+      }
+      await setDoc(doc(db,"usuarios",data.localId), {
+        nombre, roles, rol: roles[0], moderador, email
+      });
+      toast("ok","Usuario creado",`${nombre} · ${email} · ${roles.join(", ")}`);
+    } else {
+      await updateDoc(doc(db,"usuarios",uidEditando), {
+        nombre, roles, rol: roles[0], moderador
+      });
+      toast("ok","Actualizado",`${nombre} · ${roles.join(", ")}`);
+    }
+    cerrarModalUsuario();
+    cargarUsuarios();
+  } catch(err) {
+    toast("err","Error",err.message);
+  } finally { btn.disabled=false; btn.textContent="Guardar"; }
+});
+
+// ── HELPERS ─────────────────────────────────────────────────
+
+
+// ── ESTADO EN MEMORIA ─────────────────────────────────────────
+// { listaId: string[] }
+const state = {};
+
+// ── INICIALIZAR: crea cards y carga todas las listas ──────────
+function inicializar() {
+  const grid = document.getElementById("listasGrid");
+  grid.innerHTML = "";
+  LISTAS.forEach(l => {
+    grid.appendChild(crearCard(l));
+    cargarLista(l.id);
+  });
+}
+
+// ── CREAR CARD ────────────────────────────────────────────────
+function crearCard(lista) {
+  const card = document.createElement("div");
+  card.className="lista-card";
+  card.id=`card-${lista.id}`;
+  card.innerHTML=`
+    <div class="lista-card-header">
+      <div class="lista-card-title">
+        <span class="lista-icon">${lista.icon}</span>
+        <span class="lista-nombre">${lista.nombre}</span>
+      </div>
+      <span class="lista-count" id="count-${lista.id}">—</span>
+    </div>
+    <div class="lista-search">
+      <input type="text" placeholder="Filtrar ${lista.nombre.toLowerCase()}..."
+        oninput="filtrarLista('${lista.id}', this.value)">
+    </div>
+    <div class="lista-items" id="items-${lista.id}">
+      <div class="lista-loading"><span class="spinner"></span>Cargando...</div>
+    </div>
+    <div class="lista-add">
+      <input type="text" id="nuevo-${lista.id}"
+        placeholder="Nuevo ${lista.nombre.toLowerCase().replace(/s$/,"")}..."
+        onkeydown="if(event.key==='Enter') agregarItem('${lista.id}')">
+      <button class="btn btn-primary" onclick="agregarItem('${lista.id}')">+ Agregar</button>
+    </div>
+  `;
+  return card;
+}
+
+// ── CARGAR LISTA DESDE FIRESTORE ──────────────────────────────
+async function cargarLista(listaId) {
+  try {
+    const snap = await getDoc(doc(db, COL, listaId));
+    const items = snap.exists() ? (snap.data().items || []) : [];
+    // Ordenar alfabéticamente
+    state[listaId] = [...items].sort((a,b)=>a.localeCompare(b));
+    renderLista(listaId, "");
+  } catch(err) {
+    document.getElementById(`items-${listaId}`).innerHTML=
+      `<div class="lista-empty" style="color:var(--err)">Error: ${err.message}</div>`;
+  }
+}
+
+// ── GUARDAR LISTA COMPLETA EN FIRESTORE ───────────────────────
+async function guardarLista(listaId) {
+  const items = state[listaId] || [];
+  await setDoc(doc(db, COL, listaId), { items }, { merge: false });
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderLista(listaId, filtro) {
+  const items    = state[listaId] || [];
+  const filtroUp = (filtro||"").toUpperCase().trim();
+  const filtered = filtroUp ? items.filter(i=>i.includes(filtroUp)) : items;
+
+  document.getElementById(`count-${listaId}`).textContent =
+    `${items.length} ítem${items.length!==1?"s":""}`;
+
+  const cont = document.getElementById(`items-${listaId}`);
+
+  if(!filtered.length) {
+    cont.innerHTML=`<div class="lista-empty">${filtroUp?"Sin resultados":"Lista vacía"}</div>`;
+    return;
+  }
+
+  cont.innerHTML = filtered.map((item, idx) => {
+    // Usamos el índice real en state, no en filtered
+    const realIdx = items.indexOf(item);
+    return `
+    <div class="item-row" id="row-${listaId}-${realIdx}">
+      <span class="item-num">${realIdx+1}</span>
+      <span class="item-text" id="txt-${listaId}-${realIdx}">${item}</span>
+      <div class="item-actions" id="actions-${listaId}-${realIdx}">
+        <button class="btn-icon edit" title="Editar"
+          onclick="iniciarEdicion('${listaId}',${realIdx})">✏️</button>
+        <button class="btn-icon del" title="Eliminar"
+          onclick="pedirConfirmacion('${listaId}',${realIdx})">🗑️</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── FILTRAR ───────────────────────────────────────────────────
+window.filtrarLista = function(listaId, valor) {
+  renderLista(listaId, valor);
+};
+
+// ── AGREGAR ───────────────────────────────────────────────────
+window.agregarItem = async function(listaId) {
+  const input = document.getElementById(`nuevo-${listaId}`);
+  const val   = input.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  if(!val) return;
+
+  if((state[listaId]||[]).includes(val)) {
+    toast("err","Ya existe",`"${val}" ya está en la lista`);
+    return;
+  }
+
+  input.disabled = true;
+  try {
+    state[listaId] = [...(state[listaId]||[]), val].sort((a,b)=>a.localeCompare(b));
+    await guardarLista(listaId);
+    input.value = "";
+    renderLista(listaId, "");
+    toast("ok","Agregado",`"${val}" agregado correctamente`);
+  } catch(err) {
+    toast("err","Error",err.message);
+    // Revertir
+    state[listaId] = (state[listaId]||[]).filter(i=>i!==val);
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+};
+
+// ── EDICIÓN INLINE ────────────────────────────────────────────
+window.iniciarEdicion = function(listaId, idx) {
+  const item    = (state[listaId]||[])[idx];
+  const actEl   = document.getElementById(`actions-${listaId}-${idx}`);
+  const txtEl   = document.getElementById(`txt-${listaId}-${idx}`);
+  if(!actEl || !txtEl) return;
+
+  // Reemplazar texto por input
+  txtEl.outerHTML = `<input type="text" class="item-input" id="txt-${listaId}-${idx}"
+    value="${item.replace(/"/g,'&quot;')}"
+    onkeydown="if(event.key==='Enter') confirmarEdicion('${listaId}',${idx}); if(event.key==='Escape') cancelarEdicion('${listaId}',${idx})">`;
+
+  // Reemplazar botones
+  actEl.innerHTML = `
+    <button class="btn-icon save" title="Guardar (Enter)"
+      onclick="confirmarEdicion('${listaId}',${idx})">✔️</button>
+    <button class="btn-icon cancel-edit" title="Cancelar (Esc)"
+      onclick="cancelarEdicion('${listaId}',${idx})">✕</button>
+  `;
+
+  // Enfocar y seleccionar
+  const inp = document.getElementById(`txt-${listaId}-${idx}`);
+  if(inp) { inp.focus(); inp.select(); }
+};
+
+window.confirmarEdicion = async function(listaId, idx) {
+  const inp = document.getElementById(`txt-${listaId}-${idx}`);
+  if(!inp) return;
+  const nuevoVal = inp.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const viejoVal = (state[listaId]||[])[idx];
+
+  if(!nuevoVal) { toast("err","Campo vacío","El valor no puede estar vacío"); return; }
+  if(nuevoVal === viejoVal) { cancelarEdicion(listaId, idx); return; }
+  if((state[listaId]||[]).includes(nuevoVal)) {
+    toast("err","Ya existe",`"${nuevoVal}" ya está en la lista`); return;
+  }
+
+  inp.disabled = true;
+  try {
+    const nuevaLista = [...(state[listaId]||[])];
+    nuevaLista[idx] = nuevoVal;
+    state[listaId] = nuevaLista.sort((a,b)=>a.localeCompare(b));
+    await guardarLista(listaId);
+    renderLista(listaId, "");
+    toast("ok","Actualizado",`"${viejoVal}" → "${nuevoVal}"`);
+  } catch(err) {
+    toast("err","Error",err.message);
+    renderLista(listaId, "");
+  }
+};
+
+window.cancelarEdicion = function(listaId, idx) {
+  renderLista(listaId, "");
+};
+
+// ── ELIMINAR CON CONFIRMACIÓN INLINE ─────────────────────────
+window.pedirConfirmacion = function(listaId, idx) {
+  const item  = (state[listaId]||[])[idx];
+  const actEl = document.getElementById(`actions-${listaId}-${idx}`);
+  if(!actEl) return;
+
+  actEl.innerHTML = `
+    <div class="confirm-inline">
+      <span class="confirm-msg">¿Eliminar "${item}"?</span>
+      <button class="btn-icon del" title="Confirmar eliminación"
+        onclick="confirmarEliminar('${listaId}',${idx})">✔️</button>
+      <button class="btn-icon cancel-edit" title="Cancelar"
+        onclick="cancelarEliminar('${listaId}',${idx})">✕</button>
+    </div>
+  `;
+};
+
+window.confirmarEliminar = async function(listaId, idx) {
+  const item = (state[listaId]||[])[idx];
+  try {
+    state[listaId] = (state[listaId]||[]).filter((_,i)=>i!==idx);
+    await guardarLista(listaId);
+    renderLista(listaId, "");
+    toast("ok","Eliminado",`"${item}" eliminado de la lista`);
+  } catch(err) {
+    toast("err","Error",err.message);
+    await cargarLista(listaId); // Recargar si falla
+  }
+};
+
+window.cancelarEliminar = function(listaId, idx) {
+  renderLista(listaId, "");
+};
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

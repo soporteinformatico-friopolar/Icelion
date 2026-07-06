@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPIs · Icelion</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+    --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+    --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+    --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+  }
+  body.light {
+    --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --panel3:#f1f5f9;
+    --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+    --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+  }
+  body.light .navbar{box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+  .hidden{display:none!important;}
+
+  /* NAVBAR */
+  .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+  .nav-left{display:flex;align-items:center;gap:14px;}
+  .nav-logo{font-size:15px;font-weight:700;color:var(--text);}
+  .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;color:var(--text);}
+  .nav-brand img{width:28px;height:28px;border-radius:6px;object-fit:cover;display:block;}
+  .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+  .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+  .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .btn-theme:hover{border-color:var(--accent);color:var(--accent2);}
+  .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s;}
+  .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+  /* LAYOUT */
+  .page{padding:24px;max-width:1400px;margin:0 auto;}
+  .page-header{margin-bottom:20px;}
+  .page-title{font-size:20px;font-weight:700;}
+  .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+  /* FILTROS */
+  .filtros{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:20px;}
+  .filtros label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+  .filtros-group{display:flex;align-items:center;gap:6px;}
+  .form-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;cursor:pointer;}
+  .form-input:focus{border-color:var(--accent);}
+  .sep{width:1px;height:28px;background:var(--border);}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{opacity:.88;}
+  .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+
+  /* KPI CARDS */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+  .kpi-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+  .kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;}
+  .kpi-value{font-size:28px;font-weight:700;font-family:var(--mono);color:var(--text);line-height:1;}
+  .kpi-sub{font-size:11px;color:var(--muted);margin-top:6px;}
+  .kpi-ok{border-left:3px solid var(--ok);}
+  .kpi-warn{border-left:3px solid var(--warn);}
+  .kpi-err{border-left:3px solid var(--err);}
+  .kpi-neutral{border-left:3px solid var(--accent);}
+
+  /* SECCIONES */
+  .section{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;overflow:hidden;}
+  .section-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .section-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .section-title span{font-size:10px;font-weight:600;color:var(--muted);font-family:var(--mono);}
+  .section-body{padding:16px 18px;}
+
+  /* TABS */
+  .tabs{display:flex;gap:4px;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:20px;width:fit-content;}
+  .tab{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);background:transparent;color:var(--muted);transition:all .2s;}
+  .tab.active{background:var(--panel);color:var(--text);border:1px solid var(--border);}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+
+  /* TABLA */
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;}
+  thead th{background:var(--panel2);padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+  tbody td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--panel2);}
+  .td-mono{font-family:var(--mono);}
+  .td-right{text-align:right;}
+  .td-center{text-align:center;}
+
+  /* BADGES */
+  .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+  .badge-ok{background:rgba(34,197,94,.15);color:var(--ok);border:1px solid rgba(34,197,94,.25);}
+  .badge-warn{background:rgba(245,158,11,.15);color:var(--warn);border:1px solid rgba(245,158,11,.25);}
+  .badge-err{background:rgba(239,68,68,.15);color:var(--err);border:1px solid rgba(239,68,68,.25);}
+
+  /* BARRA DE PUNTUALIDAD */
+  .puntualidad-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;margin-top:8px;}
+  .bar-ok{background:var(--ok);}
+  .bar-warn{background:var(--warn);}
+  .bar-err{background:var(--err);}
+
+  /* TORTA */
+  .pie-wrap{display:flex;align-items:flex-start;gap:32px;flex-wrap:wrap;}
+  .pie-legend{display:flex;flex-direction:column;gap:8px;justify-content:center;}
+  .pie-legend-item{display:flex;align-items:center;gap:8px;font-size:12px;}
+  .pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .pie-leg-label{color:var(--text);}
+  .pie-leg-val{font-family:var(--mono);color:var(--muted);font-size:11px;margin-left:4px;}
+
+  /* EMPTY / LOADING */
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ESTADO TARDANZA */
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+  .dot-ok{background:var(--ok);}
+  .dot-warn{background:var(--warn);}
+  .dot-err{background:var(--err);}
+
+  /* INFO BAR */
+  .info-bar{font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:auto;}
+
+  .access-denied{max-width:520px;margin:80px auto;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;}
+  .access-denied h1{font-size:22px;margin-bottom:8px;}
+  .access-denied p{font-size:13px;color:var(--muted);line-height:1.5;}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <img src="logo.png" alt="IceLion">
+    IceLion
+    <div class="nav-module">KPIs · INDICADORES</div>
+  </div>
+  <div class="nav-right">
+    <span id="pageSub"></span>
+    <button class="btn-theme" onclick="toggleTema()" title="Tema">🌙</button>
+    <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+  </div>
+</nav>
+
+<div class="page" id="mainApp">
+  <div class="page-header">
+    <div class="page-title">Indicadores de desempeño</div>
+    <div class="page-sub">Puntualidad del transporte · Tiempos de permanencia</div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <div class="filtros-group">
+      <label>Desde</label>
+      <input type="date" class="form-input" id="fDesde">
+    </div>
+    <div class="filtros-group">
+      <label>Hasta</label>
+      <input type="date" class="form-input" id="fHasta">
+    </div>
+    <div class="sep"></div>
+    <div class="filtros-group">
+      <label>Cliente</label>
+      <select class="form-input" id="fCliente" style="min-width:150px;">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div class="filtros-group">
+      <label>Movimiento</label>
+      <select class="form-input" id="fMovimiento">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div class="filtros-group">
+      <label>Transporte</label>
+      <select class="form-input" id="fTransporte" style="min-width:150px;">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div class="sep"></div>
+    <button class="btn btn-primary btn-sm" onclick="aplicarFiltros()">Calcular</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetFiltros()">Limpiar</button>
+    <div class="info-bar" id="infoBar">—</div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-neutral">
+      <div class="kpi-label">Movimientos analizados</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-sub">Con arribo registrado</div>
+    </div>
+    <div class="kpi-card" id="cardPunt">
+      <div class="kpi-label">Puntualidad</div>
+      <div class="kpi-value" id="kpiPuntPct">—</div>
+      <div class="kpi-sub" id="kpiPuntSub">% a tiempo (≤ 0 min tarde)</div>
+      <div class="puntualidad-bar" id="barPunt"></div>
+    </div>
+    <div class="kpi-card kpi-neutral">
+      <div class="kpi-label">Demora promedio</div>
+      <div class="kpi-value" id="kpiDemoraAvg">—</div>
+      <div class="kpi-sub">Solo movimientos tardíos</div>
+    </div>
+    <div class="kpi-card kpi-neutral">
+      <div class="kpi-label">Permanencia promedio</div>
+      <div class="kpi-value" id="kpiPermAvg">—</div>
+      <div class="kpi-sub">Arribo → Egreso (con dato)</div>
+    </div>
+    <div class="kpi-card kpi-neutral">
+      <div class="kpi-label">Permanencia máxima</div>
+      <div class="kpi-value" id="kpiPermMax">—</div>
+      <div class="kpi-sub" id="kpiPermMaxSub">—</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('puntualidad',this)">Puntualidad</button>
+    <button class="tab" onclick="switchTab('permanencia',this)">Permanencia</button>
+    <button class="tab" onclick="switchTab('tiempoMov',this)">Tiempo mov.</button>
+    <button class="tab" onclick="switchTab('porCliente',this)">Por cliente</button>
+    <button class="tab" onclick="switchTab('porTransporte',this)">Por transporte</button>
+    <button class="tab" onclick="switchTab('detalle',this)">Detalle</button>
+  </div>
+
+  <!-- TAB: PUNTUALIDAD -->
+  <div class="tab-pane active" id="tab-puntualidad">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Distribución de puntualidad <span id="tPuntCount"></span></div>
+        </div>
+        <div class="section-body">
+          <div id="distribPunt"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Por tipo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaPuntMov"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: PERMANENCIA -->
+  <div class="tab-pane" id="tab-permanencia">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Distribución de permanencia (horas)</div>
+        </div>
+        <div class="section-body">
+          <div id="distribPerm"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Por tipo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="distribPermMov"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: TIEMPO MOVIMIENTO -->
+  <div class="tab-pane" id="tab-tiempoMov">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Distribución de tiempo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="distribTiempoMov"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Por tipo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaTiempoMov"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: POR CLIENTE -->
+  <div class="tab-pane" id="tab-porCliente">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Puntualidad y permanencia por cliente</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Cliente</th>
+            <th class="td-right">Movimientos</th>
+            <th class="td-right">A tiempo</th>
+            <th class="td-right">% Puntualidad</th>
+            <th class="td-right">Demora prom.</th>
+            <th class="td-right">Permanencia prom.</th>
+          </tr></thead>
+          <tbody id="tbodyCliente"><tr><td colspan="6" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: POR TRANSPORTE -->
+  <div class="tab-pane" id="tab-porTransporte">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Puntualidad y permanencia por transporte</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Transporte</th>
+            <th class="td-right">Movimientos</th>
+            <th class="td-right">A tiempo</th>
+            <th class="td-right">% Puntualidad</th>
+            <th class="td-right">Demora prom.</th>
+            <th class="td-right">Permanencia prom.</th>
+          </tr></thead>
+          <tbody id="tbodyTransporte"><tr><td colspan="6" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: DETALLE -->
+  <div class="tab-pane" id="tab-detalle">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Detalle por movimiento</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Fecha</th>
+            <th>Referencia</th>
+            <th>Cliente</th>
+            <th>Movimiento</th>
+            <th>Transporte</th>
+            <th class="td-center">H. Estipulada</th>
+            <th class="td-center">H. Arribo</th>
+            <th class="td-center">Diferencia</th>
+            <th class="td-center">H. Egreso</th>
+            <th class="td-center">Permanencia</th>
+            <th class="td-center">Estado</th>
+          </tr></thead>
+          <tbody id="tbodyDetalle"><tr><td colspan="11" class="empty">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, fmtFecha } from "./js/utils.js";
+
+initTema();
+
+function obtenerRolesSesion() {
+  let roles = [];
+  try {
+    roles = JSON.parse(sessionStorage.getItem("icelion_roles") || "[]");
+  } catch(e) {
+    roles = [];
+  }
+
+  if (!Array.isArray(roles)) roles = [];
+
+  if (!roles.length) {
+    const rolLegacy = sessionStorage.getItem("icelion_rol");
+    if (rolLegacy) roles = [rolLegacy];
+  }
+
+  return roles.map(r => String(r || "").trim().toLowerCase()).filter(Boolean);
+}
+
+function mostrarAccesoDenegado() {
+  const main = document.getElementById("mainApp");
+  if (main) {
+    main.innerHTML = `
+      <div class="access-denied">
+        <h1>Acceso no autorizado</h1>
+        <p>Este módulo está habilitado únicamente para el rol <b>admin</b>.</p>
+      </div>
+    `;
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+let docsData = []; // array de {id, data}
+
+initSesion(async u => {
+  document.getElementById("pageSub").textContent =
+    `${sessionStorage.getItem("icelion_nombre")||u.email}`;
+
+  const roles = obtenerRolesSesion();
+  if (!roles.includes("admin")) {
+    mostrarAccesoDenegado();
+    return;
+  }
+
+  inicializarFiltrosFecha();
+  await cargarDatos();
+  aplicarFiltros();
+});
+
+function inicializarFiltrosFecha() {
+  const h = hoy();
+  const hace30 = new Date(h);
+  hace30.setDate(hace30.getDate() - 30);
+  const fmt = d => d.toISOString().split("T")[0];
+  document.getElementById("fDesde").value = fmt(hace30);
+  document.getElementById("fHasta").value = h;
+}
+
+// ── CARGA DE DATOS ────────────────────────────────────────────
+const EXCLUIR      = new Set(["VINCULADO","CANCELADO","SIN IDENTIFICAR","CANCELA MOVIMIENTO"]);
+const MOVS_VALIDOS = new Set(["CARGA MI","CARGA EXPO","DESCARGA","ICO4/05"]);
+const DIAS         = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+async function cargarDatos() {
+  document.getElementById("infoBar").textContent = "Cargando…";
+  try {
+    const snap = await getDocs(query(
+      collection(db, COL),
+      where("guardia.hora_arribo", "!=", ""),
+      orderBy("guardia.hora_arribo"),
+      orderBy("planificacion.fecha_prevista")
+    ));
+    docsData = snap.docs
+      .map(d => ({ id: d.id, data: d.data() }))
+      .filter(d => !EXCLUIR.has(d.data.estado||""));
+    document.getElementById("infoBar").textContent = `${docsData.length} movimientos con arribo`;
+    poblarSelects();
+  } catch(e) {
+    // Fallback: trae todo y filtra en cliente (índice compuesto puede no existir)
+    try {
+      const snap2 = await getDocs(query(collection(db, COL), orderBy("planificacion.fecha_prevista", "desc")));
+      docsData = snap2.docs
+        .map(d => ({ id: d.id, data: d.data() }))
+        .filter(d => d.data.guardia?.hora_arribo && !EXCLUIR.has(d.data.estado||""));
+      document.getElementById("infoBar").textContent = `${docsData.length} movimientos con arribo`;
+      poblarSelects();
+    } catch(e2) {
+      toast("err","Error",e2.message);
+    }
+  }
+}
+
+function poblarSelects() {
+  const clientes   = [...new Set(docsData.map(d => d.data.planificacion?.cliente).filter(Boolean))].sort();
+  const movs       = [...new Set(docsData.map(d => d.data.planificacion?.movimiento).filter(Boolean))].sort();
+  const transportes= [...new Set(docsData.map(d => d.data.planificacion?.transporte).filter(Boolean))].sort();
+
+  poblarSelect("fCliente",    clientes);
+  poblarSelect("fMovimiento", movs);
+  poblarSelect("fTransporte", transportes);
+}
+
+function poblarSelect(id, values) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">Todos</option>` +
+    values.map(v => `<option value="${v}" ${v===cur?"selected":""}>${v}</option>`).join("");
+}
+
+// ── FILTROS Y CÁLCULO ─────────────────────────────────────────
+window.aplicarFiltros = function() {
+  const desde     = document.getElementById("fDesde").value;
+  const hasta     = document.getElementById("fHasta").value;
+  const cliente   = document.getElementById("fCliente").value;
+  const movimiento= document.getElementById("fMovimiento").value;
+  const transporte= document.getElementById("fTransporte").value;
+
+  let filtered = docsData.filter(d => {
+    const p = d.data.planificacion || {};
+    const fecha = p.fecha_prevista || "";
+    if(desde && fecha < desde) return false;
+    if(hasta && fecha > hasta)  return false;
+    if(cliente    && p.cliente    !== cliente)    return false;
+    if(movimiento && p.movimiento !== movimiento) return false;
+    if(transporte && p.transporte !== transporte) return false;
+    return true;
+  });
+
+  calcularKPIs(filtered);
+};
+
+window.resetFiltros = function() {
+  document.getElementById("fCliente").value    = "";
+  document.getElementById("fMovimiento").value = "";
+  document.getElementById("fTransporte").value = "";
+  inicializarFiltrosFecha();
+  aplicarFiltros();
+};
+
+// ── HELPERS DE TIEMPO ─────────────────────────────────────────
+// Convierte "HH:mm" en minutos
+function toMin(h) {
+  if(!h || typeof h !== "string") return null;
+  const [hh, mm] = h.split(":").map(Number);
+  if(isNaN(hh) || isNaN(mm)) return null;
+  return hh * 60 + mm;
+}
+
+// Diferencia en minutos con fecha completa (yyyy-MM-dd HH:mm)
+// Retorna positivo si b > a
+function difMinFecha(fechaA, horaA, fechaB, horaB) {
+  if(!horaA || !horaB) return null;
+  const fA = fechaA || "2000-01-01";
+  const fB = fechaB || "2000-01-01";
+  const dtA = new Date(`${fA}T${horaA}:00`);
+  const dtB = new Date(`${fB}T${horaB}:00`);
+  if(isNaN(dtA)||isNaN(dtB)) return null;
+  return Math.round((dtB - dtA) / 60000);
+}
+
+// Diferencia en minutos solo HH:mm (con manejo de cruce de medianoche ±12h)
+function difMin(estipulada, arribo) {
+  const e = toMin(estipulada), a = toMin(arribo);
+  if(e === null || a === null) return null;
+  let diff = a - e;
+  if(diff < -720) diff += 1440;
+  if(diff >  720) diff -= 1440;
+  return diff;
+}
+
+// Formatea minutos como "Xh Ym" o "Ym"
+function fmtMin(m) {
+  if(m === null || m === undefined || isNaN(m)) return "—";
+  const abs = Math.abs(Math.round(m));
+  const h = Math.floor(abs / 60), min = abs % 60;
+  const sign = m < 0 ? "-" : (m > 0 ? "+" : "");
+  return h > 0 ? `${sign}${h}h ${min}m` : `${sign}${min}m`;
+}
+
+function fmtMinAbs(m) {
+  if(m === null || m === undefined || isNaN(m)) return "—";
+  const abs = Math.abs(Math.round(m));
+  const h = Math.floor(abs / 60), min = abs % 60;
+  return h > 0 ? `${h}h ${min}m` : `${min}m`;
+}
+
+function badgePunt(diffMin) {
+  if(diffMin === null) return `<span class="badge" style="background:var(--panel3);color:var(--muted)">Sin dato</span>`;
+  if(diffMin <= 0)   return `<span class="badge badge-ok">A tiempo</span>`;
+  if(diffMin <= 30)  return `<span class="badge badge-warn">Leve</span>`;
+  return `<span class="badge badge-err">Tardío</span>`;
+}
+
+// ── SVG PIE CHART ────────────────────────────────────────────
+const PIE_COLORS = ["#3b82f6","#a78bfa","#34d399","#f59e0b","#f87171","#60a5fa","#c084fc","#6ee7b7","#fbbf24","#fca5a5"];
+
+function pieSVG(slices, size=180) {
+  const total = slices.reduce((s,x)=>s+x.value,0);
+  if(!total) return `<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2-4}" fill="var(--panel3)"/><text x="50%" y="52%" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="DM Sans,sans-serif">Sin datos</text></svg>`;
+  const cx=size/2, cy=size/2, r=size/2-6;
+  let angle=-Math.PI/2, paths="";
+  for(const s of slices){
+    if(!s.value) continue;
+    const sweep=2*Math.PI*(s.value/total);
+    const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep), y2=cy+r*Math.sin(angle+sweep);
+    const large=sweep>Math.PI?1:0;
+    paths+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${s.color}" stroke="var(--panel)" stroke-width="2"/>`;
+    angle+=sweep;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`;
+}
+
+function pieHTML(slices, total, tablaLateral=null) {
+  const legend = slices.filter(s=>s.value>0).map(s=>{
+    const pct = total ? Math.round(s.value/total*100) : 0;
+    return `<div class="pie-legend-item"><div class="pie-dot" style="background:${s.color}"></div><span class="pie-leg-label">${s.label}</span><span class="pie-leg-val">${s.value} (${pct}%)</span></div>`;
+  }).join("");
+  const tablaHtml = tablaLateral ? `<div style="flex:1;min-width:180px;">${tablaLateral}</div>` : "";
+  return `<div class="pie-wrap" style="justify-content:space-between;">${pieSVG(slices)}<div class="pie-legend">${legend}</div>${tablaHtml}</div>`;
+}
+
+// ── CÁLCULO PRINCIPAL ─────────────────────────────────────────
+function calcularKPIs(docs) {
+  // Enriquecer docs con métricas calculadas
+  const enriched = docs.map(d => {
+    const p  = d.data.planificacion || {};
+    const g  = d.data.guardia       || {};
+    const pl = d.data.playero       || {};
+    const pll= d.data.planillero    || {};
+
+    const fechaArr = g.fecha_arribo   || null;
+    const fechaPrev= p.fecha_prevista || null;
+
+    // Puntualidad: con fecha exacta si existe
+    // Sin fecha: usar hora_inicio_movimiento para determinar si arribo fue mismo día o día anterior
+    // Regla: si hora_arribo > hora_inicio + 2h → arribo fue el día ANTERIOR a fecha_prevista
+    //        si hora_arribo <= hora_inicio (o diferencia < 2h) → mismo día (puede ser madrugada)
+    const horaInicioMov = pll.hora_inicio || "";
+    const arriboFueAyer = (() => {
+      if(fechaArr) return false; // con fecha exacta no necesitamos heurística
+      if(!g.hora_arribo || !horaInicioMov) return false;
+      const mArr = toMin(g.hora_arribo), mIni = toMin(horaInicioMov);
+      if(mArr === null || mIni === null) return false;
+      return (mArr - mIni) > 120; // solo si arribo es MÁS TARDE que inicio por más de 2h
+    })();
+
+    const diff = (() => {
+      if(!p.hora_estipulada || !g.hora_arribo) return null;
+      if(fechaArr) return difMinFecha(fechaPrev, p.hora_estipulada, fechaArr, g.hora_arribo);
+      if(arriboFueAyer) {
+        // Arribo día anterior a fecha_prevista: diferencia real es negativa grande
+        const mEst = toMin(p.hora_estipulada), mArr = toMin(g.hora_arribo);
+        if(mEst === null || mArr === null) return null;
+        return mArr - mEst - 1440; // resta un día completo
+      }
+      // Mismo día — sin cap artificial, diferencia directa
+      const mEst = toMin(p.hora_estipulada), mArr = toMin(g.hora_arribo);
+      if(mEst === null || mArr === null) return null;
+      let d = mArr - mEst;
+      // Solo aplicar cruce de medianoche si NO tenemos hora_inicio como referencia
+      if(!horaInicioMov) {
+        if(d < -720) d += 1440;
+        if(d >  720) d -= 1440;
+      }
+      return d;
+    })();
+
+    // Permanencia con fecha si existe
+    const permAbs = (() => {
+      if(!g.hora_arribo || !pl.hora_egreso) return null;
+      if(fechaArr && pl.fecha_egreso)
+        return Math.abs(difMinFecha(fechaArr, g.hora_arribo, pl.fecha_egreso, pl.hora_egreso));
+      const mArr = toMin(g.hora_arribo), mEgr = toMin(pl.hora_egreso);
+      if(mArr === null || mEgr === null) return null;
+      if(arriboFueAyer) {
+        // Arribo día anterior: minutos desde arribo hasta medianoche + minutos desde medianoche hasta egreso
+        return (1440 - mArr) + mEgr;
+      }
+      // Mismo día: si egreso < arribo, cruzó medianoche → sumar 1440
+      const m = mEgr - mArr;
+      return m >= 0 ? m : m + 1440;
+    })();
+
+    // Planificación efectiva
+    const diffPlan = (p.hora_estipulada && pll.hora_inicio)
+      ? difMin(p.hora_estipulada, pll.hora_inicio) : null;
+
+    // Eficiencia despacho
+    const horaFinMov  = pll.hora_finalizado || "";
+    const despachoMin = (horaFinMov && pl.hora_egreso)
+      ? Math.abs(difMin(horaFinMov, pl.hora_egreso)||0) : null;
+
+    // Tiempo de movimiento: inicio → fin
+    const horaIniMov = pll.hora_inicio || "";
+    const tiempoMov = (horaIniMov && horaFinMov) ? (() => {
+      const mIni = toMin(horaIniMov), mFin = toMin(horaFinMov);
+      if(mIni === null || mFin === null) return null;
+      const m = mFin - mIni;
+      return m >= 0 ? m : m + 1440;
+    })() : null;
+
+    // Desvíos
+    const desvios = d.data.calidad_desvios;
+    const tieneDesvio = Array.isArray(desvios)
+      ? desvios.some(x => x.desvio)
+      : !!(desvios?.desvio);
+    const listaDesvios = Array.isArray(desvios)
+      ? desvios.filter(x=>x.desvio).map(x=>({ desvio:x.desvio, motivo:x.motivo_desvio||"" }))
+      : (desvios?.desvio ? [{ desvio:desvios.desvio, motivo:desvios.motivo_desvio||"" }] : []);
+
+    // Día de semana
+    const fechaObj = fechaPrev ? new Date(fechaPrev+"T12:00:00") : null;
+    const diaSemana = fechaObj ? fechaObj.getDay() : null;
+
+    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
+      cliente:    p.cliente    || "—",
+      movimiento: p.movimiento || "—",
+      transporte: p.transporte || "—",
+      fecha:      fechaPrev    || "",
+      referencia: p.referencia || d.id.slice(0,8),
+      horaEst:    p.hora_estipulada || "",
+      horaArr:    g.hora_arribo     || "",
+      horaEgr:    pl.hora_egreso    || "",
+      horaFinMov
+    };
+  });
+
+  // KPI Cards
+  const conDiff   = enriched.filter(d => d.diff !== null);
+  const aTiempo   = conDiff.filter(d => d.diff <= 0);
+  const tardios   = conDiff.filter(d => d.diff > 0);
+  const conPerm   = enriched.filter(d => d.permAbs !== null);
+  const puntPct   = conDiff.length ? Math.round(aTiempo.length / conDiff.length * 100) : null;
+  const demoraAvg = tardios.length ? tardios.reduce((s,d)=>s+d.diff,0)/tardios.length : null;
+  const permAvg   = conPerm.length ? conPerm.reduce((s,d)=>s+d.permAbs,0)/conPerm.length : null;
+  const permMaxD  = conPerm.length ? conPerm.reduce((a,b)=>b.permAbs>a.permAbs?b:a) : null;
+
+  document.getElementById("kpiTotal").textContent    = enriched.length;
+  document.getElementById("kpiPuntPct").textContent  = puntPct !== null ? `${puntPct}%` : "—";
+  document.getElementById("kpiDemoraAvg").textContent= fmtMinAbs(demoraAvg);
+  document.getElementById("kpiPermAvg").textContent  = fmtMinAbs(permAvg);
+  document.getElementById("kpiPermMax").textContent  = permMaxD ? fmtMinAbs(permMaxD.permAbs) : "—";
+  document.getElementById("kpiPermMaxSub").textContent = permMaxD ? `${permMaxD.cliente} · ${permMaxD.fecha}` : "—";
+
+  // Color del card de puntualidad
+  const card = document.getElementById("cardPunt");
+  card.className = "kpi-card " + (puntPct===null?"kpi-neutral":puntPct>=85?"kpi-ok":puntPct>=60?"kpi-warn":"kpi-err");
+
+  // Barra de puntualidad
+  if(conDiff.length) {
+    const leve = conDiff.filter(d=>d.diff>0&&d.diff<=30);
+    const tard = conDiff.filter(d=>d.diff>30);
+    const pOk   = aTiempo.length/conDiff.length*100;
+    const pLeve = leve.length/conDiff.length*100;
+    const pTard = tard.length/conDiff.length*100;
+    document.getElementById("barPunt").innerHTML =
+      `<div class="bar-ok"  style="width:${pOk}%"></div>` +
+      `<div class="bar-warn"style="width:${pLeve}%"></div>` +
+      `<div class="bar-err" style="width:${pTard}%"></div>`;
+    document.getElementById("kpiPuntSub").textContent =
+      `${aTiempo.length} a tiempo · ${leve.length} leve · ${tard.length} tardíos`;
+  }
+
+  document.getElementById("infoBar").textContent = `${enriched.length} movimientos · ${conDiff.length} con dato de puntualidad · ${conPerm.length} con permanencia`;
+
+  // Renderizar secciones
+  renderDistribPunt(conDiff);
+  renderDistribMov(enriched);
+  renderDistribPerm(conPerm);
+  renderDistribPermMov(enriched);
+  renderTiempoMov(enriched);
+  renderPorCliente(enriched);
+  renderPorTransporte(enriched);
+  renderDetalle(enriched);
+}
+
+
+function tablaMovPuntualidad(docs) {
+  const validos = docs.filter(d=>d.diff!==null && MOVS_VALIDOS.has(d.movimiento));
+  const byMov = agrupar(validos, d=>d.movimiento);
+  const sorted = Object.entries(byMov).sort((a,b)=>b[1].length-a[1].length);
+  return sorted.map(([mov,items],i)=>{
+    const atiem = items.filter(d=>d.diff<=0).length;
+    const pct   = items.length ? Math.round(atiem/items.length*100) : 0;
+    const color = PIE_COLORS[i%PIE_COLORS.length];
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+      <span style="font-weight:600;flex:1;">${mov}</span>
+      <span style="font-family:var(--mono);color:var(--muted);">${pct}% puntual</span>
+    </div>`;
+  }).join("") || "";
+}
+
+function tablaMovPermanencia(docs) {
+  const validos = docs.filter(d=>d.permAbs!==null && MOVS_VALIDOS.has(d.movimiento));
+  const byMov = agrupar(validos, d=>d.movimiento);
+  const sorted = Object.entries(byMov).sort((a,b)=>b[1].length-a[1].length);
+  const total = validos.length;
+  return sorted.map(([mov,items],i)=>{
+    const prom  = fmtMinAbs(items.reduce((s,d)=>s+d.permAbs,0)/items.length);
+    const pct   = total ? Math.round(items.length/total*100) : 0;
+    const color = PIE_COLORS[i%PIE_COLORS.length];
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+      <span style="font-weight:600;flex:1;">${mov}</span>
+      <span style="font-family:var(--mono);color:var(--muted);">prom. ${prom} · ${pct}%</span>
+    </div>`;
+  }).join("") || "";
+}
+
+// ── DISTRIBUCIÓN PUNTUALIDAD ──────────────────────────────────
+function renderDistribPunt(docs) {
+  const slices = [
+    { label:"Adelantado (> 15 min)",      color:"#34d399", value: docs.filter(d=>d.diff<=-15).length },
+    { label:"A tiempo (0-15 min ant.)",   color:"#22c55e", value: docs.filter(d=>d.diff>-15&&d.diff<=0).length },
+    { label:"Leve tardanza (1-30 min)",   color:"var(--warn)", value: docs.filter(d=>d.diff>0&&d.diff<=30).length },
+    { label:"Tardanza moderada (31-60m)", color:"#f97316", value: docs.filter(d=>d.diff>30&&d.diff<=60).length },
+    { label:"Tardanza grave (> 60 min)",  color:"var(--err)", value: docs.filter(d=>d.diff>60).length },
+  ];
+  document.getElementById("distribPunt").innerHTML = pieHTML(slices, docs.length);
+  document.getElementById("tPuntCount").textContent = `${docs.length} registros`;
+
+  // Tabla de puntualidad por tipo de movimiento
+  const buckets = [
+    { label:"Adelantado (> 15 min)",      fn: d=>d.diff<=-15 },
+    { label:"A tiempo (0-15 min ant.)",   fn: d=>d.diff>-15&&d.diff<=0 },
+    { label:"Leve tardanza (1-30 min)",   fn: d=>d.diff>0&&d.diff<=30 },
+    { label:"Tardanza moderada (31-60m)", fn: d=>d.diff>30&&d.diff<=60 },
+    { label:"Tardanza grave (> 60 min)",  fn: d=>d.diff>60 },
+  ];
+  const movsPunt = [...new Set(docs.filter(d=>MOVS_VALIDOS.has(d.movimiento)).map(d=>d.movimiento))].sort();
+  let tblPunt = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tipo</th>
+      ${buckets.map(b=>`<th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap;">${b.label.match(/\(([^)]+)\)/)?.[1]||b.label}</th>`).join("")}
+    </tr></thead><tbody>`;
+  for(const mov of movsPunt) {
+    const items = docs.filter(d=>d.movimiento===mov);
+    const n = items.length;
+    tblPunt += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
+      ${buckets.map(b=>{
+        const cnt = items.filter(b.fn).length;
+        const pct = n ? Math.round(cnt/n*100) : 0;
+        return `<td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${pct}%</td>`;
+      }).join("")}
+    </tr>`;
+  }
+  tblPunt += `</tbody></table>`;
+  document.getElementById("tablaPuntMov").innerHTML = movsPunt.length ? tblPunt : `<div class="empty">Sin datos</div>`;
+}
+
+// ── DISTRIBUCIÓN POR MOVIMIENTO ───────────────────────────────
+function renderDistribMov(docs) {
+  const el = document.getElementById("distribMov");
+  const elCount = document.getElementById("tMovCount");
+  if(!el) return;
+  const byMov = agrupar(docs, d=>d.movimiento);
+  const sorted = Object.entries(byMov).sort((a,b)=>b[1].length-a[1].length);
+  const slices = sorted.map(([mov,items],i)=>({ label:mov, value:items.length, color:PIE_COLORS[i%PIE_COLORS.length] }));
+  el.innerHTML = slices.length ? pieHTML(slices, docs.length) : `<div class="empty">Sin datos</div>`;
+  if(elCount) elCount.textContent = `${sorted.length} tipos`;
+}
+
+// ── DISTRIBUCIÓN PERMANENCIA ──────────────────────────────────
+function renderDistribPerm(docs) {
+  const validos = docs.filter(d=>MOVS_VALIDOS.has(d.movimiento) && d.permAbs!==null);
+  const slices = [
+    { label:"< 2 horas",    color:"#34d399", value: validos.filter(d=>d.permAbs<120).length },
+    { label:"2 a 4 horas",  color:"#22c55e", value: validos.filter(d=>d.permAbs>=120&&d.permAbs<240).length },
+    { label:"4 a 6 horas",  color:"#f59e0b", value: validos.filter(d=>d.permAbs>=240&&d.permAbs<360).length },
+    { label:"6 a 8 horas",  color:"#f97316", value: validos.filter(d=>d.permAbs>=360&&d.permAbs<480).length },
+    { label:"8 a 12 horas", color:"#ef4444", value: validos.filter(d=>d.permAbs>=480&&d.permAbs<720).length },
+    { label:"> 12 horas",   color:"#991b1b", value: validos.filter(d=>d.permAbs>=720).length },
+  ];
+  document.getElementById("distribPerm").innerHTML = validos.length
+    ? pieHTML(slices, validos.length)
+    : `<div class="empty">Sin datos de egreso</div>`;
+}
+
+function renderDistribPermMov(docs) {
+  const validos = docs.filter(d=>MOVS_VALIDOS.has(d.movimiento) && d.permAbs!==null);
+  const byMov = agrupar(validos, d=>d.movimiento);
+  const sorted = Object.entries(byMov).sort((a,b)=>b[1].length-a[1].length);
+  let tbl = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tipo</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Promedio</th>
+    </tr></thead><tbody>`;
+  for(const [mov, items] of sorted) {
+    const prom = fmtMinAbs(items.reduce((s,d)=>s+d.permAbs,0)/items.length);
+    tbl += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${prom}</td>
+    </tr>`;
+  }
+  tbl += `</tbody></table>`;
+  document.getElementById("distribPermMov").innerHTML = sorted.length ? tbl : `<div class="empty">Sin datos de egreso</div>`;
+}
+
+// ── TIEMPO DE MOVIMIENTO ──────────────────────────────────────
+function renderTiempoMov(docs) {
+  const validos = docs.filter(d => MOVS_VALIDOS.has(d.movimiento) && d.tiempoMov !== null);
+  const slices = [
+    { label:"< 1 hora",    color:"#34d399", value: validos.filter(d=>d.tiempoMov<60).length },
+    { label:"1 a 2 horas", color:"#22c55e", value: validos.filter(d=>d.tiempoMov>=60&&d.tiempoMov<120).length },
+    { label:"2 a 3 horas", color:"#f59e0b", value: validos.filter(d=>d.tiempoMov>=120&&d.tiempoMov<180).length },
+    { label:"3 a 4 horas", color:"#f97316", value: validos.filter(d=>d.tiempoMov>=180&&d.tiempoMov<240).length },
+    { label:"> 4 horas",   color:"#ef4444", value: validos.filter(d=>d.tiempoMov>=240).length },
+  ];
+  document.getElementById("distribTiempoMov").innerHTML = validos.length
+    ? pieHTML(slices, validos.length)
+    : `<div class="empty">Sin datos de inicio/fin de movimiento</div>`;
+
+  // Tabla por tipo de movimiento
+  const byMov = agrupar(validos, d=>d.movimiento);
+  const sorted = Object.entries(byMov).sort((a,b)=>b[1].length-a[1].length);
+  if(!sorted.length) {
+    document.getElementById("tablaTiempoMov").innerHTML = `<div class="empty">Sin datos</div>`;
+    return;
+  }
+  let tbl = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tipo</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">N</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Promedio</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Mín</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Máx</th>
+    </tr></thead><tbody>`;
+  for(const [mov, items] of sorted) {
+    const vals = items.map(d=>d.tiempoMov);
+    const prom = vals.reduce((s,v)=>s+v,0)/vals.length;
+    const min  = Math.min(...vals);
+    const max  = Math.max(...vals);
+    tbl += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--text);border-bottom:1px solid var(--border);">${fmtMinAbs(prom)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--ok);border-bottom:1px solid var(--border);">${fmtMinAbs(min)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--err);border-bottom:1px solid var(--border);">${fmtMinAbs(max)}</td>
+    </tr>`;
+  }
+  tbl += `</tbody></table>`;
+  document.getElementById("tablaTiempoMov").innerHTML = tbl;
+}
+
+// ── POR CLIENTE ───────────────────────────────────────────────
+function renderPorCliente(docs) {
+  renderPorGrupo(docs, d=>d.cliente, "tbodyCliente");
+}
+
+function renderPorTransporte(docs) {
+  renderPorGrupo(docs, d=>d.transporte, "tbodyTransporte");
+}
+
+function renderPorGrupo(docs, keyFn, tbodyId) {
+  const grupos = agrupar(docs, keyFn);
+  const sorted = Object.entries(grupos).sort((a,b)=>b[1].length-a[1].length);
+  const html = sorted.map(([key, items])=>{
+    const conD = items.filter(d=>d.diff!==null);
+    const atiem = conD.filter(d=>d.diff<=0).length;
+    const pct = conD.length ? Math.round(atiem/conD.length*100) : null;
+    const demoraAvg = conD.filter(d=>d.diff>0).length
+      ? conD.filter(d=>d.diff>0).reduce((s,d)=>s+d.diff,0)/conD.filter(d=>d.diff>0).length
+      : null;
+    const conPerm = items.filter(d=>d.permAbs!==null);
+    const permAvg = conPerm.length ? conPerm.reduce((s,d)=>s+d.permAbs,0)/conPerm.length : null;
+    const badge = pct===null?"":pct>=85?`<span class="badge badge-ok">${pct}%</span>`:
+      pct>=60?`<span class="badge badge-warn">${pct}%</span>`:`<span class="badge badge-err">${pct}%</span>`;
+    return `<tr>
+      <td><strong>${key}</strong></td>
+      <td class="td-right td-mono">${items.length}</td>
+      <td class="td-right td-mono">${conD.length?atiem:"—"}</td>
+      <td class="td-right">${badge||"—"}</td>
+      <td class="td-right td-mono">${fmtMinAbs(demoraAvg)}</td>
+      <td class="td-right td-mono">${fmtMinAbs(permAvg)}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById(tbodyId).innerHTML = html || `<tr><td colspan="6" class="empty">Sin datos</td></tr>`;
+}
+
+// ── DETALLE ───────────────────────────────────────────────────
+function renderDetalle(docs) {
+  const sorted = [...docs].sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.horaEst.localeCompare(b.horaEst));
+  const html = sorted.map(d=>{
+    const diffStyle = d.diff===null?"color:var(--muted)":d.diff<=0?"color:var(--ok)":d.diff<=30?"color:var(--warn)":"color:var(--err)";
+    return `<tr>
+      <td class="td-mono">${fmtFecha(d.fecha)||d.fecha}</td>
+      <td class="td-mono" style="font-size:10px;">${d.referencia}</td>
+      <td>${d.cliente}</td>
+      <td>${d.movimiento}</td>
+      <td>${d.transporte||"—"}</td>
+      <td class="td-center td-mono">${d.horaEst||"—"}</td>
+      <td class="td-center td-mono">${d.horaArr||"—"}${d.arriboFueAyer?` <span title="Arribo día anterior" style="color:var(--warn);font-size:10px;">-1d</span>`:""}</td>
+      <td class="td-center td-mono" style="${diffStyle}">${d.diff!==null?fmtMin(d.diff):"—"}</td>
+      <td class="td-center td-mono">${d.horaEgr||"—"}</td>
+      <td class="td-center td-mono">${fmtMinAbs(d.permAbs)}</td>
+      <td class="td-center">${badgePunt(d.diff)}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("tbodyDetalle").innerHTML = html || `<tr><td colspan="11" class="empty">Sin datos</td></tr>`;
+}
+
+// ── UTIL ──────────────────────────────────────────────────────
+function agrupar(arr, keyFn) {
+  return arr.reduce((acc, d)=>{
+    const k = keyFn(d)||"—";
+    if(!acc[k]) acc[k]=[];
+    acc[k].push(d);
+    return acc;
+  }, {});
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+window.switchTab = function(name, btn) {
+  document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  btn.classList.add("active");
+};
+
+// ── TEMA Y SESIÓN ─────────────────────────────────────────────
+window.toggleTema  = () => { document.body.classList.toggle("light"); localStorage.setItem("tema",document.body.classList.contains("light")?"light":"dark"); };
+window.cerrarSesion= () => { import("https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js").then(m=>m.signOut(auth)); };
+</script>
+<script type="module" src="./js/nav.js?v=20260703-kpis-admin"></script>
+</body>
+</html>

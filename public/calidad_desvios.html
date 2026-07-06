@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Calidad — Desvíos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --panel3:#f1f5f9;
+      --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    }
+    body.light .navbar        { box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    body.light tbody tr:hover { background:#f0f4ff; }
+    body.light .form-input    { color:var(--text); }
+    body.light .form-input option { background:#fff; color:#0f172a; }
+    body.light .toast.ok  { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+    body.light .toast.err { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+    body.light .notas-current  { background:#f8fafc; }
+    body.light .supervisor-box { background:#f8fafc; border-color:rgba(0,0,0,.08); }
+    body.light tr.row-completo td { background:rgba(34,197,94,.04); }
+    body.light .suggest-list { background:#fff; }
+    body.light .suggest-item:hover { background:#f0f4ff; }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+    .hidden{display:none!important;}
+
+    /* NAVBAR */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-brand span{font-size:20px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .btn-theme:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s;}
+    .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+    /* MAIN */
+    .main{padding:12px 16px;}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+    .page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{background:var(--accent2);}
+    .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.2);}
+    .btn-ok:hover{background:rgba(34,197,94,.2);}
+    .btn-sm{padding:5px 10px;font-size:11px;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* FILTROS */
+    .filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;}
+    .filters-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;}
+    .daybar-nav{display:flex;align-items:center;gap:8px;}
+    .day-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .day-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .day-label{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);min-width:130px;text-align:center;}
+    .day-today-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:700;transition:all .2s;}
+    .day-today-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .filters-sep{width:1px;height:28px;background:var(--border);margin:0 2px;}
+    .estado-select{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;cursor:pointer;}
+    body.light .estado-select option{background:#fff;color:#0f172a;}
+    .search-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;min-width:260px;transition:border-color .2s;}
+    .search-input:focus{border-color:var(--accent);}
+    .search-input::placeholder{color:var(--muted);}
+    .read-info{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);white-space:nowrap;}
+
+    /* TABLA */
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:var(--panel2);padding:11px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:var(--panel2);}
+    tbody td{padding:10px 14px;white-space:nowrap;color:var(--text);}
+    .td-ref{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:600;}
+    .td-mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+
+    /* Fila con desvío cargado */
+    tr.row-completo td{background:rgba(34,197,94,.04);}
+    tr.row-completo:hover td{background:rgba(34,197,94,.08)!important;}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.3px;border:1px solid transparent;white-space:nowrap;}
+    .badge-planificado{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-agregado{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-sinidentif{background:rgba(239,68,68,.15);color:#ef4444;}
+    .badge-esp{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-arribado{background:rgba(251,191,36,.15);color:#fbbf24;}
+    .badge-enespera{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-dock{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-atracado{background:rgba(245,158,11,.15);color:#f64dfc;}
+    .badge-encurso{background:rgba(34,197,94,.15);color:#4ade80;}
+    .badge-iniciomov{background:rgba(134,239,172,.2);color:#4ade80;}
+    .badge-pausado{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-liberado{background:rgba(34,211,238,.15);color:#67e8f9;}
+    .badge-finalizado{background:rgba(34,197,94,.2);color:#22c55e;}
+    .badge-finmov{background:rgba(22,163,74,.2);color:#16a34a;}
+    .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-expo{background:rgba(234,179,8,.15);color:#fde047;}
+    /* Indicador desvío */
+    .desvio-items-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+    .desvio-item-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+    .desvio-item-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+    .desvio-item-num{font-size:10px;font-weight:700;color:var(--muted);font-family:var(--mono);min-width:20px;}
+    .btn-remove-desvio{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;margin-left:auto;transition:color .15s;padding:0;}
+    .btn-remove-desvio:hover{color:var(--err);}
+    .btn-add-desvio{background:var(--panel2);border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:12px;font-family:var(--font);font-weight:600;padding:8px;width:100%;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+    .btn-add-desvio:hover{border-color:var(--accent);color:var(--accent2);}
+    .desvio-ok{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#4ade80;}
+    .desvio-pendiente{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--muted);}
+
+    /* ÍCONO NOTAS */
+    .btn-notas{background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:6px;transition:all .2s;line-height:1;}
+    .btn-notas.tiene-notas{filter:none;}
+    .btn-notas.sin-notas{opacity:.3;filter:grayscale(1);}
+    .btn-notas:hover{opacity:1;filter:none;transform:scale(1.15);}
+
+    .table-info{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+
+    /* LOADING */
+    .loading-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* EMPTY */
+    .empty-state{text-align:center;padding:48px 20px;color:var(--muted);}
+    .empty-state .icon{font-size:36px;margin-bottom:12px;}
+    .empty-state p{font-size:13px;}
+
+    /* MODALES */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-header h2{font-size:17px;font-weight:700;}
+    .modal-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+    .modal-body{padding:20px 22px;overflow-y:auto;flex:1;}
+    .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;}
+    .btn-close-modal{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px;transition:color .2s;}
+    .btn-close-modal:hover{color:var(--text);}
+
+    /* FORM */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 14px;}
+    .form-group{display:flex;flex-direction:column;gap:5px;position:relative;}
+    .form-group.span-all{grid-column:1/-1;}
+    .form-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .form-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color .2s;width:100%;}
+    .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+    .form-input::placeholder{color:var(--muted);}
+    .form-input option{background:#1a2840;}
+    textarea.form-input{resize:vertical;min-height:72px;}
+
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+    .section-title:first-child{margin-top:0;}
+
+    /* Info box */
+    .info-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:4px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px 16px;}
+    .info-item{display:flex;flex-direction:column;gap:2px;}
+    .info-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .info-value{font-size:12px;font-weight:600;font-family:var(--mono);}
+
+    /* Caja supervisor (solo lectura) */
+    .supervisor-box{background:var(--panel3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:4px;}
+    .supervisor-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;}
+    .supervisor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;}
+    .sup-item{display:flex;flex-direction:column;gap:3px;}
+    .sup-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+    .sup-value{font-size:13px;font-weight:600;color:var(--text);}
+    .sup-empty{color:var(--muted);font-style:italic;font-size:12px;}
+
+    /* AUTOCOMPLETE DESVÍO */
+    .suggest-list{
+      position:absolute; top:calc(100% + 4px); left:0; right:0;
+      background:var(--panel3); border:1px solid var(--border); border-radius:10px;
+      max-height:200px; overflow-y:auto; z-index:300;
+      box-shadow:0 12px 28px rgba(0,0,0,.4); display:none;
+    }
+    .suggest-list.show{display:block;}
+    .suggest-item{padding:9px 12px;font-size:12px;cursor:pointer;transition:background .15s;}
+    .suggest-item:hover{background:var(--panel2);color:var(--accent2);}
+    .suggest-new{padding:9px 12px;font-size:12px;cursor:pointer;color:var(--accent2);font-weight:700;border-top:1px solid var(--border);}
+    .suggest-new:hover{background:var(--panel2);}
+
+    /* Modal notas */
+    .notas-current{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;min-height:60px;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;}
+    .notas-current.empty{color:var(--muted);font-style:italic;}
+
+    
+    /* SISTEMA DE NOTAS */
+    .modal-notas-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;overflow:hidden;}
+    .notas-historial{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;margin-bottom:12px;padding:4px 2px;}
+    .nota-item{border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;border:1px solid var(--border);position:relative;}
+    .nota-item.resuelta{opacity:.4;}
+    .nota-item.propia{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2);}
+    .nota-item.ajena{background:var(--panel2);}
+    .nota-meta{font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .nota-rol{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;background:rgba(59,130,246,.15);color:var(--accent2);}
+    .nota-rol.guardia{background:rgba(245,158,11,.15);color:#fcd34d;}
+    .nota-rol.calidad{background:rgba(34,197,94,.15);color:#86efac;}
+    .nota-rol.supervisor{background:rgba(168,85,247,.15);color:#d8b4fe;}
+    .nota-rol.consolidador{background:rgba(236,72,153,.15);color:#f9a8d4;}
+    .nota-texto{color:var(--text);white-space:pre-wrap;word-break:break-word;}
+    .nota-resuelta-badge{font-size:9px;color:var(--ok);margin-left:auto;}
+    .btn-resolver{font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac;cursor:pointer;margin-top:6px;font-family:inherit;}
+    .btn-resolver:hover{background:rgba(34,197,94,.2);}
+    .notas-empty{color:var(--muted);font-style:italic;font-size:13px;text-align:center;padding:16px 0;}
+    .btn-notas.pendiente{color:#ef4444 !important;filter:drop-shadow(0 0 4px rgba(239,68,68,.5));}
+
+    /* TOAST */
+    .toast{position:fixed;top:18px;right:18px;z-index:9999;min-width:260px;max-width:400px;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;animation:slideIn .25s ease;}
+    .toast.ok{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .toast-title{font-weight:700;font-size:13px;}
+    .toast-msg{font-size:12px;margin-top:2px;opacity:.85;}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg"   id="toastMsg"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand"><img src="logo.png" style="width:28px;height:28px;border-radius:6px;"> IceLion <div class="nav-module">CALIDAD · DESVÍOS</div></div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema" title="Cambiar tema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Registro de Desvíos</div>
+      <div class="page-sub" id="pageSub">Movimientos de todos los estados</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btnActualizar">↻ Actualizar</button>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters">
+    <div class="filters-left">
+
+      <!-- Navegación por día -->
+      <div class="daybar-nav">
+        <button class="day-btn" id="btnDiaAnterior">◀</button>
+        <div class="day-label" id="diaLabel">—</div>
+        <button class="day-btn" id="btnDiaSiguiente">▶</button>
+        <button class="day-today-btn" id="btnHoy">Hoy</button>
+      </div>
+
+      <div class="filters-sep"></div>
+
+      <!-- Estado -->
+      <select class="estado-select" id="filtroEstado">
+        <option value="">Todos los estados</option>
+        <option value="PLANIFICADO">Planificado</option>
+        <option value="AGREGADO">Agregado</option>
+        <option value="SIN IDENTIFICAR">Sin Identificar</option>
+        <option value="ARRIBADO">Arribado</option>
+        <option value="EN ESPERA">En Espera</option>
+        <option value="DOCK ASIGNADO">Dock Asignado</option>
+        <option value="ATRACADO">Atracado</option>
+        <option value="INICIO MOVIMIENTO">Inicio Movimiento</option>
+        <option value="PAUSADO">Pausado</option>
+        <option value="FIN MOVIMIENTO">Fin Movimiento</option>
+        <option value="CANCELA MOVIMIENTO">Cancela Movimiento</option>
+        <option value="CANCELADO">Cancelado</option>
+        <option value="LIBERADO">Liberado</option>
+      </select>
+
+      <!-- Desvío -->
+      <select class="estado-select" id="filtroDesvio">
+        <option value="">Todos</option>
+        <option value="pendiente">Sin desvío cargado</option>
+        <option value="completo">Con desvío cargado</option>
+      </select>
+
+      <div class="filters-sep"></div>
+
+      <!-- Búsqueda libre -->
+      <input type="text" class="search-input" id="campoBuscar"
+        placeholder="Buscar por cualquier dato del día...">
+      <button class="btn btn-ghost btn-sm" id="btnBuscar">Buscar</button>
+      <button class="btn btn-ghost btn-sm" id="btnLimpiar">✕ Limpiar</button>
+    </div>
+    <div class="read-info" id="readInfo">—</div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Notas</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Pat. Tractor</th>
+          <th>Pat. Semi</th>
+          <th>Referencia</th>
+          <th>Destino</th>
+          <th>Dock</th>
+          <th>Estado</th>
+          <th>Desvío</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyDesvios">
+        <tr class="loading-row"><td colspan="11"><span class="spinner"></span>Cargando...</td></tr>
+      </tbody>
+    </table>
+    <div class="table-info" id="tableInfo">—</div>
+  </div>
+</div>
+
+<!-- MODAL DESVÍO -->
+<div class="modal-overlay hidden" id="modalDesvio">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-header">
+      <div>
+        <h2>Registrar Desvío</h2>
+        <div class="modal-sub" id="desvioSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarDesvio">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Info movimiento -->
+      <div class="section-title">Movimiento</div>
+      <div class="info-box" id="desvioInfoBox"></div>
+
+      <!-- Campos calidad -->
+      <div class="section-title">Desvíos registrados</div>
+      <div class="desvio-items-list" id="desvioItemsList"></div>
+      <button class="btn-add-desvio" onclick="agregarItemDesvio()">+ Agregar desvío</button>
+      <!-- Suggest global (reutilizado por cada input activo) -->
+      <div class="suggest-list" id="desvioSuggest" style="display:none;"></div>
+
+      <!-- Solución supervisor (solo lectura) -->
+      <div class="section-title">Resolución del Supervisor</div>
+      <div class="supervisor-box" id="supervisorBox">
+        <div class="supervisor-title">Completado por Supervisor</div>
+        <div class="supervisor-grid">
+          <div class="sup-item">
+            <span class="sup-label">Solución</span>
+            <span class="sup-value" id="supSolucion">—</span>
+          </div>
+          <div class="sup-item">
+            <span class="sup-label">Personal implicado</span>
+            <span class="sup-value" id="supPersonal">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancelarDesvio">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarDesvio">Guardar desvío</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL NOTAS -->
+<div class="modal-overlay hidden" id="modalNotas">
+  <div class="modal-notas-box">
+    <div class="modal-header">
+      <div>
+        <h2>📝 Notas del movimiento</h2>
+        <div class="modal-sub" id="notasSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarNotas">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;">
+      <div class="notas-historial" id="notasHistorial"></div>
+      <div class="form-group" style="margin-top:4px;">
+        <label class="form-label">Nueva nota</label>
+        <textarea class="form-input" id="notasTexto" rows="3"
+          placeholder="Escribí una nota... (visible para todos los roles)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancelarNotas">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarNotas">Agregar nota</button>
+    </div>
+  </div>
+</div>
+
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { arrayUnion, collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, fmtFecha, fmtTimestamp, badgeEstado, badgeMov, caps, uuid } from "./js/utils.js";
+import { guardarConAuditoria } from "./js/auditoria.js";
+const COL_LISTAS = "listas";
+
+initTema();
+
+initSesion();
+
+// ── HELPERS ─────────────────────────────────────────────────
+
+function normalizarDesvios(cd) {
+  if (!cd) return [];
+  if (Array.isArray(cd)) return cd;
+  // legacy: objeto único → array
+  if (cd.desvio) return [{ desvio: cd.desvio, motivo_desvio: cd.motivo_desvio||"", notas_desvio: cd.notas_desvio||"" }];
+  return [];
+}
+
+function desvioCompleto(cd) {
+  const arr = normalizarDesvios(cd);
+  return arr.length > 0 && arr.some(x => x.desvio && x.desvio.trim());
+}
+
+// ── LISTA DE DESVÍOS ──────────────────────────────────────────
+let desviosCache = [];
+
+async function cargarListaDesvios() {
+  try {
+    const snap = await getDoc(doc(db, COL_LISTAS, "desvios"));
+    if(snap.exists()) {
+      desviosCache = (snap.data().items || []).sort();
+    }
+  } catch(_) {
+    desviosCache = [];
+  }
+}
+
+async function agregarDesvioALista(texto) {
+  if(!texto || desviosCache.includes(texto)) return;
+  try {
+    await updateDoc(doc(db, COL_LISTAS, "desvios"), {
+      items: arrayUnion(texto)
+    });
+    desviosCache = [...desviosCache, texto].sort();
+  } catch(_) {
+    // Si no existe el documento, no falla silenciosamente
+  }
+}
+
+// ── AUTOCOMPLETE DESVÍO ───────────────────────────────────────
+// ── ITEMS DESVÍOS DINÁMICOS ──────────────────────────────────
+let _activeSuggestInput = null;
+let _skipFocusSuggest = false;
+
+window.agregarItemDesvio = function(item={}) {
+  const list = document.getElementById("desvioItemsList");
+  const idx  = list.children.length;
+  const card = document.createElement("div");
+  card.className = "desvio-item-card";
+  card.dataset.idx = idx;
+  card.innerHTML = `
+    <div class="desvio-item-header">
+      <span class="desvio-item-num">#${idx+1}</span>
+      <div style="position:relative;flex:1;display:flex;">
+        <input type="text" class="form-input caps desvio-input" data-idx="${idx}"
+          placeholder="Desvío *" autocomplete="off"
+          value="${(item.desvio||"").toUpperCase()}"
+          style="flex:1;padding-right:26px;">
+        <button type="button" class="desvio-toggle-list" title="Ver todas las opciones"
+          style="position:absolute;right:2px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--accent2);cursor:pointer;font-size:16px;line-height:1;padding:6px 8px;">▾</button>
+      </div>
+      <button class="btn-remove-desvio" onclick="this.closest('.desvio-item-card').remove();renumerarDesvios()" title="Quitar">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:8px;">
+      <label class="form-label">Motivo</label>
+      <textarea class="form-input desvio-motivo" rows="2" placeholder="Describí el motivo...">${item.motivo_desvio||""}</textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label">Notas adicionales</label>
+      <textarea class="form-input desvio-notas" rows="2" placeholder="Aclaraciones...">${item.notas_desvio||""}</textarea>
+    </div>`;
+  list.appendChild(card);
+
+  // Suggest para este input
+  const inp = card.querySelector(".desvio-input");
+  inp.addEventListener("input", () => {
+    _activeSuggestInput = inp;
+    mostrarSuggest(inp.value.trim().toUpperCase());
+  });
+  inp.addEventListener("blur", () => {
+    setTimeout(() => hideSuggest(), 200);
+  });
+  inp.addEventListener("focus", () => {
+    _activeSuggestInput = inp;
+    if(_skipFocusSuggest) { _skipFocusSuggest = false; return; }
+    mostrarSuggest(inp.value.trim().toUpperCase());
+  });
+
+  // Flecha: despliega TODAS las opciones sin filtrar
+  const toggleBtn = card.querySelector(".desvio-toggle-list");
+  toggleBtn.addEventListener("mousedown", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    _activeSuggestInput = inp;
+    _skipFocusSuggest = true;
+    inp.focus();
+    mostrarSuggestCompleto(inp.value.trim().toUpperCase());
+  });
+  toggleBtn.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+};
+
+window.renumerarDesvios = function() {
+  document.querySelectorAll("#desvioItemsList .desvio-item-card").forEach((card, i) => {
+    card.querySelector(".desvio-item-num").textContent = `#${i+1}`;
+  });
+};
+
+function leerDesviosDelModal() {
+  return [...document.querySelectorAll("#desvioItemsList .desvio-item-card")].map(card => ({
+    desvio:        card.querySelector(".desvio-input").value.trim(),
+    motivo_desvio: card.querySelector(".desvio-motivo").value.trim(),
+    notas_desvio:  card.querySelector(".desvio-notas").value.trim()
+  })).filter(x => x.desvio);
+}
+
+const inputDesvio  = { value: "" }; // placeholder — ya no se usa directamente
+const suggestList  = document.getElementById("desvioSuggest");
+function hideSuggest() { suggestList.style.display="none"; }
+
+function posicionarSuggest(inp) {
+  const wrapper = inp.parentElement; // el div position:relative que envuelve el input
+  if (wrapper && wrapper !== suggestList.parentElement) {
+    wrapper.appendChild(suggestList);
+  }
+}
+
+function mostrarSuggest(q) {
+  if(!q) { hideSuggest(); return; }
+  const matches = desviosCache.filter(d=>d.includes(q));
+  const esNuevo = q && !desviosCache.includes(q);
+  if(!matches.length && !esNuevo) { hideSuggest(); return; }
+
+  if(_activeSuggestInput) posicionarSuggest(_activeSuggestInput);
+
+  suggestList.innerHTML = [
+    ...matches.map(d=>`<div class="suggest-item" data-val="${d}">${d}</div>`),
+    esNuevo ? `<div class="suggest-new" data-new="${q}">+ Agregar "${q}" a la lista</div>` : ""
+  ].join("");
+
+  bindSuggestItems();
+  suggestList.style.display = "block";
+}
+
+function mostrarSuggestCompleto(q) {
+  const esNuevo = q && !desviosCache.includes(q);
+
+  if(_activeSuggestInput) posicionarSuggest(_activeSuggestInput);
+
+  suggestList.innerHTML = [
+    ...desviosCache.map(d=>`<div class="suggest-item" data-val="${d}">${d}</div>`),
+    esNuevo ? `<div class="suggest-new" data-new="${q}">+ Agregar "${q}" a la lista</div>` : ""
+  ].join("");
+
+  bindSuggestItems();
+  suggestList.style.display = "block";
+}
+
+function bindSuggestItems() {
+  suggestList.querySelectorAll(".suggest-item").forEach(el => {
+    el.addEventListener("mousedown", e => {
+      e.preventDefault();
+      if(_activeSuggestInput) _activeSuggestInput.value = el.dataset.val;
+      hideSuggest();
+    });
+  });
+  const newEl = suggestList.querySelector(".suggest-new");
+  if(newEl) {
+    newEl.addEventListener("mousedown", e => {
+      e.preventDefault();
+      if(_activeSuggestInput) _activeSuggestInput.value = newEl.dataset.new;
+      hideSuggest();
+    });
+  }
+}
+
+document.addEventListener("click", e => {
+  if(suggestList.contains(e.target)) return;
+  if(e.target.closest && e.target.closest(".desvio-toggle-list")) return;
+  hideSuggest();
+});
+
+// ── ESTADO ────────────────────────────────────────────────────
+let diaActual  = hoy();
+let docsCache  = [];
+let modoSearch = false;
+let textoBusqueda = "";
+
+function normalizarBusqueda(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .trim();
+}
+
+function valoresBusqueda(obj) {
+  const vals = [];
+  const walk = v => {
+    if (v === null || v === undefined) return;
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (typeof v === "object") { Object.values(v).forEach(walk); return; }
+    vals.push(String(v));
+  };
+  walk(obj);
+  return vals.join(" ");
+}
+
+function coincideBusqueda(d, texto) {
+  const q = normalizarBusqueda(texto);
+  if (!q) return true;
+  return normalizarBusqueda(`${d.id} ${valoresBusqueda(d.data())}`).includes(q);
+}
+
+// ── CARGAR DÍA ────────────────────────────────────────────────
+let _unsubDev=null;
+function cargarDia(fecha) {
+  diaActual=fecha; modoSearch=false; textoBusqueda="";
+  document.getElementById("campoBuscar").value="";
+  document.getElementById("diaLabel").textContent=fmtLabel(fecha);
+  renderLoading();
+  if(_unsubDev){_unsubDev();_unsubDev=null;}
+
+  _unsubDev = onSnapshot(query(collection(db,COL),
+    where("planificacion.fecha_prevista","==",fecha),
+    orderBy("planificacion.hora_estipulada","asc")
+  ), snap=>{
+    docsCache=snap.docs.filter(d=>d.data().estado!=="VINCULADO");
+    document.getElementById("readInfo").textContent=
+      `${snap.size} movimiento${snap.size!==1?"s":""} · ${diaActual}`;
+    aplicarFiltros();
+  }, err=>{console.error(err);renderError(err.message);});
+}
+
+// ── BÚSQUEDA LIBRE ────────────────────────────────────────────
+function buscarLibre(texto) {
+  textoBusqueda = texto.trim();
+  modoSearch = !!textoBusqueda;
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  const fEstado  = document.getElementById("filtroEstado").value;
+  const fDesvio  = document.getElementById("filtroDesvio").value;
+
+  let filtered = docsCache;
+  if(fEstado) filtered = filtered.filter(d=>d.data().estado===fEstado);
+  if(textoBusqueda) filtered = filtered.filter(d=>coincideBusqueda(d, textoBusqueda));
+  if(fDesvio==="completo")  filtered = filtered.filter(d=>desvioCompleto(d.data().calidad_desvios));
+  if(fDesvio==="pendiente") filtered = filtered.filter(d=>!desvioCompleto(d.data().calidad_desvios));
+
+  renderTabla(filtered);
+  const completos = filtered.filter(d=>desvioCompleto(d.data().calidad_desvios)).length;
+  document.getElementById("tableInfo").textContent=
+    `${filtered.length} movimiento${filtered.length!==1?"s":""} · ${completos} con desvío registrado`;
+
+  if(modoSearch) {
+    document.getElementById("pageSub").textContent=
+      `${filtered.length} resultado${filtered.length!==1?"s":""} para "${textoBusqueda}" · ${fmtLabel(diaActual)}`;
+  } else {
+    document.getElementById("pageSub").textContent=
+      `Todos los estados · ${fmtLabel(diaActual)}`;
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderLoading() {
+  document.getElementById("tbodyDesvios").innerHTML=
+    `<tr class="loading-row"><td colspan="11"><span class="spinner"></span>Cargando...</td></tr>`;
+}
+function renderError(msg) {
+  document.getElementById("tbodyDesvios").innerHTML=
+    `<tr class="loading-row"><td colspan="11" style="color:var(--err)">Error: ${msg}</td></tr>`;
+}
+
+function renderTabla(docs) {
+  const tbody=document.getElementById("tbodyDesvios");
+  if(!docs.length) {
+    tbody.innerHTML=`<tr class="loading-row"><td colspan="11">
+      <div class="empty-state"><div class="icon">📋</div>
+      <p>No hay movimientos con esos filtros</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML=docs.map(d=>{
+    const id=d.id, data=d.data();
+    const p  = data.planificacion||{};
+    const g  = data.guardia||{};
+    const cd = data.calidad_desvios||{};
+    const sv = data.supervisor_web||{};
+    const est = data.estado||"";
+    const completo  = desvioCompleto(cd);
+    const tieneObs  = !!(p.observaciones && p.observaciones.trim());
+    const notasCls  = tienePendientes(data) ? 'pendiente tiene-notas' : (getNotas(data).length ? 'tiene-notas' : 'sin-notas');
+    const rowCls    = completo ? "row-completo" : "";
+    const dock      = data.supervisor?.dock || "—";
+
+    const desviosArr = normalizarDesvios(cd);
+    const desvioIndicador = completo
+      ? desviosArr.length > 1
+        ? `<span class="desvio-ok">✓ ${desviosArr.length} desvíos</span>`
+        : `<span class="desvio-ok">✓ ${desviosArr[0]?.desvio||""}</span>`
+      : `<span class="desvio-pendiente">○ Pendiente</span>`;
+
+    return `<tr class="${rowCls}" onclick="abrirDesvio('${id}')" title="Click para registrar desvío">
+      <td>
+        <button class="btn-notas ${notasCls}"
+          onclick="event.stopPropagation();abrirNotas('${id}')"
+          title="${tieneObs?"Ver/editar observación":"Sin observaciones"}">📝</button>
+      </td>
+      <td>${fmtFecha(p.fecha_prevista)}</td>
+      <td><strong>${p.cliente||"—"}</strong></td>
+      <td class="td-mono">${g.patente_tractor||p.patente_tractor||"—"}</td>
+      <td class="td-mono">${g.patente_semi||p.patente_semi||"—"}</td>
+      <td class="td-ref">${p.referencia||"—"}</td>
+      <td>${p.destino||"—"}</td>
+      <td>${dock}</td>
+      <td>${badgeEstado(est)}</td>
+      <td>${desvioIndicador}</td>
+      <td>
+        <button class="btn btn-ok btn-sm"
+          onclick="event.stopPropagation();abrirDesvio('${id}')">
+          ${completo?"Editar":"Registrar"}
+        </button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+// ── MODAL DESVÍO ──────────────────────────────────────────────
+let desvioDocId = null;
+
+window.abrirDesvio = function(id) {
+  const d = docsCache.find(x=>x.id===id);
+  if(!d) return;
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+  const cd=data.calidad_desvios||{}, sv=data.supervisor_web||{};
+  const dock = data.supervisor?.dock||"—";
+  desvioDocId=id;
+
+  document.getElementById("desvioSub").textContent=
+    `${p.cliente||"—"} · ${p.referencia||"—"} · ${fmtFecha(p.fecha_prevista)}`;
+
+  document.getElementById("desvioInfoBox").innerHTML=`
+    <div class="info-item"><span class="info-label">Estado</span>
+      <span class="info-value">${data.estado||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Movimiento</span>
+      <span class="info-value">${p.movimiento||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Transporte</span>
+      <span class="info-value">${p.transporte||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Dock</span>
+      <span class="info-value">${dock}</span></div>
+    <div class="info-item"><span class="info-label">Pat. Tractor</span>
+      <span class="info-value">${g.patente_tractor||p.patente_tractor||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Pat. Semi</span>
+      <span class="info-value">${g.patente_semi||p.patente_semi||"—"}</span></div>
+  `;
+
+  // Poblar lista de desvíos
+  const desviosArr = normalizarDesvios(cd);
+  document.getElementById("desvioItemsList").innerHTML = "";
+  if (desviosArr.length) {
+    desviosArr.forEach(it => agregarItemDesvio(it));
+  } else {
+    agregarItemDesvio();
+  }
+
+  // Supervisor (solo lectura)
+  const solEl = document.getElementById("supSolucion");
+  const perEl = document.getElementById("supPersonal");
+  solEl.textContent = sv.solucion_desvio||"";
+  perEl.textContent = sv.personal_implicado||"";
+  if(!sv.solucion_desvio) { solEl.innerHTML=`<span class="sup-empty">Sin completar</span>`; }
+  if(!sv.personal_implicado) { perEl.innerHTML=`<span class="sup-empty">Sin completar</span>`; }
+
+  document.getElementById("modalDesvio").classList.remove("hidden");
+};
+
+function cerrarDesvio() {
+  document.getElementById("modalDesvio").classList.add("hidden");
+  desvioDocId=null;
+}
+document.getElementById("btnCerrarDesvio").addEventListener("click",  cerrarDesvio);
+document.getElementById("btnCancelarDesvio").addEventListener("click",cerrarDesvio);
+
+document.getElementById("btnGuardarDesvio").addEventListener("click", async () => {
+  if(!desvioDocId) return;
+  const desviosArr = leerDesviosDelModal();
+
+  const btn=document.getElementById("btnGuardarDesvio");
+  btn.disabled=true; btn.textContent="Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre") || usuarioActual?.email || "—";
+
+  try {
+    await guardarConAuditoria(doc(db,COL,desvioDocId), {
+      calidad_desvios: desviosArr
+    }, nombre, desviosArr.length ? "Editó desvíos" : "Quitó desvío");
+
+    // Agregar nuevos desvíos a la lista
+    for (const d of desviosArr) await agregarDesvioALista(d.desvio);
+
+    toast("ok","Guardado", desviosArr.length ? "Desvíos registrados correctamente" : "Desvío quitado correctamente");
+    cerrarDesvio();
+    cargarDia(diaActual);
+  } catch(err) {
+    toast("err","Error",err.message);
+  } finally {
+    btn.disabled=false; btn.textContent="Guardar desvío";
+  }
+});
+
+// ── SISTEMA DE NOTAS ─────────────────────────────────────────
+let notasDocId = null;
+
+function fmtNotaFecha(ts) {
+  if (!ts) return "";
+  try {
+    const d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds*1000) : new Date(ts));
+    return d.toLocaleString("es-AR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  } catch(e) { return ""; }
+}
+
+function getNotas(data) {
+  const notas = Array.isArray(data.planificacion?.notas) ? [...data.planificacion.notas] : [];
+  const obsLegacy = data.planificacion?.observaciones;
+  if (obsLegacy && obsLegacy.trim() && !notas.length) {
+    notas.push({ id:"legacy", texto:obsLegacy, autor:"Sistema", rol:"sistema", fecha:null, resuelta:false });
+  }
+  // Solo mostrar notas de planificacion + propias
+  const miNombre = sessionStorage.getItem("icelion_nombre")||"—";
+  return notas.filter(n => n.rol === "planificacion" || n.rol === "sistema" || n.autor === miNombre);
+}
+
+function tienePendientes(data) {
+  return getNotas(data).some(n => !n.resuelta);
+}
+
+function renderHistorial(notas, miNombre) {
+  const h = document.getElementById("notasHistorial");
+  if (!h) return;
+  if (!notas || !notas.length) {
+    h.innerHTML = '<div class="notas-empty">Sin notas aún.</div>';
+    return;
+  }
+  h.innerHTML = notas.map((n,i) => {
+    const esPropia = n.autor === miNombre;
+    const cls = (n.resuelta ? " resuelta" : "") + (esPropia ? " propia" : " ajena");
+    const rolCls = (n.rol||"").toLowerCase().replace(/[^a-z]/g,"");
+    const btnResolver = "";
+    const badge = n.resuelta ? '<span class="nota-resuelta-badge">✓ resuelta</span>' : "";
+    return `<div class="nota-item${cls}">
+      <div class="nota-meta">
+        <span class="nota-rol ${rolCls}">${n.rol||"sistema"}</span>
+        <strong style="font-size:11px;">${n.autor||"—"}</strong>
+        <span>${fmtNotaFecha(n.fecha)}</span>
+        ${badge}
+      </div>
+      <div class="nota-texto">${n.texto||""}</div>
+      ${btnResolver}
+    </div>`;
+  }).join("");
+}
+
+window.abrirNotas = function(id) {
+  notasDocId = id;
+  const d = docsCache.find(x=>x.id===id);
+  if (!d) return;
+  const data = d.data();
+  const p = data.planificacion||{};
+  const miNombre = sessionStorage.getItem("icelion_nombre")||"—";
+  document.getElementById("notasSub").textContent =
+    `${p.cliente||"Sin cliente"} · ${p.referencia||"Sin referencia"}`;
+  document.getElementById("notasTexto").value = "";
+  renderHistorial(getNotas(data), miNombre);
+  document.getElementById("modalNotas").classList.remove("hidden");
+};
+
+window.resolverNota = async function(idx) {
+  if (!notasDocId) return;
+  const d = docsCache.find(x=>x.id===notasDocId);
+  if (!d) return;
+  const notas = getNotas(d.data());
+  notas[idx] = {...notas[idx], resuelta:true};
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  try {
+    await updateDoc(doc(db,COL,notasDocId), {
+      "planificacion.notas": notas,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en":  serverTimestamp()
+    });
+    renderHistorial(notas, nombre);
+    toast("ok","Nota resuelta","");
+  } catch(err) { toast("err","Error",err.message); }
+};
+
+function cerrarNotas() {
+  document.getElementById("modalNotas").classList.add("hidden");
+  notasDocId = null;
+}
+document.getElementById("btnCerrarNotas").addEventListener("click", cerrarNotas);
+document.getElementById("btnCancelarNotas").addEventListener("click", cerrarNotas);
+
+document.getElementById("btnGuardarNotas").addEventListener("click", async () => {
+  if (!notasDocId) return;
+  const texto = document.getElementById("notasTexto").value.trim();
+  if (!texto) return;
+  const btn = document.getElementById("btnGuardarNotas");
+  btn.disabled=true; btn.textContent="Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  const d = docsCache.find(x=>x.id===notasDocId);
+  const notas = d ? getNotas(d.data()) : [];
+  notas.push({
+    id: crypto.randomUUID ? crypto.randomUUID() : "n"+Date.now(),
+    texto,
+    autor: nombre,
+    rol: "calidad",
+    fecha: new Date(),
+    resuelta: false
+  });
+  try {
+    await updateDoc(doc(db,COL,notasDocId), {
+      "planificacion.notas": notas,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en":  serverTimestamp()
+    });
+    toast("ok","Nota agregada","");
+    document.getElementById("notasTexto").value = "";
+    renderHistorial(notas, nombre);
+  } catch(err) {
+    toast("err","Error",err.message);
+  } finally {
+    btn.disabled=false; btn.textContent="Agregar nota";
+  }
+});
+
+
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────
+document.getElementById("btnDiaAnterior").addEventListener("click",  ()=>cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnDiaSiguiente").addEventListener("click", ()=>cargarDia(sumarDias(diaActual, 1)));
+document.getElementById("btnHoy").addEventListener("click",          ()=>cargarDia(hoy()));
+document.getElementById("btnActualizar").addEventListener("click",   ()=>cargarDia(diaActual));
+document.getElementById("filtroEstado").addEventListener("change",   ()=>aplicarFiltros());
+document.getElementById("filtroDesvio").addEventListener("change",   ()=>aplicarFiltros());
+document.getElementById("btnBuscar").addEventListener("click", ()=>buscarLibre(document.getElementById("campoBuscar").value));
+document.getElementById("campoBuscar").addEventListener("input", e=>buscarLibre(e.target.value));
+document.getElementById("campoBuscar").addEventListener("keydown", e=>{
+  if(e.key==="Enter") buscarLibre(document.getElementById("campoBuscar").value);
+});
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("campoBuscar").value=""; buscarLibre("");
+});
+
+// ── INICIO ────────────────────────────────────────────────────
+cargarListaDesvios();
+cargarDia(hoy());
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

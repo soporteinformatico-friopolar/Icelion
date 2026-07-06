@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <link rel="icon" type="image/png" href="logo.png"><title>IceLion | Calidad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --panel3:#f1f5f9;
+      --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    }
+    body.light .navbar        { box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    body.light tbody tr:hover { background:#f0f4ff; }
+    body.light .form-input    { color:var(--text); }
+    body.light .form-input option { background:#fff; color:#0f172a; }
+    body.light .toast.ok  { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+    body.light .toast.err { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+    body.light .notas-current { background:#f8fafc; }
+    body.light tr.row-completo td { background:rgba(34,197,94,.04); }
+    body.light tr.row-expo td { background:rgba(59,130,246,.04); }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+    .hidden{display:none!important;}
+
+    /* NAVBAR */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-brand span{font-size:20px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .btn-theme:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s;}
+    .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+    /* MAIN */
+    .main{padding:24px;max-width:1600px;margin:0 auto;}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+    .page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{background:var(--accent2);}
+    .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.2);}
+    .btn-ok:hover{background:rgba(34,197,94,.2);}
+    .btn-print{background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.2);}
+    .btn-print:hover{background:rgba(245,158,11,.2);}
+    .btn-sm{padding:5px 10px;font-size:11px;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* DAYBAR */
+    .daybar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;}
+    .daybar-nav{display:flex;align-items:center;gap:8px;}
+    .day-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .day-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .day-label{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);min-width:130px;text-align:center;}
+    .day-today-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:700;transition:all .2s;}
+    .day-today-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .daybar-sep{width:1px;height:28px;background:var(--border);margin:0 2px;}
+    .read-info{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);white-space:nowrap;}
+
+    /* FILTRO */
+    .estado-select{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;cursor:pointer;}
+    body.light .estado-select option { background:#fff; color:#0f172a; }
+    .search-wrap{display:flex;gap:8px;align-items:center;flex:1;min-width:260px;}
+    .search-input{flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;min-width:240px;transition:border-color .2s;}
+    .search-input:focus{border-color:var(--accent);}
+    .search-input::placeholder{color:var(--muted);}
+
+    /* TABLA */
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:var(--panel2);padding:11px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:var(--panel2);}
+    tbody tr.clickable{cursor:pointer;}
+    tbody td{padding:10px 14px;white-space:nowrap;color:var(--text);}
+    .td-ref{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:600;}
+    .td-mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+
+    /* Filas con datos completos */
+    tr.row-completo td { background:rgba(34,197,94,.04); }
+    tr.row-expo td { background:rgba(59,130,246,.04); }
+    tr.row-completo:hover td { background:rgba(34,197,94,.08)!important; }
+    tr.row-expo:hover td { background:rgba(59,130,246,.08)!important; }
+
+    /* BADGES */
+    .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.3px;border:1px solid transparent;white-space:nowrap;}
+    .badge-planificado{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-agregado{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-sinidentif{background:rgba(239,68,68,.15);color:#ef4444;}
+    .badge-esp{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-arribado{background:rgba(251,191,36,.15);color:#fbbf24;}
+    .badge-enespera{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-dock{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-atracado{background:rgba(245,158,11,.15);color:#f64dfc;}
+    .badge-encurso{background:rgba(34,197,94,.15);color:#4ade80;}
+    .badge-iniciomov{background:rgba(134,239,172,.2);color:#4ade80;}
+    .badge-pausado{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-liberado{background:rgba(34,211,238,.15);color:#67e8f9;}
+    .badge-finalizado{background:rgba(34,197,94,.2);color:#22c55e;}
+    .badge-finmov{background:rgba(22,163,74,.2);color:#16a34a;}
+    .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-expo{background:rgba(234,179,8,.15);color:#fde047;}
+    /* Indicador calidad completa */
+    .calidad-ok{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#4ade80;}
+    .calidad-pendiente{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--muted);}
+
+    /* ÍCONO NOTAS */
+        /* ── Alerta cambio (read-only) ── */
+    .dot-alerta{display:inline-block;width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+    .dot-alerta.none    {background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);}
+    .dot-alerta.amarillo{background:#facc15;box-shadow:0 0 5px rgba(250,204,21,.6);}
+    .dot-alerta.rojo    {background:#ef4444;box-shadow:0 0 5px rgba(239,68,68,.6);}
+    .btn-notas{background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:6px;transition:all .2s;line-height:1;}
+    .btn-notas.tiene-notas{filter:none;}
+    .btn-notas.sin-notas{opacity:.3;filter:grayscale(1);}
+    .btn-notas:hover{opacity:1;filter:none;transform:scale(1.15);}
+
+    .table-info{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+
+    /* LOADING */
+    .loading-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* EMPTY */
+    .empty-state{text-align:center;padding:48px 20px;color:var(--muted);}
+    .empty-state .icon{font-size:36px;margin-bottom:12px;}
+    .empty-state p{font-size:13px;}
+
+    /* MODALES */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-header h2{font-size:17px;font-weight:700;}
+    .modal-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+    .modal-body{padding:20px 22px;overflow-y:auto;flex:1;}
+    .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+    .modal-footer-right{display:flex;gap:10px;}
+    .btn-close-modal{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px;transition:color .2s;}
+    .btn-close-modal:hover{color:var(--text);}
+
+    /* FORM */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 14px;}
+    .form-group{display:flex;flex-direction:column;gap:5px;}
+    .form-group.span-all{grid-column:1/-1;}
+    .form-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .form-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color .2s;width:100%;}
+    .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+    .form-input::placeholder{color:var(--muted);}
+    .form-input option{background:#1a2840;}
+
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+    .section-title:first-child{margin-top:0;}
+
+    /* Info box */
+    .info-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:4px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;}
+    .info-item{display:flex;flex-direction:column;gap:2px;}
+    .info-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .info-value{font-size:12px;font-weight:600;font-family:var(--mono);}
+
+    /* Sección EXPO */
+    .expo-section{border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:14px;background:rgba(59,130,246,.04);margin-top:4px;}
+    .expo-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+
+    /* Modal notas */
+    .notas-current{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;min-height:60px;margin-bottom:12px;white-space:pre-wrap;word-break:break-word;}
+    .notas-current.empty{color:var(--muted);font-style:italic;}
+
+    /* TOAST */
+    .toast{position:fixed;top:18px;right:18px;z-index:9999;min-width:260px;max-width:400px;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;animation:slideIn .25s ease;}
+    .toast.ok{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .toast-title{font-weight:700;font-size:13px;}
+    .toast-msg{font-size:12px;margin-top:2px;opacity:.85;}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+    /* ── HOJA DE IMPRESIÓN ───────────────────────────────────── */
+    /* Oculto por defecto, visible solo al imprimir */
+    #printArea { display:none; }
+
+    @media print {
+      /* Ocultar todo excepto la hoja de impresión */
+      body > *:not(#printArea) { display:none !important; }
+      #printArea {
+        display:block !important;
+        font-family:'DM Sans', system-ui, sans-serif;
+        font-size:12px;
+        color:#000;
+        padding:20px;
+      }
+      .print-logo {
+        font-size:18px;
+        font-weight:700;
+        margin-bottom:4px;
+        display:flex;
+        align-items:center;
+        gap:10px;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .print-logo img {
+        width:36px;
+        height:36px;
+        border-radius:6px;
+        object-fit:cover;
+        display:block;
+      }
+      .print-logo-sub {
+        font-size:10px;
+        color:#555;
+        margin-bottom:16px;
+        letter-spacing:.5px;
+        text-transform:uppercase;
+      }
+      .print-title {
+        font-size:14px;
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:.5px;
+        margin-bottom:12px;
+        border-bottom:2px solid #000;
+        padding-bottom:6px;
+      }
+      .print-section {
+        font-size:10px;
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:.5px;
+        color:#555;
+        margin:14px 0 6px;
+        border-bottom:1px solid #ccc;
+        padding-bottom:3px;
+      }
+      .print-grid {
+        display:grid;
+        grid-template-columns:repeat(3, 1fr);
+        gap:6px 16px;
+        margin-bottom:4px;
+      }
+      .print-grid-2 {
+        display:grid;
+        grid-template-columns:repeat(2, 1fr);
+        gap:6px 16px;
+        margin-bottom:4px;
+      }
+      .print-field {
+        display:flex;
+        flex-direction:column;
+        gap:1px;
+      }
+      .print-field-label {
+        font-size:9px;
+        text-transform:uppercase;
+        letter-spacing:.4px;
+        color:#666;
+      }
+      .print-field-value {
+        font-size:12px;
+        font-weight:600;
+        border-bottom:1px solid #ddd;
+        min-height:18px;
+        padding-bottom:2px;
+      }
+      .print-field-value.empty {
+        color:#aaa;
+        font-weight:400;
+        font-style:italic;
+      }
+      .print-footer {
+        margin-top:24px;
+        font-size:10px;
+        color:#888;
+        text-align:right;
+      }
+    }
+
+    .badge-pen-si{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.4);letter-spacing:.3px;}
+    .badge-ec-si{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(245,158,11,.18);color:#fcd34d;border:1px solid rgba(245,158,11,.4);letter-spacing:.3px;}
+    .badge-no{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;color:var(--muted);border:1px solid var(--border);}
+  </style>
+</head>
+<body>
+
+<!-- ── ÁREA DE IMPRESIÓN (invisible en pantalla, visible al imprimir) ── -->
+<div id="printArea">
+  <div class="print-logo">
+    <img src="logo.png" style="width:36px;height:36px;border-radius:6px;object-fit:cover;display:block;">
+    IceLion
+  </div>
+  <div class="print-logo-sub">Frio Polar S.A. — Gestión Logística</div>
+  <div class="print-title">Ficha de Calidad</div>
+
+  <div class="print-section">Datos del movimiento</div>
+  <div class="print-grid" id="printMovGrid"></div>
+
+  <div class="print-section">Datos generales de calidad</div>
+  <div class="print-grid" id="printCalGrid"></div>
+
+  <div class="print-section">Datos de exportación</div>
+  <div class="print-grid" id="printExpoGrid"></div>
+
+  <div class="print-footer" id="printFooter"></div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg"   id="toastMsg"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand"><img src="logo.png" style="width:28px;height:28px;border-radius:6px;"> IceLion <div class="nav-module">CALIDAD</div></div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema" title="Cambiar tema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Control de Calidad</div>
+      <div class="page-sub" id="pageSub">Cargando...</div>
+    </div>
+    
+  </div>
+
+  <!-- DAYBAR -->
+  <div class="daybar">
+    <div class="daybar-nav">
+      <button class="day-btn" id="btnDiaAnterior">◀</button>
+      <div class="day-label" id="diaLabel">—</div>
+      <button class="day-btn" id="btnDiaSiguiente">▶</button>
+      <button class="day-today-btn" id="btnHoy">Hoy</button>
+    </div>
+    <div class="daybar-sep"></div>
+    <select class="estado-select" id="filtroEstado">
+      <option value="">Todos los estados</option>
+      <option value="PLANIFICADO">Planificado</option>
+      <option value="AGREGADO">Agregado</option>
+      <option value="ARRIBADO">Arribado</option>
+      <option value="EN ESPERA">En Espera</option>
+      <option value="DOCK ASIGNADO">Dock Asignado</option>
+      <option value="ATRACADO">Atracado</option>
+      <option value="INICIO MOVIMIENTO">Inicio Movimiento</option>
+      <option value="PAUSADO">Pausado</option>
+      <option value="FIN MOVIMIENTO">Fin Movimiento</option>
+      <option value="CANCELADO">Cancelado</option>
+      <option value="LIBERADO">Liberado</option>
+    </select>
+    <div class="daybar-sep"></div>
+    <select class="estado-select" id="filtroCalidad">
+      <option value="">Todos</option>
+      <option value="pendiente">Solo pendientes</option>
+      <option value="completo">Solo completos</option>
+    </select>
+    <div class="daybar-sep"></div>
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="campoBuscar"
+        placeholder="Buscar por cualquier dato...">
+      <button class="btn btn-ghost btn-sm" id="btnBuscar">Buscar</button>
+      <button class="btn btn-ghost btn-sm" id="btnLimpiar">✕ Limpiar</button>
+    </div>
+    <div class="read-info" id="readInfo">—</div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th title="Alerta">⚡</th>
+          <th>Notas</th>
+          <th>Hora</th>
+          <th>Cliente</th>
+          <th>Movimiento</th>
+          <th>Transporte</th>
+          <th>Destino</th>
+          <th>Referencia</th>
+          <th>Dock</th>
+          <th>Estado</th>
+          <th>Calidad</th>
+          <th>Receta</th>
+          <th>Nota Venta</th>
+          <th>Pen.</th>
+          <th>Extra $</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyCalidad">
+        <tr class="loading-row"><td colspan="15"><span class="spinner"></span>Cargando...</td></tr>
+      </tbody>
+    </table>
+    <div class="table-info" id="tableInfo">—</div>
+  </div>
+</div>
+
+<!-- MODAL CALIDAD (EXPO y DESCARGA) -->
+<div class="modal-overlay hidden" id="modalCalidad">
+  <div class="modal-box" style="max-width:700px;">
+    <div class="modal-header">
+      <div>
+        <h2>Datos de Calidad</h2>
+        <div class="modal-sub" id="calidadSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarCalidad">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Info del movimiento -->
+      <div class="section-title">Movimiento</div>
+      <div class="info-box" id="calidadInfoBox"></div>
+
+      <!-- Campos base -->
+      <div class="section-title">Datos generales</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Tara</label>
+          <input type="text" class="form-input" id="cTara" placeholder="Ej: 4360">
+        </div>
+        <div class="form-group">
+          <label class="form-label">M3</label>
+          <input type="text" class="form-input" id="cM3" placeholder="Ej: 67.5">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precinto SENASA</label>
+          <input type="text" class="form-input caps" id="cPrecintoSenasa" placeholder="Nº precinto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nº Termógrafo</label>
+          <input type="text" class="form-input caps" id="cNroTermografo" placeholder="Nº termógrafo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Habilitación SENASA</label>
+          <input type="text" class="form-input caps" id="cHabilitacionSenasa" placeholder="Nº habilitación">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Temperatura °C</label>
+          <input type="text" class="form-input" id="cTemperatura" placeholder="Ej: -18">
+        </div>
+      </div>
+
+      <!-- Campos EXPO -->
+      <div class="expo-section" style="margin-top:16px;">
+        <div class="expo-title">
+          <span class="badge badge-expo">EXPO</span>
+          Datos de exportación
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Código de carga</label>
+            <input type="text" class="form-input caps" id="cCodigoCarga">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Permiso embarque</label>
+            <input type="text" class="form-input caps" id="cPermisoEmbarque">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Exportador</label>
+            <input type="text" class="form-input caps" id="cExportador">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Despachante</label>
+            <input type="text" class="form-input caps" id="cDespachante">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ATA</label>
+            <input type="text" class="form-input caps" id="cAta">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Buque</label>
+            <input type="text" class="form-input caps" id="cBuque">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Puerto salida</label>
+            <input type="text" class="form-input caps" id="cPuertoSalida">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Canje</label>
+            <input type="text" class="form-input caps" id="cCanje">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payload</label>
+            <input type="text" class="form-input" id="cPayload">
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <!-- Izquierda: botón imprimir -->
+      <button class="btn btn-print" id="btnImprimirCalidad">🖨 Imprimir ficha</button>
+      <!-- Derecha: cancelar + guardar -->
+      <div class="modal-footer-right">
+        <button class="btn btn-ghost" id="btnCancelarCalidad">Cancelar</button>
+        <button class="btn btn-primary" id="btnGuardarCalidad">Guardar calidad</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTAS -->
+<div class="modal-overlay hidden" id="modalNotas">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <div>
+        <h2>📝 Observaciones</h2>
+        <div class="modal-sub" id="notasSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarNotas">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Texto actual</label>
+        <div class="notas-current" id="notasActual">—</div>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label class="form-label">Editar observaciones</label>
+        <textarea class="form-input" id="notasTexto" rows="4"
+          placeholder="Visible para todos los roles..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;">
+      <div class="modal-footer-right">
+        <button class="btn btn-ghost" id="btnCancelarNotas">Cancelar</button>
+        <button class="btn btn-primary" id="btnGuardarNotas">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { collection, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, fmtFecha, fmtTimestamp, badgeEstado, badgeMov, caps, uuid } from "./js/utils.js";
+import { guardarConAuditoria } from "./js/auditoria.js";
+
+initTema();
+
+initSesion();
+
+// ── HELPERS ─────────────────────────────────────────────────
+document.querySelectorAll(".caps").forEach(caps);
+
+function calidadCompleta(cal) {
+  if(!cal) return false;
+  return !!(cal.tara || cal.m3 || cal.precinto_senasa);
+}
+function esCalidad(movimiento) {
+  const m = (movimiento||"").toUpperCase();
+  return m.includes("EXPO") || m.includes("DESCARGA") || m.includes("CARGA MI");
+}
+
+function normalizarUrlDrive(url) {
+  let s = String(url || "").trim();
+  if(!s) return "";
+
+  // Evita romper links si alguien pegó rutas en mayúsculas.
+  // IMPORTANTE: no cambia el ID del archivo porque Google lo trata como sensible a mayúsculas/minúsculas.
+  if(!/^https?:\/\//i.test(s)) s = "https://" + s;
+
+  try {
+    const u = new URL(s);
+    const host = u.hostname.toLowerCase();
+    u.hostname = host;
+
+    const parts = u.pathname.split("/").filter(Boolean);
+
+    if(host === "docs.google.com") {
+      const tipo = (parts[0] || "").toLowerCase();
+      const dPart = (parts[1] || "").toLowerCase();
+      const id = parts[2] || "";
+      const accion = (parts[3] || "edit").toLowerCase();
+
+      if(["spreadsheets", "document", "presentation"].includes(tipo) && dPart === "d" && id) {
+        u.pathname = `/${tipo}/d/${id}/${accion}`;
+      }
+    }
+
+    if(host === "drive.google.com") {
+      const filePart = (parts[0] || "").toLowerCase();
+      const dPart = (parts[1] || "").toLowerCase();
+      const id = parts[2] || "";
+      const accion = (parts[3] || "view").toLowerCase();
+
+      if(filePart === "file" && dPart === "d" && id) {
+        u.pathname = `/file/d/${id}/${accion}`;
+      }
+    }
+
+    return u.toString();
+  } catch(e) {
+    return s;
+  }
+}
+
+function esUrlValida(url) {
+  try {
+    const u = new URL(normalizarUrlDrive(url));
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch(e) {
+    return false;
+  }
+}
+
+function escAttr(val) {
+  return String(val || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function obtenerUrlsDetalle(detalles, campo) {
+  const urls = [];
+  const vistos = new Set();
+
+  (Array.isArray(detalles) ? detalles : []).forEach(item => {
+    const val = item?.[campo];
+    const arr = Array.isArray(val) ? val : (val ? [val] : []);
+    arr.forEach(u => {
+      const url = normalizarUrlDrive(u);
+      if(!esUrlValida(url) || vistos.has(url)) return;
+      vistos.add(url);
+      urls.push(url);
+    });
+  });
+
+  return urls;
+}
+
+function renderLinkDocumento(urls, titulo, icono, labelGrupo) {
+  if(!urls.length) {
+    return `<span style="font-size:11px;color:var(--muted);opacity:.35;" title="Sin ${titulo}">${icono}</span>`;
+  }
+
+  if(urls.length === 1) {
+    return `<a href="${escAttr(urls[0])}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation();" title="Ver ${titulo}"
+      style="font-size:15px;text-decoration:none;cursor:pointer;">${icono}</a>`;
+  }
+
+  const links = urls.map((url, i) =>
+    `<a href="${escAttr(url)}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation();"
+      style="display:block;padding:6px 12px;font-size:12px;color:var(--accent2);text-decoration:none;border-bottom:1px solid var(--border);">${labelGrupo} ${i + 1}</a>`
+  ).join("");
+
+  return `<span style="position:relative;display:inline-block;">
+    <button onclick="event.stopPropagation();toggleRecetas(this)"
+      style="background:none;border:none;cursor:pointer;font-size:15px;padding:2px;"
+      title="${urls.length} ${titulo}">${icono}</button>
+    <div class="receta-dropdown hidden"
+      style="position:absolute;right:0;top:100%;background:var(--panel);border:1px solid var(--border);border-radius:8px;min-width:170px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.4);">${links}</div>
+  </span>`;
+}
+
+// ── ESTADO ────────────────────────────────────────────────────
+let diaActual = hoy();
+let docsCache = [];
+let modoSearch = false;
+let textoBusqueda = "";
+
+// ── BÚSQUEDA LOCAL ────────────────────────────────────────────
+function normalizarBusqueda(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .trim();
+}
+
+function valoresBuscables(valor) {
+  if (valor === null || valor === undefined) return "";
+  if (["string", "number", "boolean"].includes(typeof valor)) return String(valor);
+  if (Array.isArray(valor)) return valor.map(valoresBuscables).join(" ");
+  if (typeof valor === "object") {
+    if (typeof valor.toDate === "function") {
+      try { return valor.toDate().toISOString(); } catch(_) {}
+    }
+    return Object.values(valor).map(valoresBuscables).join(" ");
+  }
+  return "";
+}
+
+function docCoincideBusqueda(d, q) {
+  if (!q) return true;
+  return normalizarBusqueda(`${d.id} ${valoresBuscables(d.data())}`).includes(q);
+}
+
+function buscarLibre(texto) {
+  textoBusqueda = normalizarBusqueda(texto);
+  modoSearch = !!textoBusqueda;
+  aplicarFiltros();
+}
+
+// ── CARGAR DÍA ────────────────────────────────────────────────
+let _unsubDia = null;
+function cargarDia(fecha) {
+  diaActual=fecha;
+  modoSearch=false;
+  textoBusqueda="";
+  const buscador = document.getElementById("campoBuscar");
+  if(buscador) buscador.value="";
+  document.getElementById("diaLabel").textContent=fmtLabel(fecha);
+  renderLoading();
+  if(_unsubDia) { _unsubDia(); _unsubDia=null; }
+  const q = query(
+    collection(db,COL),
+    where("planificacion.fecha_prevista","==",fecha),
+    orderBy("planificacion.hora_estipulada","asc")
+  );
+  _unsubDia = onSnapshot(q, snap => {
+    docsCache = snap.docs;
+    document.getElementById("readInfo").textContent=
+      `${snap.size} doc${snap.size!==1?"s":""} leído${snap.size!==1?"s":""} · ${fecha}`;
+    aplicarFiltros();
+  }, err => { console.error(err); renderError(err.message); });
+}
+
+function aplicarFiltros() {
+  const fEstado   = document.getElementById("filtroEstado").value;
+  const fCalidad  = document.getElementById("filtroCalidad").value;
+
+  let filtered = docsCache.filter(d=>(d.data().estado||"") !== "VINCULADO");
+  if(modoSearch) filtered = filtered.filter(d=>docCoincideBusqueda(d, textoBusqueda));
+  if(fEstado) filtered = filtered.filter(d=>d.data().estado===fEstado);
+  // El filtro calidad aplica a EXPO, DESCARGA y CARGA MI
+  if(fCalidad==="completo")  filtered = filtered.filter(d=>esCalidad(d.data().planificacion?.movimiento) && calidadCompleta(d.data().calidad));
+  if(fCalidad==="pendiente") filtered = filtered.filter(d=>esCalidad(d.data().planificacion?.movimiento) && !calidadCompleta(d.data().calidad));
+
+  renderTabla(filtered);
+
+  const expos    = filtered.filter(d=>esCalidad(d.data().planificacion?.movimiento));
+  const completos= expos.filter(d=>calidadCompleta(d.data().calidad)).length;
+  document.getElementById("tableInfo").textContent=
+    `${filtered.length} movimiento${filtered.length!==1?"s":""} · ${expos.length} con calidad · ${completos} completos`;
+  document.getElementById("pageSub").textContent=
+    modoSearch
+      ? `${filtered.length} resultado${filtered.length!==1?"s":""} para "${document.getElementById("campoBuscar").value.trim()}" · ${fmtLabel(diaActual)}`
+      : `Movimientos del día · ${fmtLabel(diaActual)}`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderLoading() {
+  document.getElementById("tbodyCalidad").innerHTML=
+    `<tr class="loading-row"><td colspan="15"><span class="spinner"></span>Cargando...</td></tr>`;
+}
+function renderError(msg) {
+  document.getElementById("tbodyCalidad").innerHTML=
+    `<tr class="loading-row"><td colspan="15" style="color:var(--err)">Error: ${msg}</td></tr>`;
+}
+
+function renderTabla(docs) {
+  const tbody = document.getElementById("tbodyCalidad");
+  if(!docs.length) {
+    tbody.innerHTML=`<tr class="loading-row"><td colspan="15">
+      <div class="empty-state"><div class="icon">🔬</div>
+      <p>No hay movimientos para este día</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = docs.map(d => {
+    const id=d.id, data=d.data(), p=data.planificacion||{}, cal=data.calidad||{};
+    const pen=data.penalidades||{};
+    const est    = data.estado||"PLANIFICADO";
+    const expo   = esCalidad(p.movimiento);
+    const completo = expo && calidadCompleta(cal);
+    const tieneObs = !!(p.observaciones && p.observaciones.trim());
+    const notasCls = tieneObs ? "tiene-notas" : "sin-notas";
+
+    // Dock
+    const dock = data.supervisor?.dock;
+    const dockCell = dock
+      ? `<span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--warn);">D${dock}</span>`
+      : `<span style="font-size:11px;color:var(--muted);">—</span>`;
+
+    // Links cargados desde Consolidador
+    const grupos = (data.detalles || []);
+    const recetaCell = renderLinkDocumento(
+      obtenerUrlsDetalle(grupos, "receta_impresa_url"),
+      "receta impresa",
+      "📄",
+      "Receta grupo"
+    );
+    const notaCell = renderLinkDocumento(
+      obtenerUrlsDetalle(grupos, "nota_venta_url"),
+      "nota de venta",
+      "🧾",
+      "Nota de venta grupo"
+    );
+
+    let rowCls = "";
+    if(completo) rowCls = "row-expo";
+    else if(!expo && calidadCompleta(cal)) rowCls = "row-completo";
+
+    const rowClickable = expo ? `class="${rowCls} clickable" onclick="abrirCalidad('${id}')" title="Click para cargar datos de calidad"` : `class="${rowCls}"`;
+
+    const calidadIndicador = expo
+      ? (completo
+          ? `<span class="calidad-ok">✓ Completo</span>`
+          : `<span class="calidad-pendiente">○ Pendiente</span>`)
+      : `<span style="font-size:10px;color:var(--muted)">—</span>`;
+
+    const accionBtn = expo
+      ? `<button class="btn btn-ok btn-sm" onclick="event.stopPropagation();abrirCalidad('${id}')">
+           ${completo?"Editar":"Completar"}
+         </button>`
+      : `<span style="font-size:11px;color:var(--muted);">—</span>`;
+
+    return `<tr ${rowClickable}>
+      <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td>
+      <td>
+        <button class="btn-notas ${notasCls}" onclick="event.stopPropagation();abrirNotas('${id}')"
+          title="${tieneObs?"Ver/editar observación":"Sin observaciones"}">📝</button>
+      </td>
+      <td>${p.hora_estipulada||"—"}</td>
+      <td><strong>${p.cliente||"—"}</strong></td>
+      <td>${p.movimiento||"—"}${(p.movimiento||"").toUpperCase().includes("EXPO")?` <span class="badge badge-expo">EXPO</span>`:((p.movimiento||"").toUpperCase().includes("DESCARGA")?` <span class="badge badge-desc">DESC</span>`:"")}</td>
+      <td class="td-mono">${p.transporte||"—"}</td>
+      <td>${p.destino||"—"}</td>
+      <td class="td-ref">${p.referencia||"—"}</td>
+      <td>${dockCell}</td>
+      <td>${badgeEstado(est)}</td>
+      <td>${calidadIndicador}</td>
+      <td>${recetaCell}</td>
+      <td>${notaCell}</td>
+      <td style="text-align:center;">${(pen.lista||[]).length?'<span class="badge-pen-si">SÍ</span>':'<span class="badge-no">NO</span>'}</td>
+      <td style="text-align:center;">${(pen.extra_costos||[]).some(Boolean)?'<span class="badge-ec-si">SÍ</span>':'<span class="badge-no">NO</span>'}</td>
+      <td>${accionBtn}</td>
+    </tr>`;
+  }).join("");
+}
+
+window.toggleRecetas = function(btn) {
+  const dd = btn.nextElementSibling;
+  dd.classList.toggle("hidden");
+  document.addEventListener("click", ()=>dd.classList.add("hidden"), {once:true});
+};
+
+// ── MODAL CALIDAD ─────────────────────────────────────────────
+let calidadDocId = null;
+
+window.abrirCalidad = function(id) {
+  const d = docsCache.find(x=>x.id===id);
+  if(!d) return;
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{}, cal=data.calidad||{};
+  // Calidad: solo abre si es EXPO, DESCARGA o CARGA MI
+  if(!esCalidad(p.movimiento)) return;
+  calidadDocId = id;
+
+  document.getElementById("calidadSub").textContent=
+    `${p.cliente||"—"} · ${p.referencia||"—"} · ${fmtFecha(p.fecha_prevista)}`;
+
+  document.getElementById("calidadInfoBox").innerHTML=`
+    <div class="info-item"><span class="info-label">Movimiento</span>
+      <span class="info-value">${p.movimiento||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Transporte</span>
+      <span class="info-value">${p.transporte||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Patente tractor</span>
+      <span class="info-value">${g.patente_tractor||p.patente_tractor||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Patente semi</span>
+      <span class="info-value">${g.patente_semi||p.patente_semi||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Contenedor</span>
+      <span class="info-value">${p.contenedor||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Booking</span>
+      <span class="info-value">${p.booking||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Destino</span>
+      <span class="info-value">${p.destino||"—"}</span></div>
+    <div class="info-item"><span class="info-label">Referencia</span>
+      <span class="info-value">${p.referencia||"—"}</span></div>
+  `;
+
+  // Campos base
+  document.getElementById("cTara").value             = cal.tara||"";
+  document.getElementById("cM3").value               = cal.m3||"";
+  document.getElementById("cPrecintoSenasa").value   = cal.precinto_senasa||"";
+  document.getElementById("cNroTermografo").value    = cal.nro_termografo||"";
+  document.getElementById("cHabilitacionSenasa").value = cal.habilitacion_senasa||"";
+  document.getElementById("cTemperatura").value      = cal.temperatura||"";
+
+  // Campos EXPO
+  document.getElementById("cCodigoCarga").value    = cal.codigo_carga||"";
+  document.getElementById("cPermisoEmbarque").value= cal.permiso_embarque||"";
+  document.getElementById("cExportador").value     = cal.exportador||"";
+  document.getElementById("cDespachante").value    = cal.despachante||"";
+  document.getElementById("cAta").value            = cal.ata||"";
+  document.getElementById("cBuque").value          = cal.buque||"";
+  document.getElementById("cPuertoSalida").value   = cal.puerto_salida||"";
+  document.getElementById("cCanje").value          = cal.canje||"";
+  document.getElementById("cPayload").value        = cal.payload||"";
+
+  document.getElementById("modalCalidad").classList.remove("hidden");
+};
+
+function cerrarCalidad() {
+  document.getElementById("modalCalidad").classList.add("hidden");
+  calidadDocId=null;
+}
+document.getElementById("btnCerrarCalidad").addEventListener("click",  cerrarCalidad);
+document.getElementById("btnCancelarCalidad").addEventListener("click",cerrarCalidad);
+
+// ── GUARDAR CALIDAD ───────────────────────────────────────────
+document.getElementById("btnGuardarCalidad").addEventListener("click", async () => {
+  if(!calidadDocId) return;
+  const btn=document.getElementById("btnGuardarCalidad");
+  btn.disabled=true; btn.textContent="Guardando...";
+
+  const nombre = sessionStorage.getItem("icelion_nombre") || usuarioActual?.email || "—";
+
+  const calData = {
+    tara:               document.getElementById("cTara").value.trim(),
+    m3:                 document.getElementById("cM3").value.trim(),
+    precinto_senasa:    document.getElementById("cPrecintoSenasa").value.trim(),
+    nro_termografo:     document.getElementById("cNroTermografo").value.trim(),
+    habilitacion_senasa:document.getElementById("cHabilitacionSenasa").value.trim(),
+    temperatura:        document.getElementById("cTemperatura").value.trim(),
+    codigo_carga:       document.getElementById("cCodigoCarga").value.trim(),
+    permiso_embarque:   document.getElementById("cPermisoEmbarque").value.trim(),
+    exportador:         document.getElementById("cExportador").value.trim(),
+    despachante:        document.getElementById("cDespachante").value.trim(),
+    ata:                document.getElementById("cAta").value.trim(),
+    buque:              document.getElementById("cBuque").value.trim(),
+    puerto_salida:      document.getElementById("cPuertoSalida").value.trim(),
+    canje:              document.getElementById("cCanje").value.trim(),
+    payload:            document.getElementById("cPayload").value.trim()
+  };
+
+  try {
+    await guardarConAuditoria(doc(db,COL,calidadDocId), {
+      calidad: calData
+    }, nombre, "Editó datos de calidad");
+    toast("ok","Guardado","Datos de calidad guardados correctamente");
+    cerrarCalidad();
+    cargarDia(diaActual);
+  } catch(err) {
+    toast("err","Error",err.message);
+  } finally {
+    btn.disabled=false; btn.textContent="Guardar calidad";
+  }
+});
+
+// ── IMPRIMIR FICHA ────────────────────────────────────────────
+document.getElementById("btnImprimirCalidad").addEventListener("click", () => {
+  if(!calidadDocId) return;
+  const d = docsCache.find(x=>x.id===calidadDocId);
+  if(!d) return;
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+
+  // Leer valores actuales del modal (por si no guardó aún)
+  const cal = {
+    tara:               document.getElementById("cTara").value.trim(),
+    m3:                 document.getElementById("cM3").value.trim(),
+    precinto_senasa:    document.getElementById("cPrecintoSenasa").value.trim(),
+    nro_termografo:     document.getElementById("cNroTermografo").value.trim(),
+    habilitacion_senasa:document.getElementById("cHabilitacionSenasa").value.trim(),
+    temperatura:        document.getElementById("cTemperatura").value.trim(),
+    codigo_carga:       document.getElementById("cCodigoCarga").value.trim(),
+    permiso_embarque:   document.getElementById("cPermisoEmbarque").value.trim(),
+    exportador:         document.getElementById("cExportador").value.trim(),
+    despachante:        document.getElementById("cDespachante").value.trim(),
+    ata:                document.getElementById("cAta").value.trim(),
+    buque:              document.getElementById("cBuque").value.trim(),
+    puerto_salida:      document.getElementById("cPuertoSalida").value.trim(),
+    canje:              document.getElementById("cCanje").value.trim(),
+    payload:            document.getElementById("cPayload").value.trim()
+  };
+
+  function pf(val) {
+    if(!val || !String(val).trim()) return `<span class="print-field-value empty">—</span>`;
+    return `<span class="print-field-value">${val}</span>`;
+  }
+  function campo(label, val) {
+    return `<div class="print-field"><span class="print-field-label">${label}</span>${pf(val)}</div>`;
+  }
+
+  document.getElementById("printMovGrid").innerHTML = `
+    ${campo("Cliente",        p.cliente)}
+    ${campo("Fecha",          fmtFecha(p.fecha_prevista))}
+    ${campo("Movimiento",     p.movimiento)}
+    ${campo("Transporte",     p.transporte)}
+    ${campo("Pat. Tractor",   g.patente_tractor||p.patente_tractor)}
+    ${campo("Pat. Semi",      g.patente_semi||p.patente_semi)}
+    ${campo("Contenedor",     p.contenedor)}
+    ${campo("Booking",        p.booking)}
+    ${campo("Destino",        p.destino)}
+    ${campo("Referencia",     p.referencia)}
+    ${campo("Estado",         data.estado)}
+    ${campo("Dock",           data.supervisor?.dock)}
+  `;
+
+  document.getElementById("printCalGrid").innerHTML = `
+    ${campo("Tara",               cal.tara)}
+    ${campo("M3",                 cal.m3)}
+    ${campo("Precinto SENASA",    cal.precinto_senasa)}
+    ${campo("Nº Termógrafo",      cal.nro_termografo)}
+    ${campo("Habilitación SENASA",cal.habilitacion_senasa)}
+    ${campo("Temperatura °C",     cal.temperatura)}
+  `;
+
+  document.getElementById("printExpoGrid").innerHTML = `
+    ${campo("Código de carga",   cal.codigo_carga)}
+    ${campo("Permiso embarque",  cal.permiso_embarque)}
+    ${campo("Exportador",        cal.exportador)}
+    ${campo("Despachante",       cal.despachante)}
+    ${campo("ATA",               cal.ata)}
+    ${campo("Buque",             cal.buque)}
+    ${campo("Puerto salida",     cal.puerto_salida)}
+    ${campo("Canje",             cal.canje)}
+    ${campo("Payload",           cal.payload)}
+  `;
+
+  const now = new Date();
+  const ts  = `${now.toLocaleDateString("es-AR")} ${now.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}`;
+  document.getElementById("printFooter").textContent =
+    `Impreso el ${ts} · IceLion — Frio Polar S.A.`;
+
+  window.print();
+});
+
+// ── MODAL NOTAS ───────────────────────────────────────────────
+let notasDocId = null;
+
+window.abrirNotas = function(id) {
+  const d = docsCache.find(x=>x.id===id);
+  if(!d) return;
+  const data=d.data(), p=data.planificacion||{};
+  notasDocId=id;
+
+  document.getElementById("notasSub").textContent=
+    `${p.cliente||"—"} · ${p.referencia||"—"}`;
+
+  const obs = p.observaciones||"";
+  const actual = document.getElementById("notasActual");
+  if(obs.trim()){
+    actual.textContent=obs; actual.classList.remove("empty");
+  } else {
+    actual.textContent="Sin observaciones aún."; actual.classList.add("empty");
+  }
+  document.getElementById("notasTexto").value=obs;
+  document.getElementById("modalNotas").classList.remove("hidden");
+};
+
+function cerrarNotas() {
+  document.getElementById("modalNotas").classList.add("hidden"); notasDocId=null;
+}
+document.getElementById("btnCerrarNotas").addEventListener("click",  cerrarNotas);
+document.getElementById("btnCancelarNotas").addEventListener("click",cerrarNotas);
+
+document.getElementById("btnGuardarNotas").addEventListener("click", async () => {
+  if(!notasDocId) return;
+  const texto=document.getElementById("notasTexto").value.trim();
+  const btn=document.getElementById("btnGuardarNotas");
+  btn.disabled=true; btn.textContent="Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre") || usuarioActual?.email || "—";
+  try {
+    await updateDoc(doc(db,COL,notasDocId), {
+      "planificacion.observaciones": texto,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en":  serverTimestamp()
+    });
+    toast("ok","Observación guardada","");
+    cerrarNotas(); cargarDia(diaActual);
+  } catch(err) { toast("err","Error",err.message); }
+  finally { btn.disabled=false; btn.textContent="Guardar"; }
+});
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────
+document.getElementById("btnDiaAnterior").addEventListener("click",  ()=>cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnDiaSiguiente").addEventListener("click", ()=>cargarDia(sumarDias(diaActual, 1)));
+document.getElementById("btnHoy").addEventListener("click",          ()=>cargarDia(hoy()));
+
+document.getElementById("filtroEstado").addEventListener("change",   ()=>aplicarFiltros());
+document.getElementById("filtroCalidad").addEventListener("change",  ()=>aplicarFiltros());
+document.getElementById("btnBuscar").addEventListener("click",       ()=>buscarLibre(document.getElementById("campoBuscar").value));
+document.getElementById("campoBuscar").addEventListener("input",     e=>buscarLibre(e.target.value));
+document.getElementById("campoBuscar").addEventListener("keydown",   e=>{ if(e.key==="Enter") buscarLibre(e.target.value); });
+document.getElementById("btnLimpiar").addEventListener("click",      ()=>{
+  document.getElementById("campoBuscar").value="";
+  modoSearch=false;
+  textoBusqueda="";
+  aplicarFiltros();
+});
+
+// ── INICIO ────────────────────────────────────────────────────
+cargarDia(hoy());
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

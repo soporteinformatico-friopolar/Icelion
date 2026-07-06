@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+<title>IceLion | Frio Polar S.A.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       VARIABLES GLOBALES — compartidas con todos los módulos
+    ============================================================ */
+    :root {
+      --bg:        #080e1a;
+      --panel:     #0f1824;
+      --panel2:    #131f2e;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #3b82f6;
+      --accent2:   #60a5fa;
+      --text:      #e8edf5;
+      --muted:     #6b7f99;
+      --ok:        #22c55e;
+      --err:       #ef4444;
+      --warn:      #f59e0b;
+      --radius:    10px;
+      --font:      'DM Sans', sans-serif;
+      --mono:      'DM Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Fondo animado */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+    .bg-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    /* Card de login */
+    .login-wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 360px;
+      padding: 16px;
+    }
+
+    .login-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 32px 32px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.08);
+    }
+
+    .logo-area {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .logo-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      background: transparent;
+      border-radius: 14px;
+      font-size: 24px;
+      margin-bottom: 12px;
+      box-shadow: none;
+    }
+    .logo-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-family: var(--mono);
+      letter-spacing: 0.5px;
+    }
+
+    /* Campos */
+    .field {
+      margin-bottom: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+    .field input::placeholder { color: var(--muted); }
+
+    /* Sufijo dominio */
+    .input-wrap {
+      position: relative;
+    }
+    .input-suffix {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* Botón */
+    .btn-login {
+      width: 100%;
+      padding: 11px;
+      margin-top: 6px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+    }
+    .btn-login:hover { background: var(--accent2); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+    .btn-login:active { transform: scale(0.99); }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Error */
+    .login-error {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--radius);
+      color: #fca5a5;
+      font-size: 12px;
+      text-align: center;
+    }
+    .login-error.show { display: block; }
+
+    /* Loading spinner inline */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Fade in */
+    .login-card { animation: fadeUp 0.4s ease; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <div class="login-wrap">
+    <div class="login-card">
+
+      <div class="logo-area">
+        <div class="logo-icon"><img src="logo.png" style="width: 52px;height:52px;border-radius:8px;"></div>
+        <div class="logo-title">IceLion</div>
+        <div class="logo-sub">FRIO POLAR S.A. — GESTIÓN LOGÍSTICA</div>
+      </div>
+
+      <div class="field">
+        <label>Usuario</label>
+        <div class="input-wrap">
+          <input type="text" id="username" placeholder="tu.nombre" autocomplete="username" />
+          <span class="input-suffix">@icelion.com</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <button class="btn-login" id="btnLogin">Ingresar al sistema</button>
+
+      <div class="login-error" id="loginError">
+        Usuario o contraseña incorrectos.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Firebase SDK v10 modular via CDN -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc }
+      from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    // ── CONFIG ──────────────────────────────────────────────────
+    const firebaseConfig = {
+      apiKey:            "AIzaSyCFw6jdf8Q8iE9wLWDAnKMRX6QAi3Ba1hA",
+      authDomain:        "friopolar-gestion.firebaseapp.com",
+      projectId:         "friopolar-gestion",
+      storageBucket:     "friopolar-gestion.firebasestorage.app",
+      messagingSenderId: "433748741369",
+      appId:             "1:433748741369:web:5813ae592ef66b7ff4a628"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // ── MAPA DE ROLES → PÁGINAS ──────────────────────────────────
+    // Cuando agregues más usuarios, solo actualizás este mapa
+    const ROL_RUTA = {
+      admin:         "planificacion.html",
+      planificacion: "planificacion.html",
+      guardia:       "guardia.html",
+      calidad:       "calidad.html",
+      supervisor:    "supervisor_web.html",
+      consolidador:  "consolidador.html",
+      dataentry:     "dataentry.html",
+      moderador:     "listas.html",
+      planillero:    "planificacion.html",
+    };
+
+    // ── ELEMENTOS ────────────────────────────────────────────────
+    const btnLogin   = document.getElementById("btnLogin");
+    const errorBox   = document.getElementById("loginError");
+    const userInput  = document.getElementById("username");
+    const passInput  = document.getElementById("password");
+
+    // ── SI YA HAY SESIÓN ACTIVA → redirigir directo ──────────────
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await redirigirSegunRol(user);
+      }
+    });
+
+    // ── LOGIN ────────────────────────────────────────────────────
+    btnLogin.addEventListener("click", login);
+    passInput.addEventListener("keydown", (e) => { if (e.key === "Enter") login(); });
+
+    async function login() {
+      const userVal = userInput.value.trim();
+      const pass    = passInput.value;
+
+      if (!userVal || !pass) return;
+
+      // Construimos el email igual que antes
+      const email = userVal.includes("@") ? userVal : userVal + "@icelion.com";
+
+      btnLogin.innerHTML = `<span class="spinner"></span>Verificando...`;
+      btnLogin.disabled = true;
+      errorBox.classList.remove("show");
+
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, pass);
+        await redirigirSegunRol(cred.user);
+      } catch (err) {
+        errorBox.classList.add("show");
+        btnLogin.innerHTML = "Ingresar al sistema";
+        btnLogin.disabled  = false;
+        passInput.value    = "";
+      }
+    }
+
+    // ── LEER ROL DE FIRESTORE Y REDIRIGIR ────────────────────────
+    async function redirigirSegunRol(user) {
+      try {
+        // Leemos UNA sola vez el documento del usuario en /usuarios/{uid}
+        const snap = await getDoc(doc(db, "usuarios", user.uid));
+
+        // Soporte roles[] (nuevo) y rol string (legacy)
+        let roles = [];
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data.roles) && data.roles.length) {
+            roles = data.roles;
+          } else if (data.rol) {
+            roles = [data.rol];
+          }
+        }
+        if (!roles.length) roles = ["admin"]; // fallback solo si no hay doc
+
+        const rolPrimario = roles[0];
+        sessionStorage.setItem("icelion_roles",     JSON.stringify(roles));
+        sessionStorage.setItem("icelion_rol",       rolPrimario);
+        sessionStorage.setItem("icelion_uid",       user.uid);
+        sessionStorage.setItem("icelion_email",     user.email);
+        sessionStorage.setItem("icelion_nombre",    snap.exists() ? (snap.data().nombre || user.email) : user.email);
+        sessionStorage.setItem("icelion_moderador", snap.exists() ? (snap.data().moderador === true ? "1" : "0") : "0");
+        const ruta = ROL_RUTA[rolPrimario] || "planificacion.html";
+        window.location.href = ruta;
+
+      } catch (err) {
+        console.error("Error leyendo rol:", err);
+        // Si falla la lectura igual mandamos a planificacion (admin)
+        window.location.href = "planificacion.html";
+      }
+    }
+  </script>
+<script>
+(function() {
+  // ── MAPA DE MÓDULOS POR ROL ───────────────────────────────
+  const MODULOS = {
+    admin: [
+      { label:"Planificación", href:"planificacion.html" },
+      { label:"Guardia",       href:"guardia.html" },
+      { label:"Calidad",       href:"calidad.html" },
+      { label:"Desvíos",       href:"calidad_desvios.html" },
+      { label:"Supervisor",    href:"supervisor_web.html" },
+      { label:"Consolidador",  href:"consolidador.html" },
+      { label:"Listas",        href:"listas.html" }
+    ],
+    planificacion: [
+      { label:"Planificación", href:"planificacion.html" }
+    ],
+    guardia: [
+      { label:"Guardia", href:"guardia.html" }
+    ],
+    calidad: [
+      { label:"Calidad",  href:"calidad.html" },
+      { label:"Desvíos",  href:"calidad_desvios.html" }
+    ],
+    supervisor: [
+      { label:"Supervisor", href:"supervisor_web.html" }
+    ],
+    consolidador: [
+      { label:"Consolidador",  href:"consolidador.html" },
+      { label:"Planificación", href:"planificacion.html" }
+    ],
+    dataentry: [
+      { label:"Data Entry", href:"dataentry.html" }
+    ],
+    moderador: [
+      { label:"Listas", href:"listas.html" }
+    ]
+  };
+
+  const MODULO_LISTAS = { label:"Listas", href:"listas.html" };
+
+  // ── INYECTAR ESTILOS ──────────────────────────────────────
+  const style = document.createElement("style");
+  style.textContent = `
+    .nav-menu-wrap { position:relative; }
+    .nav-module-btn {
+      font-size:11px; font-family:var(--mono); color:var(--muted);
+      background:var(--panel2); border:1px solid var(--border);
+      padding:3px 10px; border-radius:999px; cursor:pointer;
+      transition:all .2s; display:flex; align-items:center; gap:5px;
+    }
+    .nav-module-btn:hover { border-color:var(--accent); color:var(--accent2); }
+    .nav-module-btn .chevron { font-size:9px; transition:transform .2s; }
+    .nav-module-btn.open .chevron { transform:rotate(180deg); }
+    .nav-dropdown {
+      position:absolute; top:calc(100% + 8px); left:0;
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:12px; box-shadow:0 16px 40px rgba(0,0,0,.4);
+      min-width:180px; overflow:hidden; z-index:200;
+      display:none;
+    }
+    .nav-dropdown.show { display:block; }
+    .nav-dropdown a {
+      display:block; padding:10px 16px; font-size:13px; font-weight:600;
+      color:var(--text); text-decoration:none; transition:background .15s;
+      border-bottom:1px solid var(--border);
+    }
+    .nav-dropdown a:last-child { border-bottom:none; }
+    .nav-dropdown a:hover { background:var(--panel2); color:var(--accent2); }
+    .nav-dropdown a.activo {
+      color:var(--accent2); background:rgba(59,130,246,.08);
+    }
+  `;
+  document.head.appendChild(style);
+
+  // ── CONSTRUIR MENÚ ────────────────────────────────────────
+  const rol       = sessionStorage.getItem("icelion_rol") || "";
+  const esMod     = sessionStorage.getItem("icelion_moderador") === "1";
+  const paginaAct = window.location.pathname.split("/").pop() || "index.html";
+
+  let modulos = [...(MODULOS[rol] || [])];
+
+  // Si tiene flag moderador y no es admin ni ya tiene listas → agregar listas
+  if(esMod && rol !== "admin" && rol !== "moderador") {
+    if(!modulos.find(m=>m.href==="listas.html")) {
+      modulos.push(MODULO_LISTAS);
+    }
+  }
+
+  // Si solo hay un módulo y es la página actual → no mostrar menú
+  if(modulos.length <= 1) return;
+
+  // ── REEMPLAZAR EL BADGE ESTÁTICO ─────────────────────────
+  // Busca el .nav-module existente y lo reemplaza por el botón
+  const badge = document.querySelector(".nav-module");
+  if(!badge) return;
+
+  const labelActual = badge.textContent.trim();
+
+  const wrap = document.createElement("div");
+  wrap.className = "nav-menu-wrap";
+
+  const btn = document.createElement("button");
+  btn.className = "nav-module-btn";
+  btn.innerHTML = `${labelActual} <span class="chevron">▼</span>`;
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "nav-dropdown";
+  dropdown.innerHTML = modulos.map(m => `
+    <a href="${m.href}" class="${m.href===paginaAct?"activo":""}">
+      ${m.href===paginaAct ? "● " : ""}${m.label}
+    </a>
+  `).join("");
+
+  wrap.appendChild(btn);
+  wrap.appendChild(dropdown);
+  badge.replaceWith(wrap);
+
+  // ── TOGGLE ────────────────────────────────────────────────
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    btn.classList.toggle("open");
+    dropdown.classList.toggle("show");
+  });
+  document.addEventListener("click", () => {
+    btn.classList.remove("open");
+    dropdown.classList.remove("show");
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#080e1a;--panel:#0f1824;--panel2:#131f2e;--panel3:#1a2840;--border:rgba(255,255,255,0.07);--accent:#3b82f6;--accent2:#60a5fa;--text:#e8edf5;--muted:#6b7f99;--ok:#22c55e;--err:#ef4444;--warn:#f59e0b;--radius:10px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
+    body.light{--bg:#f1f5f9;--panel:#ffffff;--panel2:#f8fafc;--panel3:#f1f5f9;--border:rgba(0,0,0,0.08);--text:#0f172a;--muted:#64748b;--ok:#16a34a;--err:#dc2626;--warn:#d97706;}
+    body.light .navbar{box-shadow:0 1px 4px rgba(0,0,0,.08);}
+    body.light .toast.ok{background:#dcfce7;border-color:#bbf7d0;color:#166534;}
+    body.light .toast.err{background:#fee2e2;border-color:#fecaca;color:#991b1b;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+    .hidden{display:none!important;}
+
+    /* NAVBAR */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+    .nav-left{display:flex;align-items:center;gap:12px;}
+    .nav-brand{font-weight:700;font-size:15px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);}
+    .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+    /* MAIN */
+    .main{padding:24px;max-width:1400px;margin:0 auto;}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+    .page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    /* TOOLBAR */
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+    .form-input{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);font-size:13px;font-family:var(--font);}
+    .form-input:focus{outline:none;border-color:var(--accent);}
+    select.form-input option{background:var(--panel2);}
+    input[type="date"].form-input{width:160px;}
+    .search-input{flex:1;min-width:200px;}
+
+    /* BTN */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s;}
+    .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .btn-primary:hover{opacity:.88;}
+    .btn-ghost{background:transparent;border-color:var(--border);color:var(--muted);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.35);color:#fca5a5;}
+    .btn-danger:hover{background:rgba(239,68,68,.22);}
+    .btn-sm{padding:5px 10px;font-size:12px;}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+    /* TABLE */
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:auto;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:var(--panel2);padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover td{background:var(--panel2);}
+    tbody td{padding:9px 12px;color:var(--text);white-space:nowrap;}
+    .loading-row td{text-align:center;padding:40px;color:var(--muted);}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .info-bar{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px;}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;}
+    .badge-planificado{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-agregado{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-sinidentif{background:rgba(239,68,68,.15);color:#ef4444;}
+    .badge-esp{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-arribado{background:rgba(251,191,36,.15);color:#fbbf24;}
+    .badge-enespera{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-dock{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-atracado{background:rgba(245,158,11,.15);color:#f64dfc;}
+    .badge-encurso{background:rgba(34,197,94,.15);color:#4ade80;}
+    .badge-iniciomov{background:rgba(134,239,172,.2);color:#4ade80;}
+    .badge-pausado{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-liberado{background:rgba(34,211,238,.15);color:#67e8f9;}
+    .badge-finalizado{background:rgba(34,197,94,.2);color:#22c55e;}
+    .badge-finmov{background:rgba(22,163,74,.2);color:#16a34a;}
+    .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-expo{background:rgba(234,179,8,.15);color:#fde047;}
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+    .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:900px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.6);}
+    .modal-header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-header h2{font-size:15px;font-weight:700;}
+    .modal-header-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px;}
+    .modal-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 20px;background:var(--panel);flex-shrink:0;}
+    .modal-tab{padding:10px 18px;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font);}
+    .modal-tab:hover{color:var(--text);}
+    .modal-tab.activa{color:var(--accent2);border-bottom-color:var(--accent2);}
+    .modal-body{flex:1;overflow-y:auto;padding:20px;}
+    .tab-panel{display:none;}
+    .tab-panel.activa{display:block;}
+    .audit-entry{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .audit-entry:last-child{border-bottom:none;}
+    .modal-footer{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;}
+    .btn-close{background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px 6px;line-height:1;}
+    .btn-close:hover{color:var(--text);}
+
+    /* FORM SECTIONS */
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+    .section-title:first-child{margin-top:0;}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+    .form-group{display:flex;flex-direction:column;gap:4px;}
+    .form-group.span2{grid-column:span 2;}
+    .form-group.span-all{grid-column:1/-1;}
+    .form-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .form-input{width:100%;}
+    textarea.form-input{resize:vertical;min-height:60px;}
+    .audit-box{background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:11px;font-family:var(--mono);color:var(--muted);line-height:1.7;}
+
+    /* CONFIRM */
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:flex;align-items:center;justify-content:center;}
+    .confirm-box{background:var(--panel);border:1px solid rgba(239,68,68,.4);border-radius:14px;padding:28px;max-width:380px;width:100%;text-align:center;}
+    .confirm-box h3{font-size:17px;font-weight:700;margin-bottom:8px;}
+    .confirm-box p{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+    .confirm-actions{display:flex;gap:10px;justify-content:center;}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 16px;z-index:400;display:none;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+    .toast.ok{border-color:rgba(34,197,94,.4);}
+    .toast.err{border-color:rgba(239,68,68,.4);}
+    .toast-title{font-size:13px;font-weight:700;margin-bottom:2px;}
+    .toast.ok .toast-title{color:var(--ok);}
+    .toast.err .toast-title{color:var(--err);}
+    .toast-msg{font-size:12px;color:var(--muted);}
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <div class="nav-brand"><img src="logo.png" style="height:28px;vertical-align:middle;margin-right:8px;">IceLion</div>
+    <span class="nav-module">Admin Panel</span>
+  </div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">⚙️ Panel de Administración</div>
+      <div class="page-sub">Edición completa de movimientos · Solo administradores</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-ghost btn-sm" id="btnFechaAnterior">◀</button>
+    <input type="date" class="form-input" id="filtroFecha">
+    <button class="btn btn-ghost btn-sm" id="btnFechaSiguiente">▶</button>
+    <input type="text" class="form-input search-input" id="filtroBuscar" placeholder="Buscar por referencia, cliente, patente...">
+    <button class="btn btn-ghost" id="btnLimpiar">✕ Limpiar</button>
+  </div>
+  <div class="info-bar" id="infoBar">—</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="cursor:pointer;" onclick="sortBy('fecha')">Fecha <span id="sh-fecha"></span></th>
+          <th style="cursor:pointer;" onclick="sortBy('hora')">Hora <span id="sh-hora"></span></th>
+          <th style="cursor:pointer;" onclick="sortBy('cliente')">Cliente <span id="sh-cliente"></span></th>
+          <th style="cursor:pointer;" onclick="sortBy('movimiento')">Movimiento <span id="sh-movimiento"></span></th>
+          <th style="cursor:pointer;" onclick="sortBy('transporte')">Transporte <span id="sh-transporte"></span></th>
+          <th>Pat. Tractor</th>
+          <th>Pat. Semi</th>
+          <th style="cursor:pointer;" onclick="sortBy('referencia')">Referencia <span id="sh-referencia"></span></th>
+          <th style="cursor:pointer;" onclick="sortBy('estado')">Estado <span id="sh-estado"></span></th>
+          <th style="width:90px;text-align:center;">ID</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL EDICIÓN COMPLETA -->
+<div class="modal-overlay hidden" id="modalEdit">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <h2>✏️ Editar Movimiento</h2>
+        <div class="modal-header-sub" id="modalSub">—</div>
+      </div>
+      <button class="btn-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab activa" id="tabDatos" onclick="switchTab('datos')">📋 Datos</button>
+      <button class="modal-tab" id="tabAudit" onclick="switchTab('audit')">🕓 Auditoría</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-panel activa" id="panelDatos">
+
+      <!-- ESTADO -->
+      <div class="section-title">Estado general</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select class="form-input" id="aEstado">
+            <option>PLANIFICADO</option><option>AGREGADO</option>
+            <option>SIN IDENTIFICAR</option><option>ARRIBADO</option>
+            <option>EN ESPERA</option><option>DOCK ASIGNADO</option>
+            <option>ATRACADO</option><option>INICIO MOVIMIENTO</option>
+            <option>PAUSADO</option><option>FIN MOVIMIENTO</option>
+            <option>LIBERADO</option><option>CANCELA MOVIMIENTO</option>
+            <option>CANCELADO</option><option>VINCULADO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Penalizado</label>
+          <select class="form-input" id="aPenalizado">
+            <option value="false">No</option><option value="true">Sí</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registro espontáneo</label>
+          <select class="form-input" id="aEspontaneo">
+            <option value="false">No</option><option value="true">Sí</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Origen</label>
+          <input type="text" class="form-input" id="aOrigen">
+        </div>
+      </div>
+
+      <!-- PLANIFICACIÓN -->
+      <div class="section-title">Planificación</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Fecha prevista</label>
+          <input type="date" class="form-input" id="pFecha">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora estipulada</label>
+          <input type="time" class="form-input" id="pHora">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Movimiento</label>
+          <select class="form-input" id="pMovimiento">
+            <option value="">—</option>
+            <option>DESCARGA</option><option>CARGA EXPO</option>
+            <option>CARGA MI</option><option>DECOMISO</option>
+            <option>IC04/05</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cliente</label>
+          <input type="text" class="form-input" id="pCliente">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transporte</label>
+          <input type="text" class="form-input" id="pTransporte">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Referencia</label>
+          <input type="text" class="form-input" id="pReferencia">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destino</label>
+          <input type="text" class="form-input" id="pDestino">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lugar de carga</label>
+          <select class="form-input" id="pLugar">
+            <option value="">—</option>
+            <option>CONVENIO PV1</option><option>CONVENIO PV2</option>
+            <option>FRENTE PV</option><option>PV ESPECIAL</option>
+            <option>TUNEL 1</option><option>TUNEL 2</option>
+            <option>TUNEL 3</option><option>TUNELES</option>
+            <option>CAMARA 1</option><option>CAMARA 2</option>
+            <option>CAMARA 3</option><option>CAMARA 4</option>
+            <option>CAMARA 5</option><option>CAMARA 6</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Booking</label>
+          <input type="text" class="form-input" id="pBooking">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contenedor</label>
+          <input type="text" class="form-input" id="pContenedor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Patente tractor</label>
+          <input type="text" class="form-input" id="pPatTractor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Patente semi</label>
+          <input type="text" class="form-input" id="pPatSemi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Termógrafo</label>
+          <select class="form-input" id="pTermografo">
+            <option value="">—</option><option>NO</option>
+            <option>PROPIO</option><option>CLIENTE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Soporte fotográfico</label>
+          <select class="form-input" id="pSoporteFoto">
+            <option value="">—</option><option>SI</option><option>NO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Necesita clasificado</label>
+          <select class="form-input" id="pClasificado">
+            <option value="">—</option><option>SI</option><option>NO</option>
+            <option>POR LOTE</option><option>POR FECHA PRODUCCION</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">COT</label>
+          <select class="form-input" id="pCot">
+            <option value="">—</option><option>SI</option><option>NO</option>
+          </select>
+        </div>
+        <div class="form-group span-all">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-input" id="pObservaciones"></textarea>
+        </div>
+        <div class="form-group span-all">
+          <label class="form-label">Foto carpeta (URL)</label>
+          <input type="text" class="form-input" id="pFotoCarpeta">
+        </div>
+      </div>
+
+      <!-- GUARDIA -->
+      <div class="section-title">Guardia</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Chofer</label>
+          <input type="text" class="form-input" id="gChofer">
+        </div>
+        <div class="form-group">
+          <label class="form-label">DNI</label>
+          <input type="text" class="form-input" id="gDni">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input type="text" class="form-input" id="gTelefono">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora arribo</label>
+          <input type="time" class="form-input" id="gHoraArribo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Patente tractor</label>
+          <input type="text" class="form-input" id="gPatTractor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Patente semi</label>
+          <input type="text" class="form-input" id="gPatSemi">
+        </div>
+        <div class="form-group span-all">
+          <label class="form-label">Observaciones guardia</label>
+          <textarea class="form-input" id="gObservaciones"></textarea>
+        </div>
+      </div>
+
+      <!-- SUPERVISOR -->
+      <div class="section-title">Supervisor</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Dock</label>
+          <input type="text" class="form-input" id="svDock">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora ingreso</label>
+          <input type="time" class="form-input" id="svHoraIngreso">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Abre contenedor</label>
+          <select class="form-input" id="svAbreContenedor">
+            <option value="">—</option><option>SI</option><option>NO</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SUPERVISOR WEB -->
+      <div class="section-title">Supervisor Web (desvíos)</div>
+      <div class="form-grid">
+        <div class="form-group span-all">
+          <label class="form-label">Solución desvío</label>
+          <textarea class="form-input" id="swSolucion"></textarea>
+        </div>
+        <div class="form-group span-all">
+          <label class="form-label">Personal implicado</label>
+          <input type="text" class="form-input" id="swPersonal">
+        </div>
+      </div>
+
+      <!-- PLAYERO -->
+      <div class="section-title">Playero</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Hora atraco</label>
+          <input type="time" class="form-input" id="plHoraAtraco">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora egreso</label>
+          <input type="time" class="form-input" id="plHoraEgreso">
+        </div>
+      </div>
+
+      <!-- PLANILLERO -->
+      <div class="section-title">Planillero</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nombre planillero</label>
+          <input type="text" class="form-input" id="llNombre">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cantidad operarios</label>
+          <input type="number" class="form-input" id="llOperarios">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora inicio</label>
+          <input type="time" class="form-input" id="llHoraInicio">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora finalizado</label>
+          <input type="time" class="form-input" id="llHoraFin">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pausa</label>
+          <input type="text" class="form-input" id="llPausa">
+        </div>
+        <div class="form-group span-all">
+          <label class="form-label">Motivo pausa</label>
+          <input type="text" class="form-input" id="llMotivoPausa">
+        </div>
+      </div>
+
+      <!-- CALIDAD -->
+      <div class="section-title">Calidad</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Tara</label>
+          <input type="text" class="form-input" id="cTara">
+        </div>
+        <div class="form-group">
+          <label class="form-label">M3</label>
+          <input type="text" class="form-input" id="cM3">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precinto SENASA</label>
+          <input type="text" class="form-input" id="cPrecinto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nro termógrafo</label>
+          <input type="text" class="form-input" id="cNroTermo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Habilitación SENASA</label>
+          <input type="text" class="form-input" id="cHabilitacion">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Temperatura</label>
+          <input type="text" class="form-input" id="cTemperatura">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Código carga</label>
+          <input type="text" class="form-input" id="cCodigoCarga">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Permiso embarque</label>
+          <input type="text" class="form-input" id="cPermisoEmbarque">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Exportador</label>
+          <input type="text" class="form-input" id="cExportador">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Despachante</label>
+          <input type="text" class="form-input" id="cDespachante">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ATA</label>
+          <input type="text" class="form-input" id="cAta">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Buque</label>
+          <input type="text" class="form-input" id="cBuque">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Puerto salida</label>
+          <input type="text" class="form-input" id="cPuertoSalida">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Canje</label>
+          <input type="text" class="form-input" id="cCanje">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payload</label>
+          <input type="text" class="form-input" id="cPayload">
+        </div>
+      </div>
+
+      <!-- CALIDAD DESVIOS -->
+      <div class="section-title">Calidad — Desvíos</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Desvío</label>
+          <input type="text" class="form-input" id="cdDesvio">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motivo desvío</label>
+          <input type="text" class="form-input" id="cdMotivo">
+        </div>
+        <div class="form-group span-all">
+          <label class="form-label">Notas desvío</label>
+          <textarea class="form-input" id="cdNotas"></textarea>
+        </div>
+      </div>
+      </div><!-- end panelDatos -->
+
+      <!-- PANEL AUDITORÍA -->
+      <div class="tab-panel" id="panelAudit">
+        <div style="margin-bottom:12px;padding:12px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;font-size:12px;" id="auditCreado">—</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;" id="auditHistCount">Historial</div>
+        <div id="auditBox" style="max-height:480px;overflow-y:auto;">—</div>
+      </div>
+
+    </div><!-- end modal-body -->
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btnEliminar">🗑 Eliminar documento</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btnGuardar">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM ELIMINAR -->
+<div class="confirm-overlay hidden" id="confirmElim">
+  <div class="confirm-box">
+    <h3>⚠️ Eliminar movimiento</h3>
+    <p>Esta acción es <strong>irreversible</strong>. El documento se borrará permanentemente de Firestore.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('confirmElim').classList.add('hidden')">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmElim">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg" id="toastMsg"></div>
+</div>
+
+<script type="module">
+import { db, COL } from "./js/firebase.js";
+import { initTema, initSesion, toast, fmtTimestamp } from "./js/utils.js";
+import {
+  arrayUnion, collection, doc, getDocs, getDoc, updateDoc, deleteDoc, setDoc,
+  query, where, orderBy, limit, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+initTema();
+
+// ── AUDIT HELPER ─────────────────────────────────────────────
+function buildAuditEntry(nombre) {
+  return { fecha: new Date(), usuario: nombre, rol: "admin" };
+}
+
+let docActual = null;
+
+initSesion(async u => {
+  const snap = await getDoc(doc(db,"usuarios",u.uid));
+  const data = snap.data()||{};
+  const roles = data.roles||(data.rol?[data.rol]:[]);
+  if(!roles.includes("admin")) { window.location.href="index.html"; return; }
+  const hoyStr = hoy();
+  document.getElementById("filtroFecha").value = hoyStr;
+  iniciarSnapshot(hoyStr);
+});
+
+// ── CONTROLES ─────────────────────────────────────────────────
+document.getElementById("filtroFecha").addEventListener("change", e => {
+  searchTerm = "";
+  document.getElementById("filtroBuscar").value = "";
+  iniciarSnapshot(e.target.value);
+});
+
+document.getElementById("btnFechaAnterior").addEventListener("click", () => {
+  const f = document.getElementById("filtroFecha").value || hoy();
+  const nueva = sumarDias(f, -1);
+  document.getElementById("filtroFecha").value = nueva;
+  searchTerm = ""; document.getElementById("filtroBuscar").value = "";
+  iniciarSnapshot(nueva);
+});
+
+document.getElementById("btnFechaSiguiente").addEventListener("click", () => {
+  const f = document.getElementById("filtroFecha").value || hoy();
+  const nueva = sumarDias(f, 1);
+  document.getElementById("filtroFecha").value = nueva;
+  searchTerm = ""; document.getElementById("filtroBuscar").value = "";
+  iniciarSnapshot(nueva);
+});
+
+let searchTimer = null;
+document.getElementById("filtroBuscar").addEventListener("input", e => {
+  clearTimeout(searchTimer);
+  const term = e.target.value.trim();
+  searchTimer = setTimeout(() => {
+    searchTerm = term;
+    if (term.length >= 3) {
+      buscarLibre(term);
+    } else if (term.length === 0) {
+      iniciarSnapshot(document.getElementById("filtroFecha").value || hoy());
+    } else {
+      aplicarFiltroYRender();
+    }
+  }, 300);
+});
+
+document.getElementById("btnLimpiar").addEventListener("click", () => {
+  searchTerm = "";
+  document.getElementById("filtroBuscar").value = "";
+  iniciarSnapshot(document.getElementById("filtroFecha").value || hoy());
+});
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function hoy(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function v(id){ return document.getElementById(id); }
+function val(id){ return v(id)?.value.trim()||""; }
+function setVal(id,value){ if(v(id)) v(id).value = value||""; }
+function toastA(type,title,msg){
+  const t=v("toast"); t.className=`toast ${type}`;
+  v("toastTitle").textContent=title; v("toastMsg").textContent=msg||"";
+  t.style.display="block"; setTimeout(()=>t.style.display="none",3800);
+}
+
+// ── CARGA CON SNAPSHOT ───────────────────────────────────────
+let unsub = null;
+let docsCache = [];
+let sortCol = "hora", sortDir = 1;
+let searchTerm = "";
+
+function sumarDias(fecha, n) {
+  const d = new Date(fecha + "T00:00:00"); d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function iniciarSnapshot(fecha) {
+  if (unsub) unsub();
+  renderLoading();
+  const q = query(
+    collection(db, COL),
+    where("planificacion.fecha_prevista", "==", fecha),
+    orderBy("planificacion.hora_estipulada", "asc"),
+    limit(300)
+  );
+  unsub = onSnapshot(q, snap => {
+    docsCache = snap.docs;
+    aplicarFiltroYRender();
+  }, err => renderError(err.message));
+}
+
+function aplicarFiltroYRender() {
+  const term = searchTerm.trim().toUpperCase();
+  let docs = docsCache;
+  if (term) {
+    docs = docs.filter(d => {
+      const data = d.data(), p = data.planificacion||{}, g = data.guardia||{};
+      return [
+        p.referencia, p.cliente, p.transporte, p.booking, p.contenedor,
+        p.patente_tractor, p.patente_semi,
+        g.patente_tractor, g.patente_semi, g.chofer, g.dni,
+        data.estado, d.id
+      ].some(v => (v||"").toUpperCase().includes(term));
+    });
+  }
+  docs = [...docs].sort((a, b) => {
+    const da = a.data(), db2 = b.data();
+    const pa = da.planificacion||{}, pb = db2.planificacion||{};
+    let va = "", vb = "";
+    if (sortCol === "fecha")      { va = pa.fecha_prevista||"";    vb = pb.fecha_prevista||""; }
+    if (sortCol === "hora")       { va = pa.hora_estipulada||"";   vb = pb.hora_estipulada||""; }
+    if (sortCol === "cliente")    { va = pa.cliente||"";           vb = pb.cliente||""; }
+    if (sortCol === "movimiento") { va = pa.movimiento||"";        vb = pb.movimiento||""; }
+    if (sortCol === "transporte") { va = pa.transporte||"";        vb = pb.transporte||""; }
+    if (sortCol === "referencia") { va = pa.referencia||"";        vb = pb.referencia||""; }
+    if (sortCol === "estado")     { va = da.estado||"";            vb = db2.estado||""; }
+    return va < vb ? -sortDir : va > vb ? sortDir : 0;
+  });
+  v("infoBar").textContent = `${docs.length} movimiento${docs.length!==1?"s":""} · ${v("filtroFecha").value}${term?` · filtro: "${searchTerm}"`:""}`;
+  renderTabla(docs);
+  actualizarSortHeaders();
+}
+
+window.sortBy = function(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  aplicarFiltroYRender();
+};
+
+function actualizarSortHeaders() {
+  ["fecha","hora","cliente","movimiento","transporte","referencia","estado"].forEach(col => {
+    const el = document.getElementById(`sh-${col}`);
+    if (!el) return;
+    el.textContent = sortCol === col ? (sortDir === 1 ? " ▲" : " ▼") : "";
+  });
+}
+
+async function buscarLibre(term) {
+  if (!term.trim()) { iniciarSnapshot(v("filtroFecha").value || hoy()); return; }
+  if (unsub) { unsub(); unsub = null; }
+  renderLoading();
+  try {
+    const t = term.trim().toUpperCase();
+    const [s1, s2, s3, s4] = await Promise.all([
+      getDocs(query(collection(db,COL), where("planificacion.referencia","==",t), limit(60))),
+      getDocs(query(collection(db,COL), where("planificacion.cliente","==",t), limit(60))),
+      getDocs(query(collection(db,COL), where("planificacion.patente_tractor","==",t), limit(30))),
+      getDocs(query(collection(db,COL), where("guardia.patente_tractor","==",t), limit(30))),
+    ]);
+    const seen = new Set(), todos = [];
+    [...s1.docs,...s2.docs,...s3.docs,...s4.docs].forEach(d => {
+      if (!seen.has(d.id)) { seen.add(d.id); todos.push(d); }
+    });
+    docsCache = todos;
+    aplicarFiltroYRender();
+  } catch(err) { renderError(err.message); }
+}
+
+// ── RENDER TABLA ──────────────────────────────────────────────────────────────
+const ESTADO_CLS = {
+  "PLANIFICADO":"badge-planificado","AGREGADO":"badge-agregado","SIN IDENTIFICAR":"badge-sinidentif",
+  "ARRIBADO":"badge-arribado","EN ESPERA":"badge-dock","DOCK ASIGNADO":"badge-dock",
+  "ATRACADO":"badge-atracado","INICIO MOVIMIENTO":"badge-iniciomov","PAUSADO":"badge-pausado",
+  "FIN MOVIMIENTO":"badge-finmov","LIBERADO":"badge-liberado",
+  "CANCELADO":"badge-cancelado","CANCELA MOVIMIENTO":"badge-cancelado","VINCULADO":"badge-cancelado"
+};
+function renderLoading(){
+  v("tbody").innerHTML=`<tr class="loading-row"><td colspan="11"><span class="spinner"></span>Cargando...</td></tr>`;
+}
+function renderError(msg){
+  v("tbody").innerHTML=`<tr class="loading-row"><td colspan="11" style="color:var(--err)">Error: ${msg}</td></tr>`;
+}
+function renderTabla(docs){
+  if(!docs.length){ v("tbody").innerHTML=`<tr class="loading-row"><td colspan="11">Sin resultados</td></tr>`; return; }
+  v("tbody").innerHTML = docs.map(d=>{
+    const id=d.id, data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+    const est=data.estado||"—";
+    const patTrac = g.patente_tractor||p.patente_tractor||"—";
+    const patSemi = g.patente_semi||p.patente_semi||"—";
+    return `<tr onclick="abrirModal('${id}')">
+      <td>${p.fecha_prevista||"—"}</td>
+      <td>${p.hora_estipulada||"—"}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">${p.cliente||"—"}</td>
+      <td>${p.movimiento||"—"}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;">${p.transporte||"—"}</td>
+      <td style="font-family:var(--mono);font-size:11px;">${patTrac}</td>
+      <td style="font-family:var(--mono);font-size:11px;">${patSemi}</td>
+      <td style="font-family:var(--mono);font-size:11px;">${p.referencia||"—"}</td>
+      <td><span class="badge ${ESTADO_CLS[est]||"badge-planificado"}">${est}</span></td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;">${id.slice(0,8)}…</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();abrirModal('${id}')">✏️ Editar</button></td>
+    </tr>`;
+  }).join("");
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+window.abrirModal = async function(id){
+  const snap = await getDoc(doc(db,COL,id));
+  if(!snap.exists()){ toastA("err","Error","Documento no encontrado"); return; }
+  docActual = {id, data: snap.data()};
+  const data=snap.data(), p=data.planificacion||{}, g=data.guardia||{},
+        sv=data.supervisor||{}, sw=data.supervisor_web||{},
+        pl=data.playero||{}, ll=data.planillero||{},
+        cal=data.calidad||{}, cd=data.calidad_desvios||{},
+        audit=data.auditoria||{};
+
+  v("modalSub").textContent = `${id} · ${p.cliente||"—"} · ${p.fecha_prevista||"—"}`;
+
+  // Estado general
+  setVal("aEstado", data.estado);
+  v("aPenalizado").value = data.penalizado ? "true" : "false";
+  v("aEspontaneo").value = data.registro_espontaneo ? "true" : "false";
+  setVal("aOrigen", data.origen);
+
+  // Planificación
+  setVal("pFecha",       p.fecha_prevista);
+  setVal("pHora",        p.hora_estipulada);
+  setVal("pMovimiento",  p.movimiento);
+  setVal("pCliente",     p.cliente);
+  setVal("pTransporte",  p.transporte);
+  setVal("pReferencia",  p.referencia);
+  setVal("pDestino",     p.destino);
+  setVal("pLugar",       p.lugar_carga);
+  setVal("pBooking",     p.booking);
+  setVal("pContenedor",  p.contenedor);
+  setVal("pPatTractor",  p.patente_tractor);
+  setVal("pPatSemi",     p.patente_semi);
+  setVal("pTermografo",  p.termografo);
+  setVal("pSoporteFoto", p.soporte_foto);
+  setVal("pClasificado", p.necesita_clasificado);
+  setVal("pCot",         p.cot);
+  setVal("pObservaciones",p.observaciones);
+  setVal("pFotoCarpeta", p.foto_carpeta);
+
+  // Guardia
+  setVal("gChofer",      g.chofer);
+  setVal("gDni",         g.dni);
+  setVal("gTelefono",    g.telefono);
+  setVal("gHoraArribo",  g.hora_arribo);
+  setVal("gPatTractor",  g.patente_tractor);
+  setVal("gPatSemi",     g.patente_semi);
+  setVal("gObservaciones",g.observaciones_guardia);
+
+  // Supervisor
+  setVal("svDock",        sv.dock);
+  setVal("svHoraIngreso", sv.hora_ingreso);
+  setVal("svAbreContenedor", sv.abre_contenedor);
+
+  // Supervisor web
+  setVal("swSolucion",   sw.solucion_desvio);
+  setVal("swPersonal",   sw.personal_implicado);
+
+  // Playero
+  setVal("plHoraAtraco", pl.hora_atraco);
+  setVal("plHoraEgreso", pl.hora_egreso);
+
+  // Planillero
+  setVal("llNombre",     ll.nombre);
+  setVal("llOperarios",  ll.cantidad_operarios);
+  setVal("llHoraInicio", ll.hora_inicio);
+  setVal("llHoraFin",    ll.hora_finalizado);
+  setVal("llPausa",      ll.pausa);
+  setVal("llMotivoPausa",ll.motivo_pausa);
+
+  // Calidad
+  setVal("cTara",           cal.tara);
+  setVal("cM3",             cal.m3);
+  setVal("cPrecinto",       cal.precinto_senasa);
+  setVal("cNroTermo",       cal.nro_termografo);
+  setVal("cHabilitacion",   cal.habilitacion_senasa);
+  setVal("cTemperatura",    cal.temperatura);
+  setVal("cCodigoCarga",    cal.codigo_carga);
+  setVal("cPermisoEmbarque",cal.permiso_embarque);
+  setVal("cExportador",     cal.exportador);
+  setVal("cDespachante",    cal.despachante);
+  setVal("cAta",            cal.ata);
+  setVal("cBuque",          cal.buque);
+  setVal("cPuertoSalida",   cal.puerto_salida);
+  setVal("cCanje",          cal.canje);
+  setVal("cPayload",        cal.payload);
+
+  // Calidad desvíos
+  setVal("cdDesvio", cd.desvio);
+  setVal("cdMotivo", cd.motivo_desvio);
+  setVal("cdNotas",  cd.notas_desvio);
+
+  // Auditoría
+  const historial = audit.historial || [];
+  v("auditCreado").innerHTML =
+    `Creado por <strong>${audit.creado_por||"—"}</strong> · ${fmtTimestamp(audit.creado_en)}<br>
+     Última modificación: <strong>${audit.modificado_por||"—"}</strong> · ${fmtTimestamp(audit.modificado_en)}`;
+  v("auditHistCount").textContent = `Historial de modificaciones (${historial.length})`;
+  v("auditBox").innerHTML = historial.length
+    ? [...historial].reverse().map(h => {
+        const fecha = h.fecha?.toDate ? h.fecha.toDate() : (h.fecha?.seconds ? new Date(h.fecha.seconds*1000) : new Date(h.fecha||0));
+        const fmtFec = fecha.toLocaleString("es-AR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+        return `<div class="audit-entry">
+          <span style="font-family:var(--mono);color:var(--muted);min-width:130px;">${fmtFec}</span>
+          <strong>${h.usuario||"—"}</strong>
+          <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(59,130,246,.15);color:var(--accent2);">${h.rol||"—"}</span>
+        </div>`;
+      }).join("")
+    : `<span style="color:var(--muted);font-size:12px;font-style:italic;">Sin historial registrado aún.</span>`;
+
+  // Reset to datos tab
+  switchTab("datos");
+  v("modalEdit").classList.remove("hidden");
+};
+
+window.switchTab = function(tab) {
+  ["datos","audit"].forEach(t => {
+    document.getElementById("panel"+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle("activa", t===tab);
+    document.getElementById("tab"+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle("activa", t===tab);
+  });
+};
+
+window.cerrarModal = function(){
+  v("modalEdit").classList.add("hidden");
+  docActual = null;
+};
+
+// ── GUARDAR ───────────────────────────────────────────────────────────────────
+v("btnGuardar").addEventListener("click", async()=>{
+  if(!docActual) return;
+  const btn = v("btnGuardar");
+  btn.disabled=true; btn.textContent="Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre")||"admin";
+
+  const payload = {
+    estado:              val("aEstado"),
+    penalizado:          v("aPenalizado").value==="true",
+    registro_espontaneo: v("aEspontaneo").value==="true",
+    origen:              val("aOrigen"),
+
+    planificacion: {
+      fecha_prevista:      val("pFecha"),
+      hora_estipulada:     val("pHora"),
+      movimiento:          val("pMovimiento"),
+      cliente:             val("pCliente"),
+      transporte:          val("pTransporte"),
+      referencia:          val("pReferencia"),
+      destino:             val("pDestino"),
+      lugar_carga:         val("pLugar"),
+      booking:             val("pBooking"),
+      contenedor:          val("pContenedor"),
+      patente_tractor:     val("pPatTractor"),
+      patente_semi:        val("pPatSemi"),
+      termografo:          val("pTermografo"),
+      soporte_foto:        val("pSoporteFoto"),
+      necesita_clasificado:val("pClasificado"),
+      cot:                 val("pCot"),
+      observaciones:       val("pObservaciones"),
+      foto_carpeta:        val("pFotoCarpeta"),
+    },
+    guardia: {
+      chofer:               val("gChofer"),
+      dni:                  val("gDni"),
+      telefono:             val("gTelefono"),
+      hora_arribo:          val("gHoraArribo"),
+      patente_tractor:      val("gPatTractor"),
+      patente_semi:         val("gPatSemi"),
+      observaciones_guardia:val("gObservaciones"),
+    },
+    supervisor: {
+      dock:            val("svDock"),
+      hora_ingreso:    val("svHoraIngreso"),
+      abre_contenedor: val("svAbreContenedor"),
+    },
+    supervisor_web: {
+      solucion_desvio:   val("swSolucion"),
+      personal_implicado:val("swPersonal"),
+    },
+    playero: {
+      hora_atraco: val("plHoraAtraco"),
+      hora_egreso: val("plHoraEgreso"),
+    },
+    planillero: {
+      nombre:              val("llNombre"),
+      cantidad_operarios:  val("llOperarios"),
+      hora_inicio:         val("llHoraInicio"),
+      hora_finalizado:     val("llHoraFin"),
+      pausa:               val("llPausa"),
+      motivo_pausa:        val("llMotivoPausa"),
+    },
+    calidad: {
+      tara:                val("cTara"),
+      m3:                  val("cM3"),
+      precinto_senasa:     val("cPrecinto"),
+      nro_termografo:      val("cNroTermo"),
+      habilitacion_senasa: val("cHabilitacion"),
+      temperatura:         val("cTemperatura"),
+      codigo_carga:        val("cCodigoCarga"),
+      permiso_embarque:    val("cPermisoEmbarque"),
+      exportador:          val("cExportador"),
+      despachante:         val("cDespachante"),
+      ata:                 val("cAta"),
+      buque:               val("cBuque"),
+      puerto_salida:       val("cPuertoSalida"),
+      canje:               val("cCanje"),
+      payload:             val("cPayload"),
+    },
+    calidad_desvios: {
+      desvio:       val("cdDesvio"),
+      motivo_desvio:val("cdMotivo"),
+      notas_desvio: val("cdNotas"),
+    },
+    // Preservar campos que no editamos
+    detalles:            docActual.data.detalles            || [],
+    penalidades:         docActual.data.penalidades         || {},
+    espontaneo_vinculado_a: docActual.data.espontaneo_vinculado_a || "",
+    auditoria: {
+      ...docActual.data.auditoria,
+      modificado_por: nombre,
+      modificado_en:  serverTimestamp(),
+      historial: [...(docActual.data.auditoria?.historial||[]), buildAuditEntry(nombre)]
+    }
+  };
+
+  // Re-read latest historial to avoid overwriting concurrent edits
+  try {
+    const snapFresh = await getDoc(doc(db, COL, docActual.id));
+    const historialFresh = snapFresh.data()?.auditoria?.historial || [];
+    payload.auditoria.historial = [...historialFresh, buildAuditEntry(nombre)];
+  } catch(_) {}
+
+  try{
+    await setDoc(doc(db,COL,docActual.id), payload);
+    toastA("ok","Guardado","Movimiento actualizado correctamente");
+    cerrarModal();
+    const fecha = v("filtroFecha").value;
+    if(fecha) cargarPorFecha(fecha);
+  } catch(err){ toastA("err","Error",err.message); }
+  finally{ btn.disabled=false; btn.textContent="💾 Guardar cambios"; }
+});
+
+// ── ELIMINAR ──────────────────────────────────────────────────────────────────
+v("btnEliminar").addEventListener("click",()=>{
+  if(!docActual) return;
+  v("confirmElim").classList.remove("hidden");
+});
+v("btnConfirmElim").addEventListener("click", async()=>{
+  if(!docActual) return;
+  v("confirmElim").classList.add("hidden");
+  try{
+    await deleteDoc(doc(db,COL,docActual.id));
+    toastA("ok","Eliminado","Documento borrado permanentemente");
+    cerrarModal();
+    const fecha = v("filtroFecha").value;
+    if(fecha) cargarPorFecha(fecha);
+  } catch(err){ toastA("err","Error",err.message); }
+});
+
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Penalidades · Fact.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --panel3:#f1f5f9;
+      --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    }
+    body.light .navbar        { box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    body.light tbody tr:hover { background:#f0f4ff; }
+    body.light .form-input    { color:var(--text); }
+    body.light .form-input option { background:#fff; color:#0f172a; }
+    body.light .toast.ok  { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+    body.light .toast.err { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+    .hidden{display:none!important;}
+
+    /* NAVBAR */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .btn-theme:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s;}
+    .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+    /* MAIN */
+    .main{padding:16px 24px;width:100%;}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+    .page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{opacity:.9;}
+    .btn-sm{padding:5px 10px;font-size:11px;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* FILTROS */
+    .filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;}
+    .daybar-nav{display:flex;align-items:center;gap:8px;}
+    .day-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .day-btn:hover{border-color:var(--accent);}
+    .day-label{font-family:var(--mono);font-size:13px;font-weight:600;min-width:130px;text-align:center;}
+    .day-today-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:700;transition:all .2s;}
+    .day-today-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .filters-sep{width:1px;height:28px;background:var(--border);margin:0 2px;}
+    .read-info{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);white-space:nowrap;}
+    .search-wrap{display:flex;gap:8px;align-items:center;flex:1;min-width:200px;}
+    .search-input{flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;}
+    .search-input:focus{border-color:var(--accent);}
+    .search-input::placeholder{color:var(--muted);}
+
+    /* TABLA */
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:var(--panel2);padding:4px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:var(--panel2);}
+    tbody td{padding:4px 8px;white-space:nowrap;color:var(--text);vertical-align:middle;}
+    .td-ref{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:600;}
+    .td-mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+    .table-info{padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.3px;border:1px solid transparent;white-space:nowrap;}
+    .badge-pen{background:rgba(239,68,68,.12);color:#fca5a5;border-color:rgba(239,68,68,.25);}
+    .pen-badges{display:flex;flex-wrap:wrap;gap:3px;max-width:220px;}
+
+    /* LOADING */
+    .loading-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .empty-state{text-align:center;padding:48px;color:var(--muted);}
+
+    /* TRES ESTADOS: check / x / vacío */
+    .tri-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);transition:all .15s;font-size:15px;margin:auto;user-select:none;}
+    .tri-btn.check{background:rgba(34,197,94,.15);border-color:#22c55e;color:#22c55e;}
+    .tri-btn.cross{background:rgba(239,68,68,.12);border-color:#ef4444;color:#ef4444;}
+    .tri-btn.empty{color:var(--muted);}
+    .tri-btn.disabled{opacity:.3;cursor:default;pointer-events:none;}
+    td.td-tri{text-align:center;padding:2px 8px;}
+
+    /* OBS INLINE */
+    .obs-cell{max-width:180px;white-space:normal;word-break:break-word;line-height:1.35;}
+    .obs-input{width:160px;background:var(--panel2);border:1px solid var(--accent);border-radius:6px;color:var(--text);font-family:var(--font);font-size:11px;padding:3px 7px;outline:none;}
+    .obs-display{font-size:11px;color:var(--muted);cursor:pointer;min-height:20px;display:block;}
+    .obs-display:hover{color:var(--text);}
+
+    /* BTN LINK */
+    .btn-link{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--panel2);color:var(--accent2);font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s;}
+    .btn-link:hover{border-color:var(--accent);background:rgba(59,130,246,.1);}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:600px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;}
+    .modal-header{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-header h2{font-size:16px;font-weight:700;}
+    .modal-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+    .modal-body{padding:20px 22px;overflow-y:auto;flex:1;}
+    .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;}
+    .btn-close-modal{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px;transition:color .2s;line-height:1;}
+    .btn-close-modal:hover{color:var(--text);}
+    .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+    .form-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .form-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color .2s;width:100%;}
+    .form-input:focus{border-color:var(--accent);}
+    textarea.form-input{resize:vertical;min-height:80px;}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+    .section-title:first-child{margin-top:0;}
+    .info-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 16px;margin-bottom:4px;}
+    .info-item{display:flex;flex-direction:column;gap:2px;}
+    .info-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .info-value{font-size:12px;font-weight:600;font-family:var(--mono);}
+    .pen-list-ro{display:flex;flex-direction:column;gap:6px;}
+    .pen-ro-item{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:600;}
+
+    /* TOGGLE (respaldo) */
+    .toggle-inline{display:flex;align-items:center;gap:10px;}
+    .toggle-btn{position:relative;width:44px;height:24px;background:var(--panel3);border:1px solid var(--border);border-radius:999px;cursor:pointer;transition:all .25s;flex-shrink:0;}
+    .toggle-btn.on{background:var(--accent);border-color:var(--accent);}
+    .toggle-btn::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .25s;}
+    .toggle-btn.on::after{transform:translateX(20px);}
+
+    /* TOAST */
+    .toast{position:fixed;top:18px;right:18px;z-index:9999;min-width:260px;max-width:400px;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;animation:slideIn .25s ease;}
+    .toast.ok{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .toast-title{font-weight:700;}
+    .toast-msg{font-size:12px;margin-top:2px;opacity:.85;}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg"   id="toastMsg"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <img src="logo.png" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
+    IceLion
+    <div class="nav-module">PENALIDADES · FACTURACIÓN</div>
+  </div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Penalidades · Facturación</div>
+      <div class="page-sub" id="pageSub">Revisión comercial y facturación</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btnActualizar">↻ Actualizar</button>
+  </div>
+
+  <div class="filters">
+    <div class="daybar-nav">
+      <button class="day-btn" id="btnAnterior">◀</button>
+      <div class="day-label" id="diaLabel">—</div>
+      <button class="day-btn" id="btnSiguiente">▶</button>
+      <button class="day-today-btn" id="btnHoy">Hoy</button>
+    </div>
+    <div class="filters-sep"></div>
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="campoBuscar"
+        placeholder="Buscar por cliente, referencia, transporte...">
+      <button class="btn btn-ghost btn-sm" id="btnLimpiar">✕ Limpiar</button>
+    </div>
+    <div class="read-info" id="readInfo">—</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Hora turno</th>
+          <th>Hora arribo</th>
+          <th>Cliente</th>
+          <th>Movimiento</th>
+          <th>Referencia</th>
+          <th>Penalidades</th>
+          <th style="text-align:center;">Extra costo</th>
+          <th style="text-align:center;">RF</th>
+          <th style="text-align:center;">Archivo</th>
+          <th class="obs-cell">Obs. Planif.</th>
+          <th style="text-align:center;">Aprueba Comercial</th>
+          <th class="obs-cell">Obs. Comercial</th>
+          <th style="text-align:center;">Facturado</th>
+          <th class="obs-cell">Obs. Facturación</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="loading-row"><td colspan="14"><span class="spinner"></span>Cargando...</td></tr>
+      </tbody>
+    </table>
+    <div class="table-info" id="tableInfo">—</div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <h2 id="modalTitulo">—</h2>
+        <div class="modal-sub" id="modalSub">—</div>
+      </div>
+      <button class="btn-close-modal" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-title">Datos del movimiento</div>
+      <div class="info-box" id="modalInfoBox"></div>
+
+      <div class="section-title">Penalidades</div>
+      <div class="pen-list-ro" id="modalPenList"></div>
+
+      <div id="modalRespaldoWrap" style="margin-top:12px;">
+        <div class="section-title">Respaldo formal</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span id="modalRespaldoLabel" style="font-size:13px;font-weight:600;font-family:var(--mono);">—</span>
+          <a id="modalArchivoLink" href="#" target="_blank" class="btn-link hidden">📎 Ver archivo</a>
+        </div>
+        <div id="modalObsPlanif" style="font-size:12px;color:var(--muted);white-space:pre-wrap;"></div>
+      </div>
+
+      <!-- SECCIÓN COMERCIAL -->
+      <div id="secComercial">
+        <div class="section-title">Comercial</div>
+        <div class="form-group">
+          <label class="form-label">Aprueba Comercial</label>
+          <div style="display:flex;gap:8px;align-items:center;" id="triComercialWrap">
+            <button class="tri-btn" id="triBtnComercial" onclick="ciclarTri('comercial')">—</button>
+            <span id="triLabelComercial" style="font-size:12px;font-family:var(--mono);color:var(--muted);">Sin definir</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observaciones Comercial</label>
+          <textarea class="form-input" id="obsComercialInput" rows="3"
+            placeholder="Texto libre..."></textarea>
+        </div>
+      </div>
+
+      <!-- SECCIÓN FACTURACIÓN -->
+      <div id="secFacturacion">
+        <div class="section-title">Facturación</div>
+        <div class="form-group">
+          <label class="form-label">Facturado</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="tri-btn" id="triBtnFacturado" onclick="ciclarTri('facturado')">—</button>
+            <span id="triLabelFacturado" style="font-size:12px;font-family:var(--mono);color:var(--muted);">Sin definir</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observaciones Facturación</label>
+          <textarea class="form-input" id="obsFacturacionInput" rows="3"
+            placeholder="Texto libre..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardar" onclick="guardarModal()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { collection, doc, getDocs, onSnapshot, updateDoc, query, where, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, fmtFecha } from "./js/utils.js";
+import { guardarConAuditoria } from "./js/auditoria.js";
+
+initTema();
+
+let diaActual = hoy();
+let docsCache = [];
+let docActual = null;
+let _unsub    = null;
+
+// estado tri: null | "check" | "cross"
+let triComercial = null;
+let triFacturado = null;
+
+// roles del usuario
+let esAdmin    = false;
+let esComercial  = false;
+let esFacturacion = false;
+
+initSesion(u => {
+  let roles = [];
+  try { roles = JSON.parse(sessionStorage.getItem("icelion_roles") || "[]"); } catch(e) {}
+  if (!roles.length) { const r = sessionStorage.getItem("icelion_rol"); if(r) roles=[r]; }
+  esAdmin      = roles.includes("admin");
+  esComercial  = roles.includes("comercial")   || esAdmin;
+  esFacturacion= roles.includes("facturacion")  || esAdmin;
+  cargarDia(diaActual);
+});
+
+// ── CARGA ─────────────────────────────────────────────────────
+function cargarDia(fecha) {
+  diaActual = fecha;
+  document.getElementById("diaLabel").textContent = fmtLabel(fecha);
+  document.getElementById("tbody").innerHTML =
+    `<tr class="loading-row"><td colspan="14"><span class="spinner"></span>Cargando...</td></tr>`;
+  if (_unsub) _unsub();
+  const q = query(
+    collection(db, COL),
+    where("planificacion.fecha_prevista", "==", fecha),
+    orderBy("planificacion.hora_estipulada", "asc")
+  );
+  _unsub = onSnapshot(q, snap => {
+    // Solo movimientos con alguna penalidad Y doble check (ok_planificacion + ok_supervisor)
+    // Todos los penalizados del día
+    const todosPenalizados = snap.docs.filter(d => {
+      const data = d.data(), pen = data.penalidades || {};
+      return data.penalizado || (pen.lista||[]).length > 0;
+    });
+    // Solo mostrar si el 100% tiene doble check
+    const todosConDobleCheck = todosPenalizados.every(d => {
+      const pen = d.data().penalidades || {};
+      return pen.ok_planificacion === true && pen.ok_supervisor === true;
+    });
+    docsCache = todosConDobleCheck ? todosPenalizados : [];
+    aplicarFiltros();
+  }, err => {
+    document.getElementById("tbody").innerHTML =
+      `<tr><td colspan="14" style="padding:30px;text-align:center;color:var(--err);">${err.message}</td></tr>`;
+  });
+}
+
+function aplicarFiltros() {
+  const term = document.getElementById("campoBuscar").value.trim().toLowerCase();
+  let docs = [...docsCache];
+  if (term) {
+    docs = docs.filter(d => {
+      const data = d.data(), p = data.planificacion||{}, g = data.guardia||{};
+      return [p.cliente,p.referencia,p.transporte,p.movimiento,g.hora_arribo]
+        .some(v => (v||"").toLowerCase().includes(term));
+    });
+  }
+  renderTabla(docs);
+  document.getElementById("readInfo").textContent = `${docs.length} mov.`;
+  document.getElementById("tableInfo").textContent = `${docs.length} movimiento${docs.length!==1?"s":""} · ${fmtLabel(diaActual)}`;
+}
+
+// ── RENDER TABLA ──────────────────────────────────────────────
+function renderTabla(docs) {
+  const tbody = document.getElementById("tbody");
+  if (!docs.length) {
+    tbody.innerHTML = `<tr><td colspan="14" class="empty-state"><div class="icon">⏳</div><p>Pendiente: no todos los movimientos penalizados del día tienen doble check (OK Plan. + OK Sup.)</p></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = docs.map(d => {
+    const id   = d.id;
+    const data = d.data();
+    const p    = data.planificacion || {};
+    const g    = data.guardia       || {};
+    const pen  = data.penalidades   || {};
+
+    const lista = [...(pen.lista||[])];
+    if (data.penalizado && !lista.includes("DEMORA ARRIBO TRANSPORTE"))
+      lista.unshift("DEMORA ARRIBO TRANSPORTE");
+
+    const penBadges = lista.length
+      ? lista.map(n=>`<span class="badge badge-pen">${n}</span>`).join("")
+      : `<span style="color:var(--muted);font-size:11px;">—</span>`;
+
+    const extraAlguno = (pen.extra_costos||[]).some(Boolean);
+    const rf          = pen.respaldo_formal === true;
+    const archivo     = pen.archivo_respaldo || "";
+    const obsPlan     = pen.observacion_planificacion || "";
+
+    // Comercial
+    const aprueba   = pen.aprueba_comercial;   // "check"|"cross"|null
+    const obsComOrig= pen.obs_comercial || "";
+    // Facturación
+    const facturado    = pen.facturado;             // "check"|"cross"|null
+    const obsFactOrig  = pen.obs_facturacion || "";
+
+    const triBtnHtml = (val, campo, puedeEditar) => {
+      const cls = val === "check" ? "check" : val === "cross" ? "cross" : "empty";
+      const icon = val === "check" ? "✓" : val === "cross" ? "✕" : "—";
+      const disabled = puedeEditar ? "" : "disabled";
+      return `<div class="tri-btn ${cls} ${disabled}"
+        title="${puedeEditar?'Click para cambiar':'Sin permiso'}"
+        onclick="${puedeEditar?`event.stopPropagation();toggleTriInline(event,'${id}','${campo}')`:''}">${icon}</div>`;
+    };
+
+    const obsHtml = (val, campo, puedeEditar, placeholder) => {
+      if (!puedeEditar)
+        return `<span class="obs-display obs-cell">${val||`<em style="opacity:.4">${placeholder}</em>`}</span>`;
+      return `<span class="obs-display obs-cell" onclick="event.stopPropagation();activarObsInline(this,'${id}','${campo}','${encodeURIComponent(val)}')">${val||`<em style="opacity:.35">${placeholder}</em>`}</span>`;
+    };
+
+    return `<tr onclick="abrirModal('${id}')">
+      <td class="td-mono">${p.hora_estipulada||"—"}</td>
+      <td class="td-mono">${g.hora_arribo||"—"}</td>
+      <td><strong>${(p.cliente||"—").slice(0,20)}</strong></td>
+      <td class="td-mono">${p.movimiento||"—"}</td>
+      <td class="td-ref">${p.referencia||"—"}</td>
+      <td><div class="pen-badges">${penBadges}</div></td>
+      <td style="text-align:center;">${extraAlguno
+        ? `<span style="font-size:11px;font-weight:700;color:var(--warn);">SÍ</span>`
+        : `<span style="font-size:11px;color:var(--muted);">NO</span>`}</td>
+      <td style="text-align:center;">${rf
+        ? `<span style="font-size:11px;font-weight:700;color:var(--ok);">SÍ</span>`
+        : `<span style="font-size:11px;color:var(--muted);">—</span>`}</td>
+      <td style="text-align:center;">${archivo
+        ? `<a class="btn-link" href="${archivo}" target="_blank" onclick="event.stopPropagation()">📎</a>`
+        : `<span style="color:var(--muted);">—</span>`}</td>
+      <td class="obs-cell" style="white-space:normal;max-width:150px;font-size:11px;color:var(--muted);">${obsPlan||"—"}</td>
+      <td class="td-tri">${triBtnHtml(aprueba,  "aprueba_comercial", esComercial)}</td>
+      <td onclick="event.stopPropagation();">${obsHtml(obsComOrig,  "obs_comercial",  esComercial,  "—")}</td>
+      <td class="td-tri">${triBtnHtml(facturado, "facturado",        esFacturacion)}</td>
+      <td onclick="event.stopPropagation();">${obsHtml(obsFactOrig, "obs_facturacion",esFacturacion,"—")}</td>
+    </tr>`;
+  }).join("");
+}
+
+// ── TRI INLINE (desde tabla directamente) ─────────────────────
+const TRI_CYCLE = { null: "check", "check": "cross", "cross": null };
+const TRI_MAP   = { null: {cls:"empty",icon:"—"}, check:{cls:"check",icon:"✓"}, cross:{cls:"cross",icon:"✕"} };
+
+window.toggleTriInline = async function(e, id, campo) {
+  e.stopPropagation();
+  const d = docsCache.find(x => x.id === id);
+  if (!d) return;
+  const pen  = d.data().penalidades || {};
+  const actual = pen[campo] || null;
+  const nuevo  = TRI_CYCLE[actual];
+  try {
+    await guardarConAuditoria(doc(db, COL, id), {
+      [`penalidades.${campo}`]: nuevo
+    }, sessionStorage.getItem("icelion_nombre")||"—", `Cambió ${campo}`);
+  } catch(err) { toast("err","Error",err.message); }
+};
+
+// ── OBS INLINE (edición sin abrir modal) ─────────────────────
+window.activarObsInline = function(span, id, campo, valEnc) {
+  const val = decodeURIComponent(valEnc);
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "obs-input";
+  input.value = val;
+  span.replaceWith(input);
+  input.focus();
+  const guardar = async () => {
+    const nuevo = input.value.trim();
+    try {
+      await guardarConAuditoria(doc(db, COL, id), {
+        [`penalidades.${campo}`]: nuevo
+      }, sessionStorage.getItem("icelion_nombre")||"—", `Editó observación (${campo})`);
+    } catch(err) { toast("err","Error",err.message); }
+  };
+  input.addEventListener("blur",  guardar);
+  input.addEventListener("keydown", e => { if(e.key==="Enter") input.blur(); if(e.key==="Escape") input.blur(); });
+};
+
+// ── MODAL ─────────────────────────────────────────────────────
+window.abrirModal = function(id) {
+  const d = docsCache.find(x => x.id === id);
+  if (!d) return;
+  docActual = d;
+  const data = d.data(), p = data.planificacion||{}, g = data.guardia||{};
+  const pen  = data.penalidades||{};
+
+  document.getElementById("modalTitulo").textContent = p.cliente || "—";
+  document.getElementById("modalSub").textContent =
+    `${p.movimiento||"—"} · Ref: ${p.referencia||"—"} · Est: ${p.hora_estipulada||"—"} · Arr: ${g.hora_arribo||"—"}`;
+
+  document.getElementById("modalInfoBox").innerHTML = [
+    ["Hora turno", p.hora_estipulada], ["Hora arribo", g.hora_arribo],
+    ["Cliente", p.cliente], ["Movimiento", p.movimiento],
+    ["Referencia", p.referencia], ["Transporte", p.transporte]
+  ].map(([l,v])=>`<div class="info-item"><div class="info-label">${l}</div><div class="info-value">${v||"—"}</div></div>`).join("");
+
+  const lista = [...(pen.lista||[])];
+  if (data.penalizado && !lista.includes("DEMORA ARRIBO TRANSPORTE")) lista.unshift("DEMORA ARRIBO TRANSPORTE");
+  document.getElementById("modalPenList").innerHTML = lista.length
+    ? lista.map(n=>`<div class="pen-ro-item">🚨 ${n}</div>`).join("")
+    : `<div style="font-size:12px;color:var(--muted);">Sin penalidades</div>`;
+
+  const rf = pen.respaldo_formal === true;
+  document.getElementById("modalRespaldoLabel").textContent = rf ? "SÍ" : "NO";
+  const archLink = document.getElementById("modalArchivoLink");
+  if (rf && pen.archivo_respaldo) {
+    archLink.href = pen.archivo_respaldo;
+    archLink.classList.remove("hidden");
+  } else {
+    archLink.classList.add("hidden");
+  }
+  document.getElementById("modalObsPlanif").textContent = pen.observacion_planificacion || "—";
+
+  // Comercial
+  triComercial = pen.aprueba_comercial || null;
+  renderTriBtn("triBtnComercial", "triLabelComercial", triComercial);
+  document.getElementById("obsComercialInput").value = pen.obs_comercial || "";
+  const secCom = document.getElementById("secComercial");
+  secCom.style.display = "";
+  document.getElementById("triBtnComercial").classList.toggle("disabled", !esComercial);
+  document.getElementById("obsComercialInput").disabled = !esComercial;
+
+  // Facturación
+  triFacturado = pen.facturado || null;
+  renderTriBtn("triBtnFacturado", "triLabelFacturado", triFacturado);
+  document.getElementById("obsFacturacionInput").value = pen.obs_facturacion || "";
+  const secFact = document.getElementById("secFacturacion");
+  secFact.style.display = "";
+  document.getElementById("triBtnFacturado").classList.toggle("disabled", !esFacturacion);
+  document.getElementById("obsFacturacionInput").disabled = !esFacturacion;
+
+  document.getElementById("modal").classList.remove("hidden");
+};
+
+function renderTriBtn(btnId, labelId, val) {
+  const btn = document.getElementById(btnId);
+  const lbl = document.getElementById(labelId);
+  btn.className = "tri-btn " + (TRI_MAP[val]?.cls || "empty");
+  btn.textContent = TRI_MAP[val]?.icon || "—";
+  lbl.textContent = val === "check" ? "Aprobado ✓" : val === "cross" ? "Rechazado ✕" : "Sin definir";
+}
+
+window.ciclarTri = function(which) {
+  if (which === "comercial" && !esComercial) return;
+  if (which === "facturado" && !esFacturacion) return;
+  if (which === "comercial") {
+    triComercial = TRI_CYCLE[triComercial];
+    renderTriBtn("triBtnComercial", "triLabelComercial", triComercial);
+  } else {
+    triFacturado = TRI_CYCLE[triFacturado];
+    renderTriBtn("triBtnFacturado", "triLabelFacturado", triFacturado);
+  }
+};
+
+window.guardarModal = async function() {
+  if (!docActual) return;
+  const btn = document.getElementById("btnGuardar");
+  btn.disabled = true; btn.textContent = "Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre") || "—";
+  const update = {};
+  if (esComercial) {
+    update["penalidades.aprueba_comercial"] = triComercial;
+    update["penalidades.obs_comercial"]     = document.getElementById("obsComercialInput").value.trim();
+  }
+  if (esFacturacion) {
+    update["penalidades.facturado"]         = triFacturado;
+    update["penalidades.obs_facturacion"]   = document.getElementById("obsFacturacionInput").value.trim();
+  }
+  try {
+    await guardarConAuditoria(doc(db, COL, docActual.id), update, nombre, "Editó aprobación/facturación de penalidad");
+    toast("ok", "Guardado", "Datos actualizados");
+    cerrarModal();
+  } catch(err) { toast("err","Error",err.message); }
+  finally { btn.disabled=false; btn.textContent="💾 Guardar"; }
+};
+
+window.cerrarModal = function() {
+  document.getElementById("modal").classList.add("hidden");
+  docActual = null;
+};
+
+// ── EVENTOS ───────────────────────────────────────────────────
+document.getElementById("btnAnterior").addEventListener("click",  ()=>cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnSiguiente").addEventListener("click", ()=>cargarDia(sumarDias(diaActual, 1)));
+document.getElementById("btnHoy").addEventListener("click",       ()=>cargarDia(hoy()));
+document.getElementById("btnActualizar").addEventListener("click",()=>cargarDia(diaActual));
+document.getElementById("campoBuscar").addEventListener("input",  ()=>aplicarFiltros());
+document.getElementById("btnLimpiar").addEventListener("click",   ()=>{
+  document.getElementById("campoBuscar").value="";
+  aplicarFiltros();
+});
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

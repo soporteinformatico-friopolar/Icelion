@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Penalidades</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080e1a; --panel:#0f1824; --panel2:#131f2e; --panel3:#1a2840;
+      --border:rgba(255,255,255,0.07); --accent:#3b82f6; --accent2:#60a5fa;
+      --text:#e8edf5; --muted:#6b7f99; --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body.light {
+      --bg:#f1f5f9; --panel:#ffffff; --panel2:#f8fafc; --panel3:#f1f5f9;
+      --border:rgba(0,0,0,0.08); --accent:#2563eb; --accent2:#1d4ed8;
+      --text:#0f172a; --muted:#64748b; --ok:#16a34a; --err:#dc2626; --warn:#d97706;
+    }
+    body.light .navbar        { box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    body.light tbody tr:hover { background:#f0f4ff; }
+    body.light .form-input    { color:var(--text); }
+    body.light .form-input option { background:#fff; color:#0f172a; }
+    body.light .toast.ok  { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+    body.light .toast.err { background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+    .hidden{display:none!important;}
+
+    /* NAVBAR */
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:var(--radius);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .btn-theme:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:var(--radius);cursor:pointer;font-size:12px;font-family:var(--font);transition:all .2s;}
+    .btn-logout:hover{border-color:var(--err);color:var(--err);}
+
+    /* MAIN */
+    .main{padding:16px 24px;width:100%;}
+    .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+    .page-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+    .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{opacity:.9;}
+    .btn-sm{padding:5px 10px;font-size:11px;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* FILTROS */
+    .filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;}
+    .daybar-nav{display:flex;align-items:center;gap:8px;}
+    .day-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .day-btn:hover{border-color:var(--accent);}
+    .day-label{font-family:var(--mono);font-size:13px;font-weight:600;min-width:130px;text-align:center;}
+    .day-today-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-family:var(--font);font-weight:700;transition:all .2s;}
+    .day-today-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .filters-sep{width:1px;height:28px;background:var(--border);margin:0 2px;}
+    .estado-select{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;cursor:pointer;}
+    body.light .estado-select option{background:#fff;color:#0f172a;}
+    .read-info{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--muted);white-space:nowrap;}
+
+    .search-wrap{display:flex;gap:8px;align-items:center;flex:1;min-width:260px;}
+    .search-input{flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;min-width:240px;transition:border-color .2s;}
+    .search-input:focus{border-color:var(--accent);}
+    .search-input::placeholder{color:var(--muted);}
+
+    /* TABLA */
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:var(--panel2);padding:4px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:var(--panel2);}
+    tbody tr.row-revisado td{background:rgba(34,197,94,.04);}
+    tbody tr.row-revisado:hover td{background:rgba(34,197,94,.08)!important;}
+    .ok-check{display:flex;align-items:center;justify-content:center;cursor:pointer;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);transition:all .15s;font-size:16px;margin:auto;}
+    .ok-check.checked{background:rgba(34,197,94,.15);border-color:#22c55e;color:#22c55e;}
+    .ok-check.disabled{opacity:.35;cursor:default;}
+    td.td-check{text-align:center;padding:2px 8px;}
+    tbody td{padding:4px 8px;white-space:nowrap;color:var(--text);}
+    .td-ref{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:600;}
+    .td-mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+    .table-info{padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.3px;border:1px solid transparent;white-space:nowrap;}
+    .badge-planificado{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-agregado{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-sinidentif{background:rgba(239,68,68,.15);color:#ef4444;}
+    .badge-esp{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-arribado{background:rgba(251,191,36,.15);color:#fbbf24;}
+    .badge-enespera{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-dock{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-atracado{background:rgba(245,158,11,.15);color:#f64dfc;}
+    .badge-encurso{background:rgba(34,197,94,.15);color:#4ade80;}
+    .badge-iniciomov{background:rgba(134,239,172,.2);color:#4ade80;}
+    .badge-pausado{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-liberado{background:rgba(34,211,238,.15);color:#67e8f9;}
+    .badge-finalizado{background:rgba(34,197,94,.2);color:#22c55e;}
+    .badge-finmov{background:rgba(22,163,74,.2);color:#16a34a;}
+    .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-expo{background:rgba(234,179,8,.15);color:#fde047;}    .pen-badges{display:flex;flex-wrap:wrap;gap:3px;max-width:260px;}
+    .pen-toggle{background:none;border:none;color:var(--accent2);font-size:10px;cursor:pointer;padding:2px 4px;font-family:var(--mono);font-weight:700;white-space:nowrap;}
+    .pen-toggle:hover{text-decoration:underline;}
+    .badge-pen{background:rgba(239,68,68,.12);color:#fca5a5;border-color:rgba(239,68,68,.25);font-size:10px;}
+    .badge-extra{background:rgba(245,158,11,.15);color:#fcd34d;border-color:rgba(245,158,11,.3);font-size:10px;}
+
+    /* LOADING / EMPTY */
+    .loading-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .empty-state{text-align:center;padding:48px;color:var(--muted);}
+    .empty-state .icon{font-size:36px;margin-bottom:12px;}
+    .empty-state p{font-size:13px;}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:900px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;}
+    .modal-header{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-header h2{font-size:17px;font-weight:700;}
+    .modal-sub{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+    .modal-body{padding:20px 22px;overflow-y:auto;flex:1;}
+    .modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;}
+    .btn-close-modal{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:2px;transition:color .2s;line-height:1;}
+    .btn-close-modal:hover{color:var(--text);}
+
+    /* FORM */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 14px;}
+    .form-group{display:flex;flex-direction:column;gap:5px;}
+    .form-group.span-all{grid-column:1/-1;}
+    .form-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .form-input{background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:8px 10px;outline:none;transition:border-color .2s;width:100%;}
+    .form-input:focus{border-color:var(--accent);}
+    .form-input option{background:#1a2840;}
+    .form-input:disabled{opacity:.5;cursor:not-allowed;}
+    textarea.form-input{resize:vertical;min-height:60px;}
+
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+    .section-title:first-child{margin-top:0;}
+
+    /* Info box (solo lectura) */
+    .info-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 16px;}
+    .info-item{display:flex;flex-direction:column;gap:2px;}
+    .info-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .info-value{font-size:12px;font-weight:600;font-family:var(--mono);}
+
+    /* Caja desvío (solo lectura) */
+    .desvio-box{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:12px 14px;}
+    .sup-box{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.15);border-radius:10px;padding:12px 14px;}
+
+    /* Lista de penalidades en el modal */
+    .pen-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+    .pen-item{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;}
+    .pen-item-label{flex:1;font-size:12px;font-weight:600;}
+    .pen-item-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:5px;transition:all .2s;}
+    .pen-item-remove:hover{color:var(--err);}
+    .pen-collapse-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);cursor:pointer;font-size:10px;padding:1px 6px;margin-left:4px;transition:all .2s;font-family:var(--mono);}
+    .pen-collapse-btn:hover{border-color:var(--accent);color:var(--accent2);}
+    .pen-extra-list{display:none;margin-top:4px;}
+    .pen-extra-list.show{display:block;}
+
+    /* Toggle extra costo */
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:8px;}
+    .toggle-label{font-size:13px;font-weight:600;}
+    .toggle-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+    .toggle-btn{position:relative;width:44px;height:24px;background:var(--panel3);border:1px solid var(--border);border-radius:999px;cursor:pointer;transition:all .25s;flex-shrink:0;}
+    .toggle-btn.on{background:var(--accent);border-color:var(--accent);}
+    .toggle-btn::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .25s;}
+    .toggle-btn.on::after{transform:translateX(20px);}
+    /* toggle pequeño para uso inline en pen-item */
+    .pen-item .toggle-btn{width:34px;height:18px;}
+    .pen-item .toggle-btn::after{width:12px;height:12px;top:2px;left:2px;}
+    .pen-item .toggle-btn.on::after{transform:translateX(16px);}
+
+    
+    /* SISTEMA DE NOTAS */
+    .modal-notas-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;overflow:hidden;}
+    .notas-historial{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;margin-bottom:12px;padding:4px 2px;}
+    .nota-item{border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;border:1px solid var(--border);position:relative;}
+    .nota-item.resuelta{opacity:.4;}
+    .nota-item.propia{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2);}
+    .nota-item.ajena{background:var(--panel2);}
+    .nota-meta{font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .nota-rol{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;background:rgba(59,130,246,.15);color:var(--accent2);}
+    .nota-rol.guardia{background:rgba(245,158,11,.15);color:#fcd34d;}
+    .nota-rol.calidad{background:rgba(34,197,94,.15);color:#86efac;}
+    .nota-rol.supervisor{background:rgba(168,85,247,.15);color:#d8b4fe;}
+    .nota-rol.consolidador{background:rgba(236,72,153,.15);color:#f9a8d4;}
+    .nota-texto{color:var(--text);white-space:pre-wrap;word-break:break-word;}
+    .nota-resuelta-badge{font-size:9px;color:var(--ok);margin-left:auto;}
+    .btn-resolver{font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac;cursor:pointer;margin-top:6px;font-family:inherit;}
+    .btn-resolver:hover{background:rgba(34,197,94,.2);}
+    .notas-empty{color:var(--muted);font-style:italic;font-size:13px;text-align:center;padding:16px 0;}
+    .btn-notas.pendiente{color:#ef4444 !important;filter:drop-shadow(0 0 4px rgba(239,68,68,.5));}
+
+    /* TOAST */
+    .toast{position:fixed;top:18px;right:18px;z-index:9999;min-width:260px;max-width:400px;padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;animation:slideIn .25s ease;}
+    .toast.ok{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+    .toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+    .toast-title{font-weight:700;}
+    .toast-msg{font-size:12px;margin-top:2px;opacity:.85;}
+    @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+        /* ── Alerta cambio (read-only) ── */
+    .dot-alerta{display:inline-block;width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+    .dot-alerta.none    {background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);}
+    .dot-alerta.amarillo{background:#facc15;box-shadow:0 0 5px rgba(250,204,21,.6);}
+    .dot-alerta.rojo    {background:#ef4444;box-shadow:0 0 5px rgba(239,68,68,.6);}
+    .sort-icon{margin-left:4px;font-size:9px;opacity:.5;}
+    .btn-notas{background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:6px;transition:all .2s;line-height:1;}
+    .btn-notas.tiene-notas{filter:none;}
+    .btn-notas.sin-notas{opacity:.3;filter:grayscale(1);}
+    .btn-notas:hover{opacity:1;filter:none;transform:scale(1.15);}
+    .notas-current{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;line-height:1.6;min-height:60px;white-space:pre-wrap;word-break:break-word;}
+    .notas-current.empty{color:var(--muted);font-style:italic;}
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast">
+  <div class="toast-title" id="toastTitle"></div>
+  <div class="toast-msg"   id="toastMsg"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <img src="logo.png" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
+    IceLion
+    <div class="nav-module">PENALIDADES</div>
+  </div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Penalidades</div>
+      <div class="page-sub" id="pageSub">Movimientos penalizados del día</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btnActualizar">↻ Actualizar</button>
+  </div>
+
+  <div class="filters">
+    <div class="daybar-nav">
+      <button class="day-btn" id="btnAnterior">◀</button>
+      <div class="day-label" id="diaLabel">—</div>
+      <button class="day-btn" id="btnSiguiente">▶</button>
+      <button class="day-today-btn" id="btnHoy">Hoy</button>
+    </div>
+    <div class="filters-sep"></div>
+    <select class="estado-select" id="filtroEstado">
+      <option value="">Todos los estados</option>
+      <option value="PLANIFICADO">Planificado</option>
+      <option value="AGREGADO">Agregado</option>
+      <option value="ARRIBADO">Arribado</option>
+      <option value="EN ESPERA">En Espera</option>
+      <option value="DOCK ASIGNADO">Dock Asignado</option>
+      <option value="ATRACADO">Atracado</option>
+      <option value="INICIO MOVIMIENTO">Inicio Movimiento</option>
+      <option value="PAUSADO">Pausado</option>
+      <option value="FIN MOVIMIENTO">Fin Movimiento</option>
+      <option value="LIBERADO">Liberado</option>
+      <option value="CANCELADO">Cancelado</option>
+    </select>
+    <div class="filters-sep"></div>
+    <select class="estado-select" id="filtroExtra">
+      <option value="">Genera extra costo: todos</option>
+      <option value="si">Genera extra costo: SÍ</option>
+      <option value="no">Genera extra costo: NO</option>
+    </select>
+    <div class="filters-sep"></div>
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="campoBuscar"
+        placeholder="Buscar dentro del día por cualquier dato...">
+      <button class="btn btn-ghost btn-sm" id="btnLimpiar">✕ Limpiar</button>
+    </div>
+    <div class="read-info" id="readInfo">—</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-col="hora" onclick="sortTabla('hora')">Hora est.<span class="sort-icon" id="si-hora"></span></th>
+          <th class="sortable" data-col="arribo" onclick="sortTabla('arribo')">Hora arribo<span class="sort-icon" id="si-arribo"></span></th>
+          <th class="sortable" data-col="cliente" onclick="sortTabla('cliente')">Cliente<span class="sort-icon" id="si-cliente"></span></th>
+          <th class="sortable" data-col="movimiento" onclick="sortTabla('movimiento')">Movimiento<span class="sort-icon" id="si-movimiento"></span></th>
+          <th class="sortable" data-col="transporte" onclick="sortTabla('transporte')">Transporte<span class="sort-icon" id="si-transporte"></span></th>
+          <th class="sortable" data-col="referencia" onclick="sortTabla('referencia')">Referencia<span class="sort-icon" id="si-referencia"></span></th>
+          <th class="sortable" data-col="estado" onclick="sortTabla('estado')">Estado<span class="sort-icon" id="si-estado"></span></th>
+          <th>Penalidades</th>
+          <th>Extra costo</th>
+          <th style="text-align:center;">RF</th>
+          <th style="text-align:center;">OK Plan.</th>
+          <th style="text-align:center;">OK Sup.</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyPen">
+        <tr class="loading-row"><td colspan="9"><span class="spinner"></span>Cargando...</td></tr>
+      </tbody>
+    </table>
+    <div class="table-info" id="tableInfo">—</div>
+  </div>
+</div>
+
+<!-- MODAL PENALIDAD -->
+<div class="modal-overlay hidden" id="modalPen">
+  <div class="modal-box" style="max-width:860px;">
+    <div class="modal-header">
+      <div>
+        <h2 id="penTitulo">—</h2>
+        <div class="modal-sub" id="penSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarPen">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Info movimiento -->
+      <div class="section-title">Movimiento</div>
+      <div class="info-box" id="penInfoBox"></div>
+
+      <!-- Desvío (solo lectura) -->
+      <div id="penDesvioWrap">
+        <div class="section-title">Desvío registrado por Calidad</div>
+        <div class="desvio-box">
+          <div class="info-box" id="penDesvioBox" style="background:transparent;border:none;padding:0;"></div>
+        </div>
+      </div>
+
+      <!-- Resolución supervisor (solo lectura) -->
+      <div id="penResolucionWrap">
+        <div class="section-title">Resolución del Supervisor</div>
+        <div class="sup-box">
+          <div class="info-box" id="penResolucionBox" style="background:transparent;border:none;padding:0;"></div>
+        </div>
+      </div>
+
+      <!-- Penalidades aplicadas -->
+      <div class="section-title">Penalidades aplicadas</div>
+      <div class="pen-list" id="penList"></div>
+
+      <!-- Agregar penalidad -->
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-end;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Agregar penalidad</label>
+          <select class="form-input" id="selectPenalidad">
+            <option value="">Seleccionar penalidad...</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnAgregarPen" style="margin-bottom:0;height:36px;">+ Agregar</button>
+      </div>
+
+      <!-- Respaldo formal + Archivo + Observación planificacion -->
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+        <div class="section-title">Planificación</div>
+
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+          <span style="font-size:12px;font-weight:600;">Respaldo formal</span>
+          <button id="btnRespaldo" onclick="toggleRespaldo()"
+            class="toggle-btn" style="width:44px;height:24px;"></button>
+          <span id="labelRespaldo" style="font-size:12px;font-family:var(--mono);color:var(--muted);">NO</span>
+        </div>
+
+        <div class="form-group" id="archivoGroup" style="display:none;margin-bottom:12px;">
+          <label class="form-label">Archivo (link Google Drive)</label>
+          <input type="text" class="form-input" id="penArchivo"
+            placeholder="https://drive.google.com/..." style="text-transform:none;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observación Planificación</label>
+          <textarea class="form-input" id="penObservacion" rows="3"
+            placeholder="Texto libre..." style="resize:vertical;min-height:60px;"></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancelarPen">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarPen">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL NOTAS -->
+<div class="modal-overlay hidden" id="modalNotas">
+  <div class="modal-notas-box">
+    <div class="modal-header">
+      <div>
+        <h2>📝 Notas del movimiento</h2>
+        <div class="modal-sub" id="notasSub">—</div>
+      </div>
+      <button class="btn-close-modal" id="btnCerrarNotas">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;">
+      <div class="notas-historial" id="notasHistorial"></div>
+      <div class="form-group" style="margin-top:4px;">
+        <label class="form-label">Nueva nota</label>
+        <textarea class="form-input" id="notasTexto" rows="3"
+          placeholder="Escribí una nota... (visible para todos los roles)"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancelarNotas">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarNotas">Agregar nota</button>
+    </div>
+  </div>
+</div>
+
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { collection, doc, getDoc, getDocs, onSnapshot, updateDoc, query, where, orderBy, limit, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, badgeEstado } from "./js/utils.js";
+import { guardarConAuditoria } from "./js/auditoria.js";
+
+initTema();
+initSesion();
+
+let diaActual   = hoy();
+let docsCache   = [];
+let docActual   = null;
+let penActuales = [];  // array de strings (nombres)
+let extraCostos  = [];  // array parallel: true/false por índice
+let listaPenalidades = []; // cargado desde listas/penalidades
+
+// ── CARGAR LISTA DE PENALIDADES ───────────────────────────────
+async function cargarListaPenalidades() {
+  try {
+    const snap = await getDoc(doc(db,"listas","penalidades"));
+    listaPenalidades = snap.exists() ? (snap.data().items||[]) : [];
+    const sel = document.getElementById("selectPenalidad");
+    sel.innerHTML = `<option value="">Seleccionar penalidad...</option>` +
+      listaPenalidades.map(p=>`<option value="${p}">${p}</option>`).join("");
+  } catch(e) { console.warn("Error cargando penalidades:", e); }
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function fmtOrigen(o) {
+  if(o==="espontaneo_convertido") return "Espontáneo";
+  if(o==="espontaneo_vinculado")  return "Espontáneo vinculado";
+  return "Planificado";
+}
+function infoItem(label, val) {
+  return `<div class="info-item">
+    <span class="info-label">${label}</span>
+    <span class="info-value">${val||"—"}</span>
+  </div>`;
+}
+
+// ── CARGAR DÍA ────────────────────────────────────────────────
+let _unsubPen=null;
+function cargarDia(fecha) {
+  diaActual = fecha;
+  document.getElementById("diaLabel").textContent = fmtLabel(fecha);
+  renderLoading();
+  if(_unsubPen){_unsubPen();_unsubPen=null;}
+  _unsubPen = onSnapshot(query(
+    collection(db,COL),
+    where("planificacion.fecha_prevista","==",fecha),
+    orderBy("planificacion.hora_estipulada","asc"),
+    limit(80)
+  ), snap => {
+    docsCache = snap.docs;
+    document.getElementById("readInfo").textContent =
+      `${snap.size} movimiento${snap.size!==1?"s":""} · ${fecha}`;
+    aplicarFiltros();
+  }, err => {
+    document.getElementById("tbodyPen").innerHTML =
+      `<tr class="loading-row"><td colspan="9" style="color:var(--err)">Error: ${err.message}</td></tr>`;
+  });
+}
+
+function renderLoading() {
+  document.getElementById("tbodyPen").innerHTML =
+    `<tr class="loading-row"><td colspan="9"><span class="spinner"></span>Cargando...</td></tr>`;
+}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function normalizarBusqueda(valor) {
+  return String(valor??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim();
+}
+function valoresBuscables(valor) {
+  if(valor===null||valor===undefined) return "";
+  if(["string","number","boolean"].includes(typeof valor)) return String(valor);
+  if(Array.isArray(valor)) return valor.map(valoresBuscables).join(" ");
+  if(typeof valor==="object"){
+    if(typeof valor.toDate==="function"){try{return valor.toDate().toISOString();}catch(_){}}
+    return Object.values(valor).map(valoresBuscables).join(" ");
+  }
+  return "";
+}
+function docCoincide(d, q) {
+  if(!q) return true;
+  return normalizarBusqueda(`${d.id} ${valoresBuscables(d.data())}`).includes(q);
+}
+
+// ── SISTEMA DE NOTAS ─────────────────────────────────────────
+let notasDocId = null;
+
+function fmtNotaFecha(ts) {
+  if (!ts) return "";
+  try {
+    const d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds*1000) : new Date(ts));
+    return d.toLocaleString("es-AR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  } catch(e) { return ""; }
+}
+
+function getNotas(data) {
+  const notas = Array.isArray(data.planificacion?.notas) ? [...data.planificacion.notas] : [];
+  const obsLegacy = data.planificacion?.observaciones;
+  if (obsLegacy && obsLegacy.trim() && !notas.length) {
+    notas.push({ id:"legacy", texto:obsLegacy, autor:"Sistema", rol:"sistema", fecha:null, resuelta:false });
+  }
+  return notas;
+}
+
+function tienePendientes(data) {
+  return getNotas(data).some(n => !n.resuelta);
+}
+
+function renderHistorial(notas, miNombre) {
+  const h = document.getElementById("notasHistorial");
+  if (!h) return;
+  if (!notas || !notas.length) {
+    h.innerHTML = '<div class="notas-empty">Sin notas aún.</div>';
+    return;
+  }
+  h.innerHTML = notas.map((n,i) => {
+    const esPropia = n.autor === miNombre;
+    const cls = (n.resuelta ? " resuelta" : "") + (esPropia ? " propia" : " ajena");
+    const rolCls = (n.rol||"").toLowerCase().replace(/[^a-z]/g,"");
+    const btnResolver = "";
+    const badge = n.resuelta ? '<span class="nota-resuelta-badge">✓ resuelta</span>' : "";
+    return `<div class="nota-item${cls}">
+      <div class="nota-meta">
+        <span class="nota-rol ${rolCls}">${n.rol||"sistema"}</span>
+        <strong style="font-size:11px;">${n.autor||"—"}</strong>
+        <span>${fmtNotaFecha(n.fecha)}</span>
+        ${badge}
+      </div>
+      <div class="nota-texto">${n.texto||""}</div>
+      ${btnResolver}
+    </div>`;
+  }).join("");
+}
+
+window.abrirNotas = function(id) {
+  notasDocId = id;
+  const d = docsCache.find(x=>x.id===id);
+  if (!d) return;
+  const data = d.data();
+  const p = data.planificacion||{};
+  const miNombre = sessionStorage.getItem("icelion_nombre")||"—";
+  document.getElementById("notasSub").textContent =
+    `${p.cliente||"Sin cliente"} · ${p.referencia||"Sin referencia"}`;
+  document.getElementById("notasTexto").value = "";
+  renderHistorial(getNotas(data), miNombre);
+  document.getElementById("modalNotas").classList.remove("hidden");
+};
+
+window.resolverNota = async function(idx) {
+  if (!notasDocId) return;
+  const d = docsCache.find(x=>x.id===notasDocId);
+  if (!d) return;
+  const notas = getNotas(d.data());
+  notas[idx] = {...notas[idx], resuelta:true};
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  try {
+    await updateDoc(doc(db,COL,notasDocId), {
+      "planificacion.notas": notas,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en":  serverTimestamp()
+    });
+    renderHistorial(notas, nombre);
+    toast("ok","Nota resuelta","");
+  } catch(err) { toast("err","Error",err.message); }
+};
+
+function cerrarNotas() {
+  document.getElementById("modalNotas").classList.add("hidden");
+  notasDocId = null;
+}
+document.getElementById("btnCerrarNotas").addEventListener("click", cerrarNotas);
+document.getElementById("btnCancelarNotas").addEventListener("click", cerrarNotas);
+
+document.getElementById("btnGuardarNotas").addEventListener("click", async () => {
+  if (!notasDocId) return;
+  const texto = document.getElementById("notasTexto").value.trim();
+  if (!texto) return;
+  const btn = document.getElementById("btnGuardarNotas");
+  btn.disabled=true; btn.textContent="Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  const d = docsCache.find(x=>x.id===notasDocId);
+  const notas = d ? getNotas(d.data()) : [];
+  notas.push({
+    id: crypto.randomUUID ? crypto.randomUUID() : "n"+Date.now(),
+    texto,
+    autor: nombre,
+    rol: "planificacion",
+    fecha: new Date(),
+    resuelta: false
+  });
+  try {
+    await updateDoc(doc(db,COL,notasDocId), {
+      "planificacion.notas": notas,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en":  serverTimestamp()
+    });
+    toast("ok","Nota agregada","");
+    document.getElementById("notasTexto").value = "";
+    renderHistorial(notas, nombre);
+  } catch(err) {
+    toast("err","Error",err.message);
+  } finally {
+    btn.disabled=false; btn.textContent="Agregar nota";
+  }
+});
+
+
+
+let sortCol = "hora";
+let sortDir = 1;
+
+window.sortTabla = function(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  document.querySelectorAll(".sort-icon").forEach(el => el.textContent = "");
+  const si = document.getElementById("si-" + col);
+  if (si) si.textContent = sortDir === 1 ? " ▲" : " ▼";
+  aplicarFiltros();
+};
+
+function sortDocs(docs) {
+  return [...docs].sort((a,b) => {
+    const pa = a.data().planificacion||{}, ga = a.data().guardia||{};
+    const pb = b.data().planificacion||{}, gb = b.data().guardia||{};
+    let va = "", vb = "";
+    if (sortCol==="hora")        { va=pa.hora_estipulada||""; vb=pb.hora_estipulada||""; }
+    else if (sortCol==="cliente"){ va=pa.cliente||""; vb=pb.cliente||""; }
+    else if (sortCol==="movimiento"){ va=pa.movimiento||""; vb=pb.movimiento||""; }
+    else if (sortCol==="transporte"){ va=pa.transporte||""; vb=pb.transporte||""; }
+    else if (sortCol==="referencia"){ va=pa.referencia||""; vb=pb.referencia||""; }
+    else if (sortCol==="arribo") { va=ga.hora_arribo||""; vb=gb.hora_arribo||""; }
+    else if (sortCol==="estado") { va=a.data().estado||""; vb=b.data().estado||""; }
+    return va.localeCompare(vb) * sortDir;
+  });
+}
+
+function aplicarFiltros() {
+  const q     = normalizarBusqueda(document.getElementById("campoBuscar")?.value||"");
+  const fEst   = document.getElementById("filtroEstado").value;
+  const fExtra = document.getElementById("filtroExtra").value;
+  let docs = (q ? docsCache.filter(d=>docCoincide(d,q)) : docsCache)
+    .filter(d=>d.data().estado !== "VINCULADO");
+  if(fEst)   docs = docs.filter(d=>d.data().estado===fEst);
+  if(fExtra==="si") docs = docs.filter(d=>(d.data().penalidades?.extra_costos||[]).some(Boolean));
+  if(fExtra==="no") docs = docs.filter(d=>!(d.data().penalidades?.extra_costos||[]).some(Boolean));
+  docs = sortDocs(docs);
+  renderTabla(docs);
+  document.getElementById("tableInfo").textContent =
+    `${docs.length} de ${docsCache.length} movimientos`;
+  document.getElementById("pageSub").textContent =
+    `Gestión de penalidades · ${fmtLabel(diaActual)}`;
+}
+
+// ── RENDER TABLA ──────────────────────────────────────────────
+function renderPenalidadesCelda(lista, id) {
+  if(!lista.length) return `<span style="font-size:11px;color:var(--muted);">Sin cargar</span>`;
+  if(lista.length === 1) return `<span class="badge badge-pen">${lista[0]}</span>`;
+  // Más de una: mostrar solo la primera, con botón para ver el resto
+  return `<div class="pen-badges">
+    <span class="badge badge-pen">${lista[0]}</span>
+    <button class="pen-toggle" onclick="event.stopPropagation();togglePenBadges('${id}',this)">+${lista.length-1} más ▼</button>
+    <div id="pen-extra-${id}" style="display:none;width:100%;margin-top:3px;">
+      ${lista.slice(1).map(l=>`<span class="badge badge-pen" style="margin:1px 2px;">${l}</span>`).join("")}
+    </div>
+  </div>`;
+}
+
+window.togglePenBadges = function(id, btn) {
+  const el = document.getElementById("pen-extra-"+id);
+  const open = el.style.display !== "none";
+  el.style.display = open ? "none" : "flex";
+  el.style.flexWrap = "wrap";
+  el.style.gap = "3px";
+  const count = el.querySelectorAll(".badge").length;
+  btn.textContent = open ? "+" + count + " más ▼" : "▲ ocultar";
+};
+
+function renderTabla(docs) {
+  const tbody = document.getElementById("tbodyPen");
+  if(!docs.length) {
+    tbody.innerHTML=`<tr class="loading-row"><td colspan="9">
+      <div class="empty-state"><div class="icon">✅</div>
+      <p>No hay movimientos penalizados para este día</p></div></td></tr>`;
+    return;
+  }
+  const _roles = (()=>{let r=[];try{r=JSON.parse(sessionStorage.getItem("icelion_roles")||"[]");}catch(e){}if(!r.length){const rl=sessionStorage.getItem("icelion_rol");if(rl)r=[rl];}return r;})();
+  const _esAdmin = _roles.includes("admin");
+  const _esPlan  = _roles.includes("planificacion") || _esAdmin;
+  const _esSup   = _roles.includes("supervisor") || _esAdmin;
+  tbody.innerHTML = docs.map(d=>{
+    const id=d.id, data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+    const pen = data.penalidades||{};
+    const lista = pen.lista||[];
+    const puedeOkPlan = _esPlan;
+    const puedeOkSup  = _esSup;
+    const extraCostos = pen.extra_costos||[];
+    const extraAlguno = extraCostos.some(Boolean);
+    const est   = data.estado||"PLANIFICADO";
+    const esRevisado = lista.length > 0;
+
+    return `<tr class="${esRevisado?"row-revisado":""}" onclick="abrirModal('${id}')">
+      <td class="td-mono" style="font-weight:700;">${p.hora_estipulada||"—"}</td>
+      <td class="td-mono" style="color:var(--err);font-weight:700;">${g.hora_arribo||"—"}</td>
+      <td><strong>${p.cliente||"—"}</strong></td>
+      <td>${p.movimiento||"—"}</td>
+      <td class="td-mono">${p.transporte||"—"}</td>
+      <td class="td-ref">${p.referencia||"—"}</td>
+      <td>${badgeEstado(est)}</td>
+
+      <td onclick="event.stopPropagation();">${renderPenalidadesCelda(lista, id)}</td>
+      <td>${extraAlguno
+        ? `<span class="badge badge-extra">SÍ</span>`
+        : `<span style="font-size:11px;color:var(--muted);">NO</span>`
+      }</td>
+      <td style="text-align:center;padding:2px 8px;">
+        ${pen.respaldo_formal
+          ? `<span style="font-size:11px;font-weight:700;color:var(--ok);">SÍ</span>`
+          : `<span style="font-size:11px;color:var(--muted);">—</span>`}
+      </td>
+      <td class="td-check" onclick="event.stopPropagation();">
+        <div class="ok-check ${pen.ok_planificacion?'checked':''} ${!puedeOkPlan?'disabled':''}"
+          title="${pen.ok_planificacion?'OK Planificación ✓':'Marcar OK Planificación'}"
+          onclick="${puedeOkPlan?`toggleOkCheck(event,'${id}','ok_planificacion',${!pen.ok_planificacion})`:''}">
+          ${pen.ok_planificacion?'✓':'—'}
+        </div>
+      </td>
+      <td class="td-check" onclick="event.stopPropagation();">
+        <div class="ok-check ${pen.ok_supervisor?'checked':''} ${!puedeOkSup?'disabled':''}"
+          title="${pen.ok_supervisor?'OK Supervisor ✓':'Marcar OK Supervisor'}"
+          onclick="${puedeOkSup?`toggleOkCheck(event,'${id}','ok_supervisor',${!pen.ok_supervisor})`:''}">
+          ${pen.ok_supervisor?'✓':'—'}
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+window.togglePenList = function(btn) {
+  const list = btn.nextElementSibling;
+  const show = list.classList.toggle("show");
+  const n = btn.textContent.match(/\d+/)?.[0];
+  btn.textContent = show ? `▲ ocultar` : `+${n} más`;
+};
+
+// ── MODAL ─────────────────────────────────────────────────────
+window.toggleOkCheck = async function(e, id, campo, valor) {
+  e.stopPropagation();
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  try {
+    await guardarConAuditoria(doc(db,COL,id), {
+      [`penalidades.${campo}`]: valor
+    }, nombre, `Cambió ${campo}`);
+  } catch(err) { toast("error","Error",err.message); }
+};
+
+window.abrirModal = async function(id) {
+  const d = docsCache.find(x=>x.id===id);
+  if(!d) return;
+  docActual = d;
+
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+  const cd=data.calidad_desvios||{}, svw=data.supervisor_web||{};
+  const pen=data.penalidades||{};
+
+  // Construir penActuales (lista[]) y extraCostos (parallel array)
+  let listaBase = [...(pen.lista||[])];
+  let ecBase    = [...(pen.extra_costos||[])];
+  // Padear extra_costos si es más corto
+  while(ecBase.length < listaBase.length) ecBase.push(false);
+  // Agregar DEMORA ARRIBO TRANSPORTE automáticamente si aplica
+  if(data.penalizado && !listaBase.includes("DEMORA ARRIBO TRANSPORTE")) {
+    listaBase = ["DEMORA ARRIBO TRANSPORTE", ...listaBase];
+    ecBase    = [false, ...ecBase];
+  }
+  penActuales = listaBase;
+  extraCostos = ecBase;
+
+  document.getElementById("penTitulo").textContent = p.cliente||"—";
+  document.getElementById("penSub").textContent =
+    `${p.movimiento||"—"} · Ref: ${p.referencia||"—"} · Est: ${p.hora_estipulada||"—"} · Arr: ${g.hora_arribo||"—"}`;
+
+  // Info box
+  document.getElementById("penInfoBox").innerHTML =
+    infoItem("Hora estipulada", p.hora_estipulada) +
+    infoItem("Hora arribo",     g.hora_arribo) +
+    infoItem("Transporte",      p.transporte) +
+    infoItem("Destino",         p.destino) +
+    infoItem("Origen",          fmtOrigen(data.origen)) +
+    infoItem("Estado",          data.estado);
+
+  // Desvío
+  if(cd.desvio) {
+    document.getElementById("penDesvioBox").innerHTML =
+      infoItem("Desvío",  cd.desvio) +
+      infoItem("Motivo",  cd.motivo_desvio) +
+      infoItem("Notas",   cd.notas_desvio);
+  } else {
+    document.getElementById("penDesvioBox").innerHTML =
+      `<div style="font-size:12px;color:var(--muted);font-style:italic;padding:4px 0;">Sin desvío registrado</div>`;
+  }
+
+  // Resolución supervisor
+  if(svw.solucion_desvio || svw.personal_implicado) {
+    document.getElementById("penResolucionBox").innerHTML =
+      infoItem("Solución",          svw.solucion_desvio) +
+      infoItem("Personal implicado", svw.personal_implicado);
+  } else {
+    document.getElementById("penResolucionBox").innerHTML =
+      `<div style="font-size:12px;color:var(--muted);font-style:italic;padding:4px 0;">Sin resolución registrada</div>`;
+  }
+
+  renderPenList();
+
+  // Campos planificación
+  const respaldo = pen.respaldo_formal === true;
+  const btnR = document.getElementById("btnRespaldo");
+  btnR.classList.toggle("on", respaldo);
+  document.getElementById("labelRespaldo").textContent = respaldo ? "SÍ" : "NO";
+  document.getElementById("archivoGroup").style.display = respaldo ? "" : "none";
+  document.getElementById("penArchivo").value = pen.archivo_respaldo || "";
+  document.getElementById("penObservacion").value = pen.observacion_planificacion || "";
+
+  document.getElementById("modalPen").classList.remove("hidden");
+};
+
+function renderPenList() {
+  const list = document.getElementById("penList");
+  if(!penActuales.length) {
+    list.innerHTML=`<div style="font-size:12px;color:var(--muted);padding:8px 0;">Sin penalidades cargadas</div>`;
+    return;
+  }
+  list.innerHTML = penActuales.map((nombre,i)=>`
+    <div class="pen-item">
+      <span class="pen-item-label">🚨 ${nombre}</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span style="font-size:10px;color:var(--muted);font-family:var(--mono);">Extra costo</span>
+        <button class="toggle-btn ${extraCostos[i]?'on':''}" onclick="toggleItemExtra(${i})" style="width:36px;height:20px;" title="Genera extra costo"></button>
+        <button class="pen-item-remove" onclick="quitarPenalidad(${i})" title="Quitar">✕</button>
+      </div>
+    </div>`).join("");
+}
+
+window.toggleItemExtra = function(idx) {
+  extraCostos[idx] = !extraCostos[idx];
+  renderPenList();
+};
+
+window.quitarPenalidad = function(idx) {
+  penActuales.splice(idx,1);
+  extraCostos.splice(idx,1);
+  renderPenList();
+};
+
+document.getElementById("btnAgregarPen").addEventListener("click", ()=>{
+  const sel = document.getElementById("selectPenalidad");
+  const val = sel.value;
+  if(!val) return;
+  if(penActuales.includes(val)) { toast("err","Duplicado","Esa penalidad ya está cargada"); return; }
+  penActuales.push(val);
+  extraCostos.push(false);
+  sel.value = "";
+  renderPenList();
+});
+
+window.toggleRespaldo = function() {
+  const btn = document.getElementById("btnRespaldo");
+  const on = btn.classList.toggle("on");
+  document.getElementById("labelRespaldo").textContent = on ? "SÍ" : "NO";
+  document.getElementById("archivoGroup").style.display = on ? "" : "none";
+};
+
+function cerrarModal() {
+  document.getElementById("modalPen").classList.add("hidden");
+  docActual=null; penActuales=[]; extraCostos=[];
+}
+document.getElementById("btnCerrarPen").addEventListener("click",   cerrarModal);
+document.getElementById("btnCancelarPen").addEventListener("click", cerrarModal);
+
+// ── GUARDAR ───────────────────────────────────────────────────
+document.getElementById("btnGuardarPen").addEventListener("click", async ()=>{
+  if(!docActual) return;
+  const btn=document.getElementById("btnGuardarPen");
+  btn.disabled=true; btn.textContent="Guardando...";
+  try {
+    const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+    const extraGlobal = extraCostos.some(Boolean); // legacy compat
+    const nuevoPenalizado = penActuales.includes("DEMORA ARRIBO TRANSPORTE");
+    await guardarConAuditoria(doc(db,COL,docActual.id), {
+      "penalidades.lista":                    penActuales,
+      "penalidades.extra_costos":             extraCostos,
+      "penalidades.extra_costo":              extraGlobal,
+      "penalidades.respaldo_formal":          document.getElementById("btnRespaldo").classList.contains("on"),
+      "penalidades.archivo_respaldo":         document.getElementById("penArchivo").value.trim(),
+      "penalidades.observacion_planificacion":document.getElementById("penObservacion").value.trim(),
+      penalizado:                             nuevoPenalizado
+    }, nombre, "Editó penalidades");
+    toast("ok","Guardado","Penalidades actualizadas");
+    cerrarModal();
+    cargarDia(diaActual);
+  } catch(err) {
+    toast("err","Error",err.message);
+  } finally { btn.disabled=false; btn.textContent="Guardar"; }
+});
+
+// ── EVENTOS ───────────────────────────────────────────────────
+document.getElementById("btnAnterior").addEventListener("click",  ()=>cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnSiguiente").addEventListener("click", ()=>cargarDia(sumarDias(diaActual, 1)));
+document.getElementById("btnHoy").addEventListener("click",       ()=>cargarDia(hoy()));
+document.getElementById("btnActualizar").addEventListener("click",()=>cargarDia(diaActual));
+document.getElementById("filtroEstado").addEventListener("change",()=>aplicarFiltros());
+document.getElementById("filtroExtra").addEventListener("change", ()=>aplicarFiltros());
+document.getElementById("campoBuscar").addEventListener("input",  ()=>aplicarFiltros());
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("campoBuscar").value="";
+  aplicarFiltros();
+});
+
+// ── INICIO ────────────────────────────────────────────────────
+cargarListaPenalidades();
+cargarDia(hoy());
+</script>
+
+<script>
+(function(){
+  const MODULOS={
+    admin:[
+      {label:"Planificación",  href:"planificacion.html"},
+      {label:"Guardia",        href:"guardia.html"},
+      {label:"Calidad",        href:"calidad.html"},
+      {label:"Desvíos",        href:"calidad_desvios.html"},
+      {label:"Supervisor",     href:"supervisor_web.html"},
+      {label:"Consolidador",   href:"consolidador.html"},
+      {label:"Data Entry",     href:"dataentry.html"},
+      {label:"Visor Completo", href:"visor_completo.html"},
+      {label:"Penalidades",    href:"penalidades.html"},
+      {label:"Listas",         href:"listas.html"}
+    ],
+    planificacion:[
+      {label:"Planificación",  href:"planificacion.html"},
+      {label:"Penalidades",    href:"penalidades.html"}
+    ],
+    calidad:[
+      {label:"Calidad",        href:"calidad.html"},
+      {label:"Desvíos",        href:"calidad_desvios.html"},
+      {label:"Visor Completo", href:"visor_completo.html"},
+      {label:"Penalidades",    href:"penalidades.html"}
+    ],
+    supervisor:[
+      {label:"Supervisor",     href:"supervisor_web.html"},
+      {label:"Visor Completo", href:"visor_completo.html"},
+      {label:"Penalidades",    href:"penalidades.html"}
+    ],
+    consolidador:[
+      {label:"Consolidador",   href:"consolidador.html"},
+      {label:"Planificación",  href:"planificacion.html"},
+      {label:"Penalidades",    href:"penalidades.html"}
+    ],
+    guardia:   [{label:"Guardia",     href:"guardia.html"}],
+    dataentry: [{label:"Data Entry",  href:"dataentry.html"}],
+    moderador: [{label:"Listas",      href:"listas.html"}]
+  };
+  const MODULO_LISTAS={label:"Listas",href:"listas.html"};
+  const style=document.createElement("style");
+  style.textContent=`.nav-menu-wrap{position:relative;}.nav-module-btn{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;}.nav-module-btn:hover{border-color:var(--accent);color:var(--accent2);}.nav-module-btn .chevron{font-size:9px;transition:transform .2s;}.nav-module-btn.open .chevron{transform:rotate(180deg);}.nav-dropdown{position:absolute;top:calc(100% + 8px);left:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.4);min-width:180px;overflow:hidden;z-index:200;display:none;}.nav-dropdown.show{display:block;}.nav-dropdown a{display:block;padding:10px 16px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;transition:background .15s;border-bottom:1px solid var(--border);}.nav-dropdown a:last-child{border-bottom:none;}.nav-dropdown a:hover{background:var(--panel2);color:var(--accent2);}.nav-dropdown a.activo{color:var(--accent2);background:rgba(59,130,246,.08);}`;
+  document.head.appendChild(style);
+  const rol=sessionStorage.getItem("icelion_rol")||"admin";
+  const esMod=sessionStorage.getItem("icelion_moderador")==="1";
+  const paginaAct=window.location.pathname.split("/").pop()||"index.html";
+  let roles=[];
+  try{roles=JSON.parse(sessionStorage.getItem("icelion_roles")||"[]");}catch(e){}
+  if(!roles.length) roles=[rol];
+  if(roles.includes("admin")) roles=["admin"];
+  const seen=new Set(); let modulos=[];
+  roles.forEach(function(r){(MODULOS[r]||[]).forEach(function(m){if(!seen.has(m.href)){seen.add(m.href);modulos.push(m);}});});
+  if(esMod&&!roles.includes("admin")&&!roles.includes("moderador")){if(!seen.has("listas.html"))modulos.push(MODULO_LISTAS);}
+  if(modulos.length<=1) return;
+  const badge=document.querySelector(".nav-module"); if(!badge) return;
+  const labelActual=badge.textContent.trim();
+  const wrap=document.createElement("div"); wrap.className="nav-menu-wrap";
+  const btn=document.createElement("button"); btn.className="nav-module-btn";
+  btn.innerHTML=labelActual+' <span class="chevron">▼</span>';
+  const dropdown=document.createElement("div"); dropdown.className="nav-dropdown";
+  dropdown.innerHTML=modulos.map(function(m){return'<a href="'+m.href+'" class="'+(m.href===paginaAct?"activo":"")+'">'+(m.href===paginaAct?"● ":"")+m.label+'</a>';}).join("");
+  wrap.appendChild(btn); wrap.appendChild(dropdown); badge.replaceWith(wrap);
+  btn.addEventListener("click",function(e){e.stopPropagation();btn.classList.toggle("open");dropdown.classList.toggle("show");});
+  document.addEventListener("click",function(){btn.classList.remove("open");dropdown.classList.remove("show");});
+})();
+</script>
+
+</body>
+</html>

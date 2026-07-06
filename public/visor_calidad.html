@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <title>IceLion | Visor Calidad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#080e1a;--panel:#0f1824;--panel2:#131f2e;--panel3:#1a2840;--border:rgba(255,255,255,0.07);--accent:#3b82f6;--accent2:#60a5fa;--text:#e8edf5;--muted:#6b7f99;--ok:#22c55e;--err:#ef4444;--warn:#f59e0b;--radius:10px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
+    body.light{--bg:#eef2f7;--panel:#ffffff;--panel2:#f4f7fb;--panel3:#eef2f7;--border:rgba(0,0,0,0.07);--accent:#2563eb;--accent2:#1d4ed8;--text:#0f172a;--muted:#64748b;--ok:#16a34a;--err:#dc2626;--warn:#d97706;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+    .hidden{display:none!important;}
+
+    .navbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+    .nav-module{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+    .nav-right{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:var(--radius);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;}
+    .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:var(--radius);cursor:pointer;font-size:12px;}
+
+    .page{padding:12px 16px;max-width:100%;margin:0 auto;}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+    .page-title{font-size:20px;font-weight:700;}
+    .page-sub{font-size:12px;color:var(--muted);}
+    .dia-nav{display:flex;align-items:center;gap:8px;}
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .btn-ghost{background:var(--panel2);border:1px solid var(--border);color:var(--text);}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent2);}
+    .btn-sm{padding:4px 10px;font-size:11px;}
+    .btn-primary{background:var(--accent);color:#fff;}
+    .btn-primary:hover{opacity:.9;}
+    .btn-print{background:var(--panel2);border:1px solid var(--border);color:var(--text);margin-right:auto;}
+
+    .search-bar{display:flex;gap:8px;margin-bottom:16px;}
+    .search-input{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:var(--radius);font-family:var(--font);font-size:13px;width:320px;outline:none;}
+    .search-input:focus{border-color:var(--accent);}
+
+    .section{margin-bottom:24px;}
+    .section-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;border-bottom:none;cursor:pointer;user-select:none;}
+    .section-header:hover{background:var(--panel2);}
+    .section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+    .section-count{font-size:11px;color:var(--muted);font-family:var(--mono);}
+    .section-dot{width:8px;height:8px;border-radius:50%;}
+    .section-chevron{margin-left:auto;font-size:12px;color:var(--muted);transition:transform .2s;display:inline-block;}
+    .section-chevron.up{transform:rotate(-90deg);}
+
+    .mov-table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);}
+    .mov-table th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;}
+    .mov-table td{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+    .mov-table tr:last-child td{border-bottom:none;}
+    .mov-row{cursor:pointer;transition:background .12s;}
+    .mov-row:hover{background:var(--panel2);}
+    .mov-row.selected{background:rgba(59,130,246,.08);outline:1px solid rgba(59,130,246,.3);}
+    .td-mono{font-family:var(--mono);font-size:11px;color:var(--muted);}
+    .td-ref{font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:600;}
+    .empty-row td{text-align:center;color:var(--muted);font-size:12px;padding:20px;font-style:italic;}
+    .loading-row td{text-align:center;padding:20px;color:var(--muted);}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+    .badge-planificado{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-agregado{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-sinidentif{background:rgba(239,68,68,.15);color:#ef4444;}
+    .badge-arribado{background:rgba(251,191,36,.15);color:#fbbf24;}
+    .badge-dock{background:rgba(168,85,247,.15);color:#c084fc;}
+    .badge-atracado{background:rgba(245,158,11,.15);color:#f64dfc;}
+    .badge-iniciomov{background:rgba(134,239,172,.2);color:#4ade80;}
+    .badge-pausado{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-liberado{background:rgba(34,211,238,.15);color:#67e8f9;}
+    .badge-finmov{background:rgba(22,163,74,.2);color:#16a34a;}
+    .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-expo{background:rgba(234,179,8,.15);color:#fde047;}
+    .nro-badge{display:inline-block;min-width:20px;text-align:center;background:rgba(59,130,246,.2);color:var(--accent2);border-radius:5px;font-size:10px;font-weight:700;padding:1px 5px;margin-left:3px;}
+
+    /* SIDE PANEL — ancho grande para calidad */
+    .side-panel{position:fixed;top:0;right:0;height:100vh;width:680px;background:var(--panel);border-left:1px solid var(--border);z-index:300;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 32px rgba(0,0,0,.4);}
+    .side-panel.open{transform:translateX(0);}
+    .side-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:299;opacity:0;pointer-events:none;transition:opacity .25s;}
+    .side-panel-overlay.open{opacity:1;pointer-events:all;}
+    .side-panel-header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .side-panel-title{font-size:15px;font-weight:700;}
+    .side-panel-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+    .side-panel-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;}
+    .side-panel-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:space-between;flex-shrink:0;}
+    .sp-section{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+    .sp-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;}
+    .sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .sp-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+    .sp-field{display:flex;flex-direction:column;gap:2px;}
+    .sp-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .sp-val{font-size:13px;font-weight:600;word-break:break-word;}
+    .sp-val.mono{font-family:var(--mono);font-size:12px;}
+    .sp-val.muted{color:var(--muted);font-weight:400;}
+    .sp-full{grid-column:1/-1;}
+
+    /* CALIDAD FORM en panel */
+    .cal-section{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+    .cal-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px;}
+    .cal-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+    .cal-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .form-group{display:flex;flex-direction:column;gap:4px;}
+    .form-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+    .form-input{background:var(--panel);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;}
+    .form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+    .expo-badge{background:rgba(234,179,8,.15);color:#fde047;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;margin-right:6px;}
+
+    .info-box{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:2px;}
+    .info-item{display:flex;flex-direction:column;gap:2px;}
+    .info-label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);}
+    .info-value{font-size:12px;font-weight:600;}
+
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:13px;z-index:999;display:none;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+    .toast.ok{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08);}
+    .toast.err{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08);}
+    #toastTitle{font-weight:700;margin-bottom:2px;}
+
+    /* PRINT */
+    #printArea { display:none; }
+    @media print {
+      body > *:not(#printArea) { display:none !important; }
+      #printArea { display:block !important;font-family:'DM Sans',system-ui,sans-serif;font-size:12px;color:#000;padding:20px; }
+      .print-logo { font-size:18px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
+      .print-logo img { width:36px;height:36px;border-radius:6px;object-fit:cover;display:block; }
+      .print-logo-sub { font-size:10px;color:#555;margin-bottom:16px;letter-spacing:.5px;text-transform:uppercase; }
+      .print-title { font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;border-bottom:2px solid #000;padding-bottom:6px; }
+      .print-section { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#555;margin:14px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px; }
+      .print-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;margin-bottom:4px; }
+      .print-grid-2 { display:grid;grid-template-columns:repeat(2,1fr);gap:6px 16px;margin-bottom:4px; }
+      .print-field { display:flex;flex-direction:column;gap:1px; }
+      .print-field-label { font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#666; }
+      .print-field-value { font-size:12px;font-weight:600;border-bottom:1px solid #ddd;min-height:18px;padding-bottom:2px; }
+      .print-field-value.empty { color:#aaa;font-weight:400;font-style:italic; }
+      .print-footer { margin-top:24px;font-size:10px;color:#888;text-align:right; }
+    }
+    .btn-notas{background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:6px;transition:all .2s;line-height:1;}
+    .btn-notas.sin-notas{opacity:.25;filter:grayscale(1);}
+    .dot-alerta{display:inline-block;width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+    .dot-alerta.none    {background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);}
+    .dot-alerta.amarillo{background:#facc15;box-shadow:0 0 5px rgba(250,204,21,.6);}
+    .dot-alerta.rojo    {background:#ef4444;box-shadow:0 0 5px rgba(239,68,68,.6);}
+    .btn-notas.tiene-notas{opacity:1;}
+    .btn-notas.pendiente{filter:drop-shadow(0 0 5px rgba(239,68,68,.7));}
+    .btn-notas:hover{opacity:1;filter:none;transform:scale(1.15);}
+    .modal-overlay-notas{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .modal-notas-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:85vh;overflow:hidden;}
+    .nota-item{border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;border:1px solid var(--border);background:var(--panel2);margin-bottom:6px;}
+    .nota-item.resuelta{opacity:.4;}
+    .nota-meta{font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .nota-rol{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;background:rgba(59,130,246,.15);color:var(--accent2);}
+  </style>
+</head>
+<body>
+
+<!-- ÁREA DE IMPRESIÓN -->
+<div id="printArea">
+  <div class="print-logo">
+    <img src="logo.png" style="width:36px;height:36px;border-radius:6px;object-fit:cover;display:block;">
+    IceLion
+  </div>
+  <div class="print-logo-sub">Frio Polar S.A. — Gestión Logística</div>
+  <div class="print-title">Ficha de Calidad</div>
+  <div class="print-section">Datos del movimiento</div>
+  <div class="print-grid" id="printMovGrid"></div>
+  <div class="print-section">Datos generales de calidad</div>
+  <div class="print-grid" id="printCalGrid"></div>
+  <div class="print-section" id="printExpoTitle">Datos de exportación</div>
+  <div class="print-grid" id="printExpoGrid"></div>
+  <div class="print-section" id="printProductosTitle">Productos</div>
+  <div id="printProductosGrid"></div>
+  <div class="print-footer" id="printFooter"></div>
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <img src="logo.png" style="width:28px;height:28px;border-radius:6px;">
+    IceLion
+    <div class="nav-module">VISOR CALIDAD</div>
+  </div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-theme" id="btnTema">🌙</button>
+    <button class="btn-logout" id="btnLogout">Salir</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Visor Calidad</div>
+      <div class="page-sub" id="pageSub">Cargando...</div>
+    </div>
+    <div class="dia-nav">
+      <button class="btn btn-ghost btn-sm" id="btnDiaAnterior">◀</button>
+      <span id="labelDia" style="font-size:13px;font-weight:600;min-width:120px;text-align:center;"></span>
+      <button class="btn btn-ghost btn-sm" id="btnDiaSiguiente">▶</button>
+      <button class="btn btn-ghost btn-sm" id="btnHoy">Hoy</button>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="search-input" id="campoBuscar" placeholder="Buscar por cliente, referencia, patente, transporte...">
+    <button class="btn btn-ghost btn-sm" id="btnLimpiar">✕</button>
+  </div>
+
+  <!-- PLANIFICADOS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secPlanificados','chevPlanificados')">
+      <div class="section-dot" style="background:#6b7f99;"></div>
+      <div class="section-title">Planificados</div>
+      <div class="section-count" id="countPlanificados">—</div>
+      <span class="section-chevron" id="chevPlanificados">▼</span>
+    </div>
+    <div id="secPlanificados">
+      <table class="mov-table">
+        <thead><tr>
+          <th>Estado</th><th>Hora est.</th><th>Cliente</th>
+          <th>Movimiento</th><th>Transporte</th><th>Referencia</th><th>Lugar carga</th><th>Destino</th><th title="Alerta">⚡</th><th>⚠</th>
+        </tr></thead>
+        <tbody id="tbodyPlanificados">
+          <tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ARRIBADOS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secArribados','chevArribados')">
+      <div class="section-dot" style="background:#fbbf24;"></div>
+      <div class="section-title">Arribados</div>
+      <div class="section-count" id="countArribados">—</div>
+      <span class="section-chevron" id="chevArribados">▼</span>
+    </div>
+    <div id="secArribados">
+      <table class="mov-table">
+        <thead><tr>
+          <th>Estado</th><th>Cliente</th><th>Lugar carga</th>
+          <th>Movimiento</th><th>Transporte</th><th>Referencia</th><th>Destino</th><th>Patentes</th><th>Dock</th><th title='Soporte Fotográfico'>SF</th><th>Calidad</th><th>Notas</th><th title="Alerta">⚡</th><th>⚠</th>
+        </tr></thead>
+        <tbody id="tbodyArribados">
+          <tr class="loading-row"><td colspan="12"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EN PLANTA -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secPlanta','chevPlanta')">
+      <div class="section-dot" style="background:#4ade80;"></div>
+      <div class="section-title">En Planta</div>
+      <div class="section-count" id="countPlanta">—</div>
+      <span class="section-chevron" id="chevPlanta">▼</span>
+    </div>
+    <div id="secPlanta">
+      <table class="mov-table">
+        <thead><tr>
+          <th>Estado</th><th>Cliente</th><th>Lugar carga</th>
+          <th>Movimiento</th><th>Transporte</th><th>Referencia</th><th>Destino</th><th>Patentes</th><th>Dock</th><th title='Soporte Fotográfico'>SF</th><th>Calidad</th><th>Notas</th><th title="Alerta">⚡</th><th>⚠</th>
+        </tr></thead>
+        <tbody id="tbodyPlanta">
+          <tr class="loading-row"><td colspan="12"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LIBERADOS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secLiberados','chevLiberados')">
+      <div class="section-dot" style="background:#67e8f9;"></div>
+      <div class="section-title">Liberados</div>
+      <div class="section-count" id="countLiberados">—</div>
+      <span class="section-chevron" id="chevLiberados">▼</span>
+    </div>
+    <div id="secLiberados">
+      <table class="mov-table">
+        <thead><tr>
+          <th>Estado</th><th>Cliente</th><th>Lugar carga</th>
+          <th>Movimiento</th><th>Transporte</th><th>Referencia</th><th>Destino</th><th>Patentes</th><th>Dock</th><th title='Soporte Fotográfico'>SF</th><th>Calidad</th><th>Notas</th><th title="Alerta">⚡</th><th>⚠</th>
+        </tr></thead>
+        <tbody id="tbodyLiberados">
+          <tr class="loading-row"><td colspan="12"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CANCELADOS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSec('secCancelados','chevCancelados')">
+      <div class="section-dot" style="background:#6b7f99;"></div>
+      <div class="section-title">Cancelados</div>
+      <div class="section-count" id="countCancelados">—</div>
+      <span class="section-chevron" id="chevCancelados">▼</span>
+    </div>
+    <div id="secCancelados">
+      <table class="mov-table">
+        <thead><tr>
+          <th>Estado</th><th>Hora est.</th><th>Cliente</th>
+          <th>Movimiento</th><th>Transporte</th><th>Referencia</th><th>Lugar carga</th><th>Destino</th><th title="Alerta">⚡</th><th>⚠</th>
+        </tr></thead>
+        <tbody id="tbodyCancelados">
+          <tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTAS -->
+<div class="modal-overlay-notas hidden" id="modalNotas">
+  <div class="modal-notas-box">
+    <div class="modal-header">
+      <div><h2>📝 Notas</h2><div class="modal-sub" id="notasSub">—</div></div>
+      <button class="btn-theme" onclick="cerrarNotasModal()">✕</button>
+    </div>
+    <div class="modal-body" style="flex:1;overflow-y:auto;">
+      <div id="notasHistorial"></div>
+      <div style="margin-top:12px;">
+        <div class="form-group">
+          <label class="form-label">Nueva nota</label>
+          <textarea class="form-input" id="notasTexto" rows="3" placeholder="Escribí tu nota..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-ghost" onclick="cerrarNotasModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarNota">Guardar nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDE PANEL -->
+<div class="side-panel-overlay" id="panelOverlay" onclick="cerrarPanel()"></div>
+<div class="side-panel" id="sidePanel">
+  <div class="side-panel-header">
+    <div>
+      <div class="side-panel-title" id="spTitle">—</div>
+      <div class="side-panel-sub" id="spSub">—</div>
+    </div>
+    <button class="btn-theme" onclick="cerrarPanel()" style="margin-left:12px;">✕</button>
+  </div>
+  <div class="side-panel-body" id="spBody"></div>
+  <div class="side-panel-footer">
+    <button class="btn btn-print" id="btnImprimirCalidad">🖨 Imprimir ficha</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+      <select id="selectVerif" style="background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;outline:none;" onchange="cambiarVerif(this.value)">
+        <option value="">— Sin verificar</option>
+        <option value="incompleto">⚠ Incompleto</option>
+        <option value="completo">✔ Completo</option>
+      </select>
+      <button class="btn btn-ghost" onclick="cerrarPanel()">Cerrar</button>
+      <button class="btn btn-primary" id="btnGuardarCalidad">Guardar calidad</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div id="toastTitle"></div>
+  <div id="toastMsg"></div>
+</div>
+
+<script type="module">
+import { auth, db, COL } from "./js/firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, fmtFecha, fmtTimestamp, badgeEstado, badgeMov, caps } from "./js/utils.js";
+
+initTema();
+
+let diaActual = hoy();
+let docsCache = [];
+let textoBusqueda = "";
+let panelDocId = null;
+let unsub = null;
+
+function buildAuditEntry(nombre) {
+  const rol = sessionStorage.getItem("icelion_rol") || "calidad";
+  return { fecha: new Date(), usuario: nombre, rol };
+}
+
+// ── ESTADOS ───────────────────────────────────────────────────
+const ESTADOS_PLANIFICADOS = ["PLANIFICADO","AGREGADO"];
+const ESTADOS_ARRIBADOS  = ["ARRIBADO","DOCK ASIGNADO"];
+const ORDEN_ESTADOS = ["PLANIFICADO","AGREGADO","ARRIBADO","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO","LIBERADO"];
+const ESTADOS_PLANTA    = ["ATRACADO", "INICIO MOVIMIENTO", "PAUSADO", "FIN MOVIMIENTO"];
+const OCULTOS           = ["VINCULADO","SIN IDENTIFICAR"];
+const ESTADOS_CANCELADOS = ["CANCELADO","CANCELA MOVIMIENTO"];
+
+function sortByEstado(docs) {
+  return [...docs].sort((a,b) => {
+    const ia = ORDEN_ESTADOS.indexOf(a.data().estado||"");
+    const ib = ORDEN_ESTADOS.indexOf(b.data().estado||"");
+    const pa = a.data().planificacion?.hora_estipulada||"";
+    const pb = b.data().planificacion?.hora_estipulada||"";
+    if (ia !== ib) return (ia===-1?999:ia) - (ib===-1?999:ib);
+    return pa.localeCompare(pb);
+  });
+}
+
+function getNotas(data) {
+  const notas = Array.isArray(data.planificacion?.notas) ? [...data.planificacion.notas] : [];
+  const obs = data.planificacion?.observaciones;
+  if (obs && obs.trim() && !notas.length)
+    notas.push({id:"legacy",texto:obs,autor:"Sistema",rol:"sistema",fecha:null,resuelta:false});
+  return notas;
+}
+function tienePendientes(data) { return getNotas(data).some(n=>!n.resuelta); }
+function notaBtn(id, data) {
+  const notas = getNotas(data);
+  const pend  = tienePendientes(data);
+  const cls   = notas.length ? (pend ? "pendiente" : "tiene-notas") : "sin-notas";
+  return `<button class="btn-notas ${cls}" onclick="event.stopPropagation();abrirNotasModal('${id}')" title="Notas">📝</button>`;
+}
+function esExpoODescarga(mov) {
+  const m = (mov||"").toUpperCase();
+  return m.includes("EXPO") || m.includes("DESCARGA");
+}
+function patentes(data) {
+  const g = data.guardia||{}, p = data.planificacion||{};
+  const t = g.patente_tractor||p.patente_tractor||"";
+  const s = g.patente_semi||p.patente_semi||"";
+  return [t,s].filter(Boolean).join(" / ") || "—";
+}
+function badgeVerifIcon(data) {
+  const v = data.calidad?.estado_verificacion || "";
+  if (v === "completo")   return `<span style="color:#22c55e;font-size:15px;" title="Completo">✔</span>`;
+  if (v === "incompleto") return `<span style="color:#fbbf24;font-size:13px;" title="Incompleto">○</span>`;
+  return `<span style="color:#6b7f99;font-size:13px;opacity:.4;" title="Sin verificar">○</span>`;
+}
+
+function badgePen(data) {
+  return data.penalizado ? `<span style="color:#ef4444;font-size:15px;font-weight:900;" title="Penalizado">!</span>` : "";
+}
+
+const ESTADO_CLS = {
+  "PLANIFICADO":"badge-planificado","AGREGADO":"badge-agregado","SIN IDENTIFICAR":"badge-sinidentif",
+  "ARRIBADO":"badge-arribado","EN ESPERA":"badge-dock","DOCK ASIGNADO":"badge-dock",
+  "ATRACADO":"badge-atracado","INICIO MOVIMIENTO":"badge-iniciomov","PAUSADO":"badge-pausado",
+  "FIN MOVIMIENTO":"badge-finmov","CANCELA MOVIMIENTO":"badge-cancelado","CANCELADO":"badge-cancelado",
+  "LIBERADO":"badge-liberado","VINCULADO":"badge-cancelado",
+};
+function badgeEst(e) {
+  return `<span class="badge ${ESTADO_CLS[e]||"badge-planificado"}">${e||"—"}</span>`;
+}
+
+// ── CARGA ─────────────────────────────────────────────────────
+function cargarDia(fecha) {
+  diaActual = fecha;
+  document.getElementById("labelDia").textContent = fmtLabel(fecha);
+  document.getElementById("pageSub").textContent = "Cargando...";
+  if (unsub) unsub();
+  const q = query(collection(db,COL), where("planificacion.fecha_prevista","==",fecha), orderBy("planificacion.hora_estipulada","asc"));
+  unsub = onSnapshot(q, snap => {
+    docsCache = snap.docs;
+    aplicarFiltros();
+  }, err => toast("err","Error",err.message));
+}
+
+function aplicarFiltros() {
+  const term = textoBusqueda.trim().toUpperCase();
+  let docs = docsCache;
+  if (term) {
+    docs = docs.filter(d => {
+      const data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+      return [p.cliente,p.referencia,p.transporte,p.booking,p.contenedor,
+              g.patente_tractor,p.patente_tractor,g.patente_semi,p.patente_semi,
+              g.chofer,data.estado].some(v=>(v||"").toUpperCase().includes(term));
+    });
+  }
+  const docsActivos = docs.filter(d => !OCULTOS.includes(d.data().estado) && !ESTADOS_CANCELADOS.includes(d.data().estado));
+  const planificados = sortByEstado(docsActivos.filter(d => ESTADOS_PLANIFICADOS.includes(d.data().estado)));
+  const arribados    = sortByEstado(docsActivos.filter(d => ESTADOS_ARRIBADOS.includes(d.data().estado)));
+  const planta       = sortByEstado(docsActivos.filter(d => ESTADOS_PLANTA.includes(d.data().estado)));
+  const liberados    = sortByEstado(docsActivos.filter(d => d.data().estado === "LIBERADO"));
+  const cancelados   = docs.filter(d => ESTADOS_CANCELADOS.includes(d.data().estado)).sort((a,b)=>(a.data().planificacion?.hora_estipulada||"").localeCompare(b.data().planificacion?.hora_estipulada||""));
+  document.getElementById("countCancelados").textContent  = `${cancelados.length} mov.`;
+  document.getElementById("countPlanificados").textContent = `${planificados.length} mov.`;
+  document.getElementById("countArribados").textContent    = `${arribados.length} mov.`;
+  document.getElementById("countPlanta").textContent       = `${planta.length} mov.`;
+  document.getElementById("countLiberados").textContent    = `${liberados.length} mov.`;
+  document.getElementById("pageSub").textContent = fmtLabel(diaActual);
+  renderPlanificados(planificados);
+  renderArribados(arribados);
+  renderPlanta(planta);
+  renderLiberados(liberados);
+  renderCancelados(cancelados);
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function rowPlanificado(d) {
+  const data=d.data(), p=data.planificacion||{};
+  return `<tr class="mov-row" onclick="abrirPanel('${d.id}')">
+    <td>${badgeEst(data.estado)}</td>
+    <td class="td-mono">${p.hora_estipulada||"—"}</td>
+    <td><strong>${(p.cliente||"—").slice(0,18)}</strong></td>
+    <td>${badgeMov(p.movimiento)}</td>
+    <td class="td-mono">${(p.transporte||"—").slice(0,14)}</td>
+    <td class="td-ref">${p.referencia||"—"}</td>
+    <td class="td-mono">${(p.lugar_carga||"—").slice(0,16)}</td>
+    <td class="td-mono">${p.destino||"—"}</td>
+    <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td><td style="text-align:center;">${badgePen(data)}</td>
+  </tr>`;
+}
+
+function rowArribado(d) {
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{};
+  return `<tr class="mov-row" onclick="abrirPanel('${d.id}')">
+    <td>${badgeEst(data.estado)}</td>
+    <td><strong>${(p.cliente||"—").slice(0,18)}</strong></td>
+    <td class="td-mono">${(p.lugar_carga||"—").slice(0,16)}</td>
+    <td>${badgeMov(p.movimiento)}</td>
+    <td class="td-mono">${(p.transporte||"—").slice(0,14)}</td>
+    <td class="td-ref">${p.referencia||"—"}</td>
+    <td class="td-mono">${(p.destino||"—").slice(0,14)}</td>
+    <td class="td-mono">${patentes(data)}</td>
+    <td class="td-mono">—</td>
+    <td style="text-align:center;">${(()=>{const sf=(p.soporte_foto||'').toUpperCase();return sf==='SI'?`<span style="color:var(--ok);font-weight:700;font-size:11px;">SI</span>`:(sf==='NO'?`<span style="color:var(--muted);font-size:11px;">NO</span>`:`<span style="color:var(--muted);font-size:11px;">—</span>`);})()}</td>
+    <td style="text-align:center;">${badgeVerifIcon(data)}</td>
+    <td style="text-align:center;">${notaBtn(d.id,data)}</td>
+    <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td><td style="text-align:center;">${badgePen(data)}</td>
+  </tr>`;
+}
+
+function rowPlanta(d) {
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{}, sv=data.supervisor||{};
+  const dock = sv.dock ? `D${sv.dock}` : "—";
+  return `<tr class="mov-row" onclick="abrirPanel('${d.id}')">
+    <td>${badgeEst(data.estado)}</td>
+    <td><strong>${(p.cliente||"—").slice(0,18)}</strong></td>
+    <td class="td-mono">${(p.lugar_carga||"—").slice(0,16)}</td>
+    <td>${badgeMov(p.movimiento)}</td>
+    <td class="td-mono">${(p.transporte||"—").slice(0,14)}</td>
+    <td class="td-ref">${p.referencia||"—"}</td>
+    <td class="td-mono">${(p.destino||"—").slice(0,14)}</td>
+    <td class="td-mono">${patentes(data)}</td>
+    <td class="td-mono">${dock}</td>
+    <td style="text-align:center;">${(()=>{const sf=(p.soporte_foto||'').toUpperCase();return sf==='SI'?`<span style="color:var(--ok);font-weight:700;font-size:11px;">SI</span>`:(sf==='NO'?`<span style="color:var(--muted);font-size:11px;">NO</span>`:`<span style="color:var(--muted);font-size:11px;">—</span>`);})()}</td>
+    <td style="text-align:center;">${badgeVerifIcon(data)}</td>
+    <td style="text-align:center;">${notaBtn(d.id,data)}</td>
+    <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td><td style="text-align:center;">${badgePen(data)}</td>
+  </tr>`;
+}
+
+function renderCancelados(docs) {
+  document.getElementById("tbodyCancelados").innerHTML = docs.length
+    ? docs.map(d => {
+        const data=d.data(), p=data.planificacion||{};
+        return `<tr class="mov-row" onclick="abrirPanel('${d.id}')">
+          <td>${badgeEst(data.estado)}</td>
+          <td class="td-mono">${p.hora_estipulada||"—"}</td>
+          <td><strong>${(p.cliente||"—").slice(0,18)}</strong></td>
+          <td>${badgeMov(p.movimiento)}</td>
+          <td class="td-mono">${(p.transporte||"—").slice(0,14)}</td>
+          <td class="td-ref">${p.referencia||"—"}</td>
+          <td class="td-mono">${(p.lugar_carga||"—").slice(0,16)}</td>
+          <td class="td-mono">${p.destino||"—"}</td>
+          <td style="text-align:center;">${(()=>{const _a=data.alerta_cambio||"";const _c=_a==="rojo"?"rojo":_a==="amarillo"?"amarillo":"none";const _t=_a==="rojo"?"Nuevo cambio":_a==="amarillo"?"Cambio":"Sin alerta";return `<span class="dot-alerta ${_c}" title="${_t}"></span>`;})()}</td><td style="text-align:center;">${badgePen(data)}</td>
+        </tr>`;
+      }).join("")
+    : `<tr class="empty-row"><td colspan="8">Sin movimientos cancelados</td></tr>`;
+}
+
+function renderPlanificados(docs) {
+  document.getElementById("tbodyPlanificados").innerHTML = docs.length
+    ? docs.map(rowPlanificado).join("")
+    : `<tr class="empty-row"><td colspan="8">Sin movimientos planificados</td></tr>`;
+}
+
+function renderArribados(docs) {
+  document.getElementById("tbodyArribados").innerHTML = docs.length
+    ? docs.map(rowArribado).join("")
+    : `<tr class="empty-row"><td colspan="12">Sin movimientos arribados</td></tr>`;
+}
+function renderPlanta(docs) {
+  document.getElementById("tbodyPlanta").innerHTML = docs.length
+    ? docs.map(rowPlanta).join("")
+    : `<tr class="empty-row"><td colspan="12">Sin movimientos en planta</td></tr>`;
+}
+function renderLiberados(docs) {
+  document.getElementById("tbodyLiberados").innerHTML = docs.length
+    ? docs.map(rowPlanta).join("")
+    : `<tr class="empty-row"><td colspan="12">Sin movimientos liberados</td></tr>`;
+}
+
+// ── PANEL LATERAL ─────────────────────────────────────────────
+function spField(label, val, cls) {
+  const display = val ? `<div class="sp-val${cls?" "+cls:""}">${val}</div>` : `<div class="sp-val muted">—</div>`;
+  return `<div class="sp-field"><div class="sp-label">${label}</div>${display}</div>`;
+}
+
+window.abrirPanel = function(id) {
+  const d = docsCache.find(x => x.id === id);
+  if (!d) return;
+  panelDocId = id;
+  document.querySelectorAll(".mov-row.selected").forEach(r => r.classList.remove("selected"));
+  document.querySelectorAll(`.mov-row`).forEach(r => {
+    if (r.getAttribute("onclick")?.includes(id)) r.classList.add("selected");
+  });
+  const data = d.data(), p = data.planificacion||{}, g = data.guardia||{};
+  const sv = data.supervisor||{}, svw = data.supervisor_web||{}, pl = data.planillero||{};
+  const cal = data.calidad||{}, det = data.detalles||[];
+  const mov = p.movimiento||"";
+  const esExpo = esExpoODescarga(mov);
+
+  document.getElementById("spTitle").textContent = p.cliente||"—";
+  document.getElementById("spSub").textContent = `${p.referencia||"—"} · ${fmtFecha(p.fecha_prevista)} · ${badgeEst(data.estado).replace(/<[^>]+>/g,"")}`;
+  const selVerif = document.getElementById("selectVerif");
+  const verifVal = cal.estado_verificacion||"";
+  selVerif.value = verifVal;
+  selVerif.style.borderColor = verifVal==="completo"?"#22c55e":verifVal==="incompleto"?"#fbbf24":"var(--border)";
+  selVerif.style.color = verifVal==="completo"?"#22c55e":verifVal==="incompleto"?"#fbbf24":"var(--text)";
+
+  let html = "";
+
+  // PLANIFICACIÓN
+  html += `<div class="sp-section">
+    <div class="sp-section-title">Planificación</div>
+    <div class="sp-grid">
+      ${spField("Cliente", p.cliente)}
+      ${spField("Movimiento", mov, "mono")}
+      ${spField("Fecha", fmtFecha(p.fecha_prevista), "mono")}
+      ${spField("Hora est.", p.hora_estipulada, "mono")}
+      ${spField("Referencia", p.referencia, "mono")}
+      ${spField("Destino", p.destino)}
+      ${spField("Booking", p.booking, "mono")}
+      ${spField("Contenedor", p.contenedor, "mono")}
+      ${spField("Transporte", p.transporte)}
+      ${spField("Lugar carga", p.lugar_carga)}
+    </div>
+  </div>`;
+
+  // GUARDIA
+  html += `<div class="sp-section">
+    <div class="sp-section-title">Guardia / Transporte</div>
+    <div class="sp-grid">
+      ${spField("Chofer", g.chofer)}
+      ${spField("DNI", g.dni, "mono")}
+      ${spField("Hora arribo", g.hora_arribo, "mono")}
+      ${spField("Pat. Tractor", g.patente_tractor||p.patente_tractor, "mono")}
+      ${spField("Pat. Semi", g.patente_semi||p.patente_semi, "mono")}
+      ${g.nro_arribo_cliente ? spField("Nro arribo", `#${g.nro_arribo_cliente}`, "mono") : ""}
+    </div>
+  </div>`;
+
+  // SUPERVISOR
+  if (sv.dock || sv.hora_ingreso || svw.solucion_desvio) {
+    html += `<div class="sp-section">
+      <div class="sp-section-title">En planta</div>
+      <div class="sp-grid">
+        ${spField("Dock", sv.dock ? `D${sv.dock}` : null, "mono")}
+        ${spField("Hora ingreso", sv.hora_ingreso, "mono")}
+        ${pl.hora_inicio ? spField("Inicio mov.", pl.hora_inicio, "mono") : ""}
+        ${pl.hora_finalizado ? spField("Fin mov.", pl.hora_finalizado, "mono") : ""}
+        ${pl.cantidad_operarios ? spField("Operarios", pl.cantidad_operarios, "mono") : ""}
+        ${svw.solucion_desvio ? `<div class="sp-field sp-full"><div class="sp-label">Desvío</div><div class="sp-val">${svw.solucion_desvio}</div></div>` : ""}
+      </div>
+    </div>`;
+  }
+
+  // PRODUCTOS — tabla
+  if (det.length) {
+    const esUrl = s => s && s.startsWith("http");
+    const loteGrupoVal = det.find(x=>x.lote_grupo)?.lote_grupo || "";
+    const loteGrupoHtml = loteGrupoVal
+      ? `<div style="font-size:10px;padding:0 0 6px;color:var(--muted);">Lote grupo: ${esUrl(loteGrupoVal)?`<a href="${loteGrupoVal}" target="_blank" style="color:var(--accent2);text-decoration:none;" onclick="event.stopPropagation()">🔗 Ver lote</a>`:`<span style="font-family:var(--mono);">${loteGrupoVal}</span>`}</div>`
+      : "";
+    const thStyle = `style="padding:5px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;text-align:left;"`;
+    const tdStyle = `style="padding:5px 8px;font-size:11px;border-bottom:1px solid var(--border);vertical-align:middle;"`;
+    const rows = det.map(it => {
+      const loteProd = it.lote && it.lote !== it.lote_grupo ? it.lote : "";
+      const loteHtml = loteProd
+        ? (esUrl(loteProd)
+            ? `<br><a href="${loteProd}" target="_blank" style="color:var(--accent2);font-size:10px;font-family:var(--mono);" onclick="event.stopPropagation()">🔗 Lote</a>`
+            : `<br><span style="color:var(--muted);font-size:10px;font-family:var(--mono);">${loteProd}</span>`)
+        : "";
+      const rotulo = it.rotulo ? `<br><span style="color:var(--warn);font-size:10px;">🏷 ${it.rotulo}</span>` : "";
+      return `<tr>
+        <td ${tdStyle}><strong>${it.elaborador||"—"}</strong></td>
+        <td ${tdStyle}>${it.producto||"—"}${rotulo}${loteHtml}</td>
+        <td ${tdStyle} style="padding:5px 8px;font-size:11px;border-bottom:1px solid var(--border);font-family:var(--mono);white-space:nowrap;">${it.calibre||"—"}</td>
+        <td ${tdStyle}>${it.empaque||"—"}</td>
+        <td ${tdStyle} style="padding:5px 8px;font-size:11px;border-bottom:1px solid var(--border);font-family:var(--mono);white-space:nowrap;">${[it.cantidad,it.unidad].filter(Boolean).join(" ")||"—"}</td>
+        <td ${tdStyle} style="padding:5px 8px;font-size:11px;border-bottom:1px solid var(--border);font-family:var(--mono);white-space:nowrap;">${it.total_kg?it.total_kg+"kg":"—"}</td>
+      </tr>`;
+    }).join("");
+    const tabla = `<div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;background:var(--panel2);border-radius:8px;overflow:hidden;">
+        <thead><tr>
+          <th ${thStyle}>Elaborador</th>
+          <th ${thStyle}>Producto</th>
+          <th ${thStyle}>Calibre</th>
+          <th ${thStyle}>Empaque</th>
+          <th ${thStyle}>Cantidad</th>
+          <th ${thStyle}>Peso</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+    html += `<div class="sp-section">
+      <div class="sp-section-title">Productos (${det.length})</div>
+      ${loteGrupoHtml}${tabla}
+    </div>`;
+  }
+
+  // ── LINKS / ARCHIVOS ──
+  const fotoUrl = p.foto_carpeta || "";
+  const linksBtns = [];
+  const seenUrls = new Set();
+  const _esUrl = v => /^https?:\/\//i.test(v||"");
+  const addLink = (url, label) => {
+    if (!url || seenUrls.has(url)) return;
+    seenUrls.add(url);
+    linksBtns.push(`<a href="${url}" target="_blank" class="btn btn-ghost btn-sm">${label}</a>`);
+  };
+  const addText = (txt, label) => {
+    if (!txt || seenUrls.has(txt)) return;
+    seenUrls.add(txt);
+    linksBtns.push(`<span class="btn btn-ghost btn-sm" style="cursor:default;font-family:var(--mono);font-size:10px;user-select:all;" title="${txt}">${label}: ${txt.length>14?txt.slice(0,14)+"…":txt}</span>`);
+  };
+  if (fotoUrl) addLink(fotoUrl, "📁 Carpeta Fotos");
+  det.forEach((item, i) => {
+    const vals = (field) => { const v=item[field]; return Array.isArray(v)?v:(v?[v]:[]); };
+    const suffix = det.length > 1 ? ` #${i+1}` : "";
+    vals("conciliacion_stock_url").forEach((u,j) => _esUrl(u) ? addLink(u, `📊 Conciliación${suffix}${j>0?"."+j:""}`) : addText(u, `📊 CS${suffix}`));
+    vals("receta_impresa_url").forEach((u,j)    => _esUrl(u) ? addLink(u, `📋 Receta${suffix}${j>0?"."+j:""}`)       : addText(u, `📋 R${suffix}`));
+    vals("nota_venta_url").forEach((u,j)         => addLink(u, `🧾 NV${suffix}${j>0?"."+j:""}`));
+    // lote como URL también se deduplica
+    const loteUrl = [item.lote_grupo, item.lote].find(v=>v&&v.startsWith("http"));
+    if (loteUrl) addLink(loteUrl, `🔗 Lote${suffix}`);
+  });
+  if (linksBtns.length) {
+    html += `<div class="sp-section">
+      <div class="sp-section-title">Archivos</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">${linksBtns.join("")}</div>
+    </div>`;
+  }
+
+  // ── FORMULARIO CALIDAD ──
+  html += `<div class="cal-section">
+    <div class="cal-section-title">Datos de Calidad</div>
+    <div class="info-box" id="spInfoBox">
+      <div class="info-item"><div class="info-label">Movimiento</div><div class="info-value">${mov||"—"}</div></div>
+      <div class="info-item"><div class="info-label">Pat. Tractor</div><div class="info-value">${g.patente_tractor||p.patente_tractor||"—"}</div></div>
+      <div class="info-item"><div class="info-label">Contenedor</div><div class="info-value">${p.contenedor||"—"}</div></div>
+      <div class="info-item"><div class="info-label">Booking</div><div class="info-value">${p.booking||"—"}</div></div>
+    </div>
+    <!-- SECCIÓN 1: siempre visible -->
+    <div class="cal-grid" style="margin-top:12px;">
+      ${esExpo?`<div class="form-group"><label class="form-label">Código de carga</label>
+        <input type="text" class="form-input caps" id="cCodigoCarga" value="${cal.codigo_carga||""}"></div>`
+        :`<input type="hidden" id="cCodigoCarga" value="${cal.codigo_carga||""}">`}
+      <div class="form-group"><label class="form-label">Precinto SENASA</label>
+        <input type="text" class="form-input caps" id="cPrecintoSenasa" value="${cal.precinto_senasa||""}" placeholder="Nº precinto"></div>
+      <div class="form-group"><label class="form-label">Nº Termógrafo</label>
+        <input type="text" class="form-input caps" id="cNroTermografo" value="${cal.nro_termografo||""}" placeholder="Nº termógrafo"></div>
+      <div class="form-group"><label class="form-label">Temperatura °C</label>
+        <input type="text" class="form-input" id="cTemperatura" value="${cal.temperatura||""}" placeholder="Ej: -18"></div>
+      <div class="form-group"><label class="form-label">Habilitación SENASA</label>
+        <input type="text" class="form-input caps" id="cHabilitacionSenasa" value="${cal.habilitacion_senasa||""}" placeholder="Nº habilitación"></div>
+    </div>
+    <!-- SECCIÓN 2: solo EXPO -->
+    ${esExpo?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div class="cal-section-title"><span class="expo-badge">EXPO / DESC</span>Embarque</div>
+      <div class="cal-grid">
+        <div class="form-group"><label class="form-label">Permiso embarque</label>
+          <input type="text" class="form-input caps" id="cPermisoEmbarque" value="${cal.permiso_embarque||""}"></div>
+        <div class="form-group"><label class="form-label">Exportador</label>
+          <input type="text" class="form-input caps" id="cExportador" value="${cal.exportador||""}"></div>
+        <div class="form-group"><label class="form-label">Despachante</label>
+          <input type="text" class="form-input caps" id="cDespachante" value="${cal.despachante||""}"></div>
+        <div class="form-group"><label class="form-label">ATA</label>
+          <input type="text" class="form-input caps" id="cAta" value="${cal.ata||""}"></div>
+        <div class="form-group"><label class="form-label">Buque</label>
+          <input type="text" class="form-input caps" id="cBuque" value="${cal.buque||""}"></div>
+        <div class="form-group"><label class="form-label">Puerto salida</label>
+          <input type="text" class="form-input caps" id="cPuertoSalida" value="${cal.puerto_salida||""}"></div>
+        <div class="form-group"><label class="form-label">Canje</label>
+          <input type="text" class="form-input caps" id="cCanje" value="${cal.canje||""}"></div>
+      </div>
+    </div>`:`<input type="hidden" id="cPermisoEmbarque" value="${cal.permiso_embarque||""}">
+    <input type="hidden" id="cExportador" value="${cal.exportador||""}">
+    <input type="hidden" id="cDespachante" value="${cal.despachante||""}">
+    <input type="hidden" id="cAta" value="${cal.ata||""}">
+    <input type="hidden" id="cBuque" value="${cal.buque||""}">
+    <input type="hidden" id="cPuertoSalida" value="${cal.puerto_salida||""}">
+    <input type="hidden" id="cCanje" value="${cal.canje||""}">`}
+    <!-- SECCIÓN 3: Payload / Tara / M3 -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div class="cal-grid">
+        ${esExpo?`<div class="form-group"><label class="form-label">Payload</label>
+          <input type="text" class="form-input" id="cPayload" value="${cal.payload||""}"></div>`
+          :`<input type="hidden" id="cPayload" value="${cal.payload||""}">`}
+        <div class="form-group"><label class="form-label">Tara</label>
+          <input type="text" class="form-input" id="cTara" value="${cal.tara||""}" placeholder="Ej: 4360"></div>
+        <div class="form-group"><label class="form-label">M3</label>
+          <input type="text" class="form-input" id="cM3" value="${cal.m3||""}" placeholder="Ej: 67.5"></div>
+      </div>
+    </div>`;
+
+  html += `</div>`;
+
+  document.getElementById("spBody").innerHTML = html;
+  document.querySelectorAll("#spBody .caps").forEach(caps);
+
+  document.getElementById("sidePanel").classList.add("open");
+  document.getElementById("panelOverlay").classList.add("open");
+};
+
+window.cerrarPanel = function() {
+  document.getElementById("sidePanel").classList.remove("open");
+  document.getElementById("panelOverlay").classList.remove("open");
+  document.querySelectorAll(".mov-row.selected").forEach(r => r.classList.remove("selected"));
+  panelDocId = null;
+};
+
+// ── CAMBIAR VERIFICACIÓN DESDE PANEL ─────────────────────────
+window.cambiarVerif = async function(valor) {
+  if (!panelDocId) return;
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  const sel = document.getElementById("selectVerif");
+  try {
+    await updateDoc(doc(db,COL,panelDocId),{
+      "calidad.estado_verificacion": valor,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en": serverTimestamp()
+    });
+    if (sel) {
+      sel.style.borderColor = valor==="completo"?"#22c55e":valor==="incompleto"?"#fbbf24":"var(--border)";
+      sel.style.color = valor==="completo"?"#22c55e":valor==="incompleto"?"#fbbf24":"var(--text)";
+    }
+  } catch(err) { toast("err","Error",err.message); }
+};
+
+// ── GUARDAR CALIDAD ───────────────────────────────────────────
+document.getElementById("btnGuardarCalidad").addEventListener("click", async () => {
+  if (!panelDocId) return;
+  const btn = document.getElementById("btnGuardarCalidad");
+  btn.disabled = true; btn.textContent = "Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre") || "—";
+  const g = v => document.getElementById(v)?.value?.trim() || "";
+  const verifVal = document.getElementById("selectVerif")?.value ?? "";
+  const calData = {
+    tara: g("cTara"), m3: g("cM3"), temperatura: g("cTemperatura"),
+    precinto_senasa: g("cPrecintoSenasa"), nro_termografo: g("cNroTermografo"),
+    habilitacion_senasa: g("cHabilitacionSenasa"),
+    codigo_carga: g("cCodigoCarga"), permiso_embarque: g("cPermisoEmbarque"),
+    exportador: g("cExportador"), despachante: g("cDespachante"),
+    ata: g("cAta"), buque: g("cBuque"), puerto_salida: g("cPuertoSalida"),
+    canje: g("cCanje"), payload: g("cPayload"),
+    estado_verificacion: verifVal
+  };
+  try {
+    await updateDoc(doc(db, COL, panelDocId), {
+      calidad: calData,
+      "auditoria.modificado_por": nombre,
+      "auditoria.modificado_en": serverTimestamp()
+    });
+    toast("ok", "Guardado", "Datos de calidad guardados");
+  } catch(err) { toast("err", "Error", err.message); }
+  finally { btn.disabled = false; btn.textContent = "Guardar calidad"; }
+});
+
+// ── IMPRIMIR ──────────────────────────────────────────────────
+document.getElementById("btnImprimirCalidad").addEventListener("click", () => {
+  if (!panelDocId) return;
+  const d = docsCache.find(x=>x.id===panelDocId); if (!d) return;
+  const data=d.data(), p=data.planificacion||{}, g=data.guardia||{}, det=data.detalles||[];
+  const gv=id=>document.getElementById(id)?.value?.trim()||"";
+  const cal={tara:gv("cTara"),m3:gv("cM3"),temperatura:gv("cTemperatura"),precinto_senasa:gv("cPrecintoSenasa"),nro_termografo:gv("cNroTermografo"),habilitacion_senasa:gv("cHabilitacionSenasa"),codigo_carga:gv("cCodigoCarga"),permiso_embarque:gv("cPermisoEmbarque"),exportador:gv("cExportador"),despachante:gv("cDespachante"),ata:gv("cAta"),buque:gv("cBuque"),puerto_salida:gv("cPuertoSalida"),canje:gv("cCanje"),payload:gv("cPayload")};
+  function pf(val){if(!val||!String(val).trim())return'<span class="print-field-value empty">—</span>';return `<span class="print-field-value">${val}</span>`;}
+  function campo(label,val){return `<div class="print-field"><span class="print-field-label">${label}</span>${pf(val)}</div>`;}
+  document.getElementById("printMovGrid").innerHTML=campo("Cliente",p.cliente)+campo("Fecha",fmtFecha(p.fecha_prevista))+campo("Movimiento",p.movimiento)+campo("Transporte",p.transporte)+campo("Pat. Tractor",g.patente_tractor||p.patente_tractor)+campo("Pat. Semi",g.patente_semi||p.patente_semi)+campo("Contenedor",p.contenedor)+campo("Booking",p.booking)+campo("Destino",p.destino)+campo("Referencia",p.referencia)+campo("Estado",data.estado)+campo("Dock",data.supervisor?.dock?"D"+data.supervisor.dock:"");
+  document.getElementById("printCalGrid").innerHTML=campo("Tara",cal.tara)+campo("M3",cal.m3)+campo("Precinto SENASA",cal.precinto_senasa)+campo("Nº Termógrafo",cal.nro_termografo)+campo("Habilitación SENASA",cal.habilitacion_senasa)+campo("Temperatura °C",cal.temperatura);
+  const expoTitle=document.getElementById("printExpoTitle"),expoGrid=document.getElementById("printExpoGrid");
+  if(esExpoODescarga(p.movimiento)){expoTitle.style.display="";expoGrid.style.display="";expoGrid.innerHTML=campo("Código de carga",cal.codigo_carga)+campo("Permiso embarque",cal.permiso_embarque)+campo("Exportador",cal.exportador)+campo("Despachante",cal.despachante)+campo("ATA",cal.ata)+campo("Buque",cal.buque)+campo("Puerto salida",cal.puerto_salida)+campo("Canje",cal.canje)+campo("Payload",cal.payload);}
+  else{expoTitle.style.display="none";expoGrid.style.display="none";}
+  const prodTitle=document.getElementById("printProductosTitle"),prodGrid=document.getElementById("printProductosGrid");
+  if(det.length){prodTitle.style.display="";prodGrid.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;"><thead><tr style="border-bottom:1px solid #ccc;"><th style="text-align:left;padding:4px 6px;font-size:9px;color:#666;text-transform:uppercase;">Producto</th><th style="text-align:left;padding:4px 6px;font-size:9px;color:#666;text-transform:uppercase;">Elaborador</th><th style="text-align:left;padding:4px 6px;font-size:9px;color:#666;text-transform:uppercase;">Cantidad</th><th style="text-align:left;padding:4px 6px;font-size:9px;color:#666;text-transform:uppercase;">Calibre</th><th style="text-align:left;padding:4px 6px;font-size:9px;color:#666;text-transform:uppercase;">Empaque</th><th style="text-align:right;padding:4px 6px;font-size:9px;color:#666;text-transform:uppercase;">Total kg</th></tr></thead><tbody>${det.map(it=>`<tr style="border-bottom:1px solid #eee;"><td style="padding:4px 6px;font-weight:600;">${it.producto||"—"}</td><td style="padding:4px 6px;">${it.elaborador||"—"}</td><td style="padding:4px 6px;">${[it.cantidad,it.unidad].filter(Boolean).join(" ")||"—"}</td><td style="padding:4px 6px;">${it.calibre||"—"}</td><td style="padding:4px 6px;">${it.empaque||"—"}</td><td style="padding:4px 6px;text-align:right;">${it.total_kg||"—"}</td></tr>`).join("")}</tbody></table>`;}
+  else{prodTitle.style.display="none";prodGrid.innerHTML="";}
+  const now=new Date();
+  document.getElementById("printFooter").textContent=`Impreso el ${now.toLocaleDateString("es-AR")} ${now.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})} · IceLion — Frio Polar S.A.`;
+  window.print();
+});
+
+// ── CONTROLES ─────────────────────────────────────────────────
+window.toggleSec = function(secId, chevId) {
+  const sec=document.getElementById(secId), chev=document.getElementById(chevId);
+  if(!sec||!chev) return;
+  sec.classList.toggle("hidden"); chev.classList.toggle("up");
+};
+
+document.getElementById("btnDiaAnterior").addEventListener("click", () => cargarDia(sumarDias(diaActual,-1)));
+document.getElementById("btnDiaSiguiente").addEventListener("click", () => cargarDia(sumarDias(diaActual,1)));
+document.getElementById("btnHoy").addEventListener("click", () => cargarDia(hoy()));
+
+document.getElementById("campoBuscar").addEventListener("input", e => {
+  textoBusqueda = e.target.value;
+  aplicarFiltros();
+});
+document.getElementById("btnLimpiar").addEventListener("click", () => {
+  textoBusqueda = "";
+  document.getElementById("campoBuscar").value = "";
+  aplicarFiltros();
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+// ── NOTAS ─────────────────────────────────────────────────────
+let notasDocId = null;
+function fmtNotaFecha(ts) {
+  if (!ts) return "";
+  try { const d=ts.toDate?ts.toDate():(ts.seconds?new Date(ts.seconds*1000):new Date(ts)); return d.toLocaleString("es-AR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); } catch(e){return "";}
+}
+window.abrirNotasModal = function(id) {
+  const d = docsCache.find(x=>x.id===id); if (!d) return;
+  notasDocId = id;
+  const data = d.data(), p = data.planificacion||{};
+  document.getElementById("notasSub").textContent = `${p.cliente||"—"} · ${p.referencia||"—"}`;
+  document.getElementById("notasTexto").value = "";
+  const notas = getNotas(data);
+  document.getElementById("notasHistorial").innerHTML = notas.length
+    ? notas.map(n=>`<div class="nota-item${n.resuelta?" resuelta":""}">
+        <div class="nota-meta">
+          <span class="nota-rol">${n.rol||"sistema"}</span>
+          <strong style="font-size:10px;">${n.autor||"—"}</strong>
+          <span style="font-size:10px;">${fmtNotaFecha(n.fecha)}</span>
+          ${n.resuelta?`<span style="font-size:9px;color:var(--ok);margin-left:auto;">✓ resuelta</span>`:""}
+        </div>
+        <div style="font-size:12px;white-space:pre-wrap;">${n.texto||""}</div>
+      </div>`).join("")
+    : `<div style="color:var(--muted);font-style:italic;font-size:13px;padding:12px 0;">Sin notas aún.</div>`;
+  document.getElementById("modalNotas").classList.remove("hidden");
+};
+window.cerrarNotasModal = function() {
+  document.getElementById("modalNotas").classList.add("hidden");
+  notasDocId = null;
+};
+document.getElementById("btnGuardarNota").addEventListener("click", async () => {
+  if (!notasDocId) return;
+  const texto = document.getElementById("notasTexto").value.trim(); if (!texto) return;
+  const btn = document.getElementById("btnGuardarNota");
+  btn.disabled=true; btn.textContent="Guardando...";
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  const rol    = sessionStorage.getItem("icelion_rol")||"calidad";
+  const d = docsCache.find(x=>x.id===notasDocId);
+  const notas = getNotas(d?.data()||{});
+  notas.push({id:crypto.randomUUID(),texto,autor:nombre,rol,fecha:new Date(),resuelta:false});
+  try {
+    await updateDoc(doc(db,COL,notasDocId),{"planificacion.notas":notas,"auditoria.modificado_por":nombre,"auditoria.modificado_en":serverTimestamp()});
+    toast("ok","Nota guardada",""); cerrarNotasModal();
+  } catch(err){toast("err","Error",err.message);}
+  finally{btn.disabled=false;btn.textContent="Guardar nota";}
+});
+
+initSesion(() => cargarDia(hoy()));
+
+function renderValorConc(v) {
+  if (!v) return "";
+  const clean = (typeof normalizarUrlDrive === "function") ? normalizarUrlDrive(v) : v;
+  if (/^https?:\/\//i.test(clean))
+    return `<a href="${clean}" target="_blank" style="color:var(--accent2);">🔗</a>`;
+  return `<span style="font-size:10px;font-family:var(--mono);color:var(--muted);" title="${clean}">${clean.length>12?clean.slice(0,12)+"…":clean}</span>`;
+}
+function getVals(detalles, campo) {
+  if(!Array.isArray(detalles)) return [];
+  const vals=[], seen=new Set();
+  for(const d of detalles){
+    const val=d?.[campo];
+    const arr=Array.isArray(val)?val:(val?[val]:[]);
+    for(const v of arr){const t=(v||"").trim();if(t&&!seen.has(t)){seen.add(t);vals.push(t);}}
+  }
+  return vals;
+}
+
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>

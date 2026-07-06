@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Docks · Frío Polar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080e1a;--panel:#0f1824;--panel2:#131f2e;--panel3:#1a2840;
+  --border:rgba(255,255,255,0.07);--accent:#3b82f6;--accent2:#60a5fa;
+  --text:#e8edf5;--muted:#6b7f99;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --c-planificado:#6b7f99;--c-agregado:#60a5fa;--c-arribado:#fbbf24;
+  --c-enespera:#c084fc;--c-dockasignado:#c084fc;--c-atracado:#f64dfc;
+  --c-iniciomov:#4ade80;--c-pausado:#f87171;--c-finmov:#16a34a;
+  --c-liberado:#67e8f9;--c-cancelado:#6b7f99;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);}
+
+.nav{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--border);height:48px;flex-shrink:0;}
+.nav-left{display:flex;align-items:center;gap:10px;}
+.nav-logo{font-family:var(--mono);font-size:13px;color:var(--accent2);font-weight:500;}
+.nav-module{font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:999px;}
+.nav-right{display:flex;align-items:center;gap:8px;}
+#navUser{font-size:12px;color:var(--muted);}
+.btn-nav{background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s;}
+.btn-nav:hover{border-color:var(--accent);color:var(--accent2);}
+
+.page{display:flex;flex-direction:column;height:calc(100vh - 48px);}
+.page-header{padding:8px 20px 4px;display:flex;align-items:baseline;gap:12px;flex-shrink:0;}
+.page-title{font-size:15px;font-weight:700;}
+.live-dot{display:inline-block;width:7px;height:7px;background:#22c55e;border-radius:50%;margin-right:6px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.page-sub{font-size:11px;color:var(--muted);font-family:var(--mono);}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 6px;flex-shrink:0;}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);font-family:var(--mono);}
+.legend-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+
+/* ── MAIN LAYOUT ── */
+.page{display:flex;flex-direction:column;height:calc(100vh - 48px);}
+.layout{
+  position:relative;
+  flex:1;
+  overflow:hidden;
+  padding:8px 14px 4px;
+}
+
+/* ACCESO */
+.acceso-col{position:absolute;left:0;top:0;width:108px;bottom:165px;display:flex;flex-direction:column;}
+.col-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-family:var(--mono);padding:2px 0 5px;text-align:center;flex-shrink:0;}
+.acceso-scroll{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 6px;}
+.acceso-scroll::-webkit-scrollbar{width:3px;}
+.acceso-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.porton-col{position:absolute;left:118px;top:0;bottom:165px;width:14px;display:flex;flex-direction:column;align-items:center;}
+.porton-line{flex:1;width:2px;background:repeating-linear-gradient(180deg,var(--accent) 0,var(--accent) 6px,transparent 6px,transparent 12px);opacity:.35;border-radius:1px;}
+.porton-badge{font-size:8px;font-family:var(--mono);color:var(--accent2);font-weight:700;letter-spacing:.5px;background:var(--panel2);border:1px solid rgba(59,130,246,.25);padding:5px 3px;border-radius:4px;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;flex-shrink:0;}
+
+/* PV2: bloque fijo 155×340, camiones a la izquierda */
+.pv2-bloque{position:absolute;left:355px;top:0;width:155px;height:340px;background:var(--panel);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;overflow:hidden;}
+.docks-v{position:absolute;left:148px;top:0;height:340px;width:207px;display:flex;flex-direction:column;justify-content:space-around;padding:4px 0;align-items:flex-end;}
+
+/* PV1: mismo tamaño rotado → width=340, height=155. Camiones arriba (h=90+4gap), bloque top=94 */
+.docks-h{position:absolute;left:574px;right:0;top:0;height:90px;display:flex;flex-direction:row;justify-content:space-around;align-items:flex-end;padding-bottom:4px;}
+.pv1-bloque{position:absolute;left:574px;right:0;top:94px;height:155px;background:var(--panel);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column-reverse;overflow:hidden;}
+
+/* SECTOR shared */
+.sector-header{background:var(--panel2);border-bottom:1px solid var(--border);padding:6px 12px;flex-shrink:0;border-radius:10px 10px 0 0;}
+.sector-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono);}
+.sector-count{font-size:11px;color:var(--muted);margin-top:1px;}
+.sector-body{flex:1;padding:8px 12px;overflow-y:auto;min-height:0;font-size:13px;}
+.sector-body::-webkit-scrollbar{width:3px;}
+.sector-body::-webkit-scrollbar-thumb{background:var(--border);}
+.sector-item{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+
+/* LIBERADOS */
+.liberados-row{position:absolute;left:0;right:0;bottom:0;height:160px;display:flex;flex-direction:column;gap:3px;padding-top:6px;border-top:1px solid var(--border);}
+.liberados-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--c-liberado);font-family:var(--mono);}
+.liberados-scroll{display:flex;flex-direction:row;gap:8px;overflow-x:auto;overflow-y:hidden;flex:1;}
+.liberados-scroll::-webkit-scrollbar{height:3px;}
+.liberados-scroll::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* DOCK SLOTS */
+.dock-slot-v{display:flex;flex-direction:row;align-items:center;gap:4px;justify-content:flex-end;}
+.dock-slot-h{display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;}
+.dock-id{font-size:10px;font-family:var(--mono);font-weight:700;color:var(--muted);min-width:18px;text-align:center;}
+.dock-libre-v{width:90px;height:28px;background:var(--panel2);border:1.5px dashed var(--border);border-radius:5px;opacity:.3;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);}
+.dock-libre-h{width:28px;height:90px;background:var(--panel2);border:1.5px dashed var(--border);border-radius:5px;opacity:.3;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);}
+.c-card{cursor:pointer;transition:transform .2s;display:flex;flex-direction:column;align-items:center;}
+.c-card:hover{transform:scale(1.04);}
+.c-label{font-size:9px;font-weight:700;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.c-sub{font-size:8px;font-family:var(--mono);color:var(--muted);text-align:center;max-width:90px;}
+.sector{display:flex;flex-direction:column;}
+
+.sector-bloque{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.sector-header{background:var(--panel2);border-bottom:1px solid var(--border);padding:6px 12px;flex-shrink:0;border-radius:10px 10px 0 0;}
+.sector-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono);}
+.sector-count{font-size:11px;color:var(--muted);margin-top:1px;}
+.sector-body{flex:1;padding:8px 12px;overflow-y:auto;min-height:0;font-size:13px;}
+.sector-body::-webkit-scrollbar{width:3px;}
+.sector-body::-webkit-scrollbar-thumb{background:var(--border);}
+.sector-item{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+
+/* LIBERADOS */
+.liberados-row{grid-column:1/-1;grid-row:2;display:flex;flex-direction:column;gap:3px;flex-shrink:0;padding-top:6px;border-top:1px solid var(--border);margin-top:4px;height:160px;min-height:160px;}
+.liberados-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--c-liberado);font-family:var(--mono);}
+.liberados-scroll{display:flex;flex-direction:row;gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:2px;}
+.liberados-scroll::-webkit-scrollbar{height:3px;}
+.liberados-scroll::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* CAMION CARD — genérico */
+.c-card{cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;position:relative;}
+.c-card:hover svg{filter:drop-shadow(0 0 7px var(--ec));}
+.c-card:hover{transform:scale(1.04);}
+.c-label{font-size:11px;font-weight:700;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.c-sub{font-size:8px;font-family:var(--mono);color:var(--ec,var(--muted));text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* DOCK SLOT */
+.dock-slot-v{display:flex;flex-direction:row;align-items:center;gap:4px;}
+.dock-slot-h{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.dock-id{font-size:11px;font-family:var(--mono);font-weight:700;color:var(--muted);min-width:20px;text-align:center;}
+.dock-libre{width:120px;height:52px;background:var(--panel2);border:1.5px solid var(--border);border-radius:6px;opacity:.25;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);font-style:italic;flex-shrink:0;}
+
+/* TOOLTIP */
+.tooltip{position:fixed;background:var(--panel3);border:1px solid var(--border);border-radius:10px;padding:10px 13px;pointer-events:none;z-index:500;min-width:170px;max-width:230px;box-shadow:0 8px 32px rgba(0,0,0,.5);display:none;}
+.tt-title{font-size:12px;font-weight:700;margin-bottom:5px;}
+.tt-row{display:flex;gap:5px;font-size:10px;margin-bottom:2px;}
+.tt-label{color:var(--muted);min-width:58px;font-family:var(--mono);}
+.tt-val{color:var(--text);}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-ov.show{opacity:1;pointer-events:all;}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:90vw;max-width:460px;max-height:82vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:scale(.95);transition:transform .2s;}
+.modal-ov.show .modal-box{transform:scale(1);}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-did{font-family:var(--mono);font-size:20px;font-weight:700;}
+.modal-sector-label{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px;}
+.modal-x{background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;padding:4px 8px;border-radius:6px;}
+.modal-x:hover{color:var(--text);}
+.modal-body{padding:14px 18px;}
+.m-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-family:var(--mono);margin:10px 0 6px;}
+.m-sec:first-child{margin-top:0;}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.m-field{display:flex;flex-direction:column;gap:1px;}
+.m-label{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.4px;}
+.m-val{font-size:12px;color:var(--text);font-weight:500;}
+.m-val.mono{font-family:var(--mono);font-size:11px;}
+.m-estado{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;font-family:var(--mono);border-radius:6px;padding:3px 9px;margin-bottom:10px;}
+.m-dot{width:7px;height:7px;border-radius:50%;animation:pulse 2s infinite;}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <span class="nav-logo">ICELION</span>
+    <span style="color:var(--border)">·</span>
+    <span class="nav-module">Mapa de Docks</span>
+  </div>
+  <div class="nav-right">
+    <span id="navUser"></span>
+    <button class="btn-nav" id="btnTema">🌙</button>
+    <button class="btn-nav" id="btnLogout">Salir</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-title"><span class="live-dot"></span>Mapa de operaciones</div>
+    <div class="page-sub" id="fechaLabel">—</div>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <div class="layout">
+
+    <!-- ACCESO -->
+    <div class="acceso-col">
+      <div class="col-title">En acceso</div>
+      <div class="acceso-scroll" id="listaAcceso">
+        <div style="font-size:11px;color:var(--muted);font-style:italic;text-align:center;padding:10px 0;">Sin vehículos</div>
+      </div>
+    </div>
+
+    <!-- PORTÓN -->
+    <div class="porton-col">
+      <div class="porton-line"></div>
+      <div class="porton-badge">▲ PORTÓN</div>
+      <div class="porton-line"></div>
+    </div>
+
+    <!-- PV2: camiones fuera izquierda (docks-v), bloque derecha -->
+    <div class="docks-v" id="docksConvenio"></div>
+    <div class="pv2-bloque">
+      <div class="sector-header">
+        <div class="sector-name">Convenio PV2</div>
+        <div class="sector-count" id="countConvenio">—</div>
+      </div>
+      <div class="sector-body" id="bodyConvenio"></div>
+    </div>
+
+    <!-- PV1: camiones fuera arriba (docks-h), bloque abajo -->
+    <div class="docks-h" id="docksFiscal"></div>
+    <div class="pv1-bloque">
+      <div class="sector-header">
+        <div class="sector-name">Fiscal PV1</div>
+        <div class="sector-count" id="countFiscal">—</div>
+      </div>
+      <div class="sector-body" id="bodyFiscal"></div>
+    </div>
+
+    <!-- LIBERADOS -->
+    <div class="liberados-row" id="liberadosRow">
+      <div class="liberados-title">🟦 Liberados del día</div>
+      <div class="liberados-scroll" id="listaLiberados"></div>
+    </div>
+
+  </div>
+  </div>
+  <div class="tooltip" id="tooltip"><div class="tt-title" id="ttTitle"></div><div id="ttBody"></div></div>
+<div class="modal-ov" id="modalDet">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div><div class="modal-did" id="mDockId">—</div><div class="modal-sector-label" id="mSector">—</div></div>
+      <button class="modal-x" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+const firebaseConfig={apiKey:"AIzaSyCFw6jdf8Q8iE9wLWDAnKMRX6QAi3Ba1hA",authDomain:"friopolar-gestion.firebaseapp.com",projectId:"friopolar-gestion",storageBucket:"friopolar-gestion.firebasestorage.app",messagingSenderId:"433748741369",appId:"1:433748741369:web:5813ae592ef66b7ff4a628"};
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const COL="movimientos";
+
+const DOCKS_CONVENIO=[1,2,3,4,5];
+const DOCKS_FISCAL=[6,7,8,9,10];
+const EC={"PLANIFICADO":"#6b7f99","AGREGADO":"#60a5fa","ARRIBADO":"#fbbf24","EN ESPERA":"#c084fc","DOCK ASIGNADO":"#c084fc","ATRACADO":"#f64dfc","INICIO MOVIMIENTO":"#4ade80","PAUSADO":"#f87171","FIN MOVIMIENTO":"#16a34a","LIBERADO":"#67e8f9","CANCELADO":"#6b7f99"};
+const ESTADOS_ACCESO=["PLANIFICADO","AGREGADO","ARRIBADO","EN ESPERA"];
+const ESTADOS_PLANTA=["DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO"];
+const OCULTOS=["CANCELADO","CANCELA MOVIMIENTO","VINCULADO","SIN IDENTIFICAR"];
+const LEGEND=[{l:"Planificado",c:"#6b7f99"},{l:"Arribado",c:"#fbbf24"},{l:"En espera",c:"#c084fc"},{l:"Dock asig.",c:"#c084fc"},{l:"Atracado",c:"#f64dfc"},{l:"En curso",c:"#4ade80"},{l:"Pausado",c:"#f87171"},{l:"Fin mov.",c:"#16a34a"},{l:"Liberado",c:"#67e8f9"}];
+
+function hoy(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+document.getElementById("legend").innerHTML=LEGEND.map(i=>`<div class="legend-item"><div class="legend-dot" style="background:${i.c}"></div><span>${i.l}</span></div>`).join("");
+const f=hoy(),dp=f.split("-");
+document.getElementById("fechaLabel").textContent=`${dp[2]}/${dp[1]}/${dp[0]}`;
+
+onAuthStateChanged(auth,u=>{
+  if(!u){window.location.href="index.html";return;}
+  document.getElementById("navUser").textContent=sessionStorage.getItem("icelion_nombre")||u.email;
+  iniciar(f);
+});
+document.getElementById("btnLogout").addEventListener("click",async()=>{await signOut(auth);sessionStorage.clear();window.location.href="index.html";});
+const btnT=document.getElementById("btnTema");
+function apT(t){document.body.classList.toggle("light",t==="light");btnT.textContent=t==="light"?"☀️":"🌙";}
+apT(localStorage.getItem("icelion_tema")||"dark");
+btnT.addEventListener("click",()=>{const n=document.body.classList.contains("light")?"dark":"light";localStorage.setItem("icelion_tema",n);apT(n);});
+
+let cache=[];
+function iniciar(fecha){
+  const q=query(collection(db,COL),where("planificacion.fecha_prevista","==",fecha),orderBy("planificacion.hora_estipulada","asc"));
+  onSnapshot(q,snap=>{cache=snap.docs.filter(d=>!OCULTOS.includes(d.data().estado));renderAll();},e=>console.error(e));
+}
+
+// ── SVG CAMION: apunta → (acceso)
+function svgDerecha(hex) {
+  return `<svg width="175" height="50" viewBox="0 0 175 50" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+    <rect x="0" y="8" width="122" height="34" rx="3" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <rect x="2" y="10" width="118" height="6" rx="1" fill="${hex}" opacity=".08"/>
+    <rect x="2" y="34" width="118" height="6" rx="1" fill="${hex}" opacity=".08"/>
+    <path d="M128,6 L162,11 L162,39 L128,44 Z" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <path d="M130,11 L158,15 L158,35 L130,39 Z" fill="${hex}" opacity=".14"/>
+    <rect x="10" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="48" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="88" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="10" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="48" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="88" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="134" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="134" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+  </svg>`;
+}
+// ── SVG CAMION: apunta ← (PV2)
+function svgIzquierda(hex) {
+  return `<svg width="175" height="50" viewBox="0 0 175 50" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+    <path d="M47,6 L13,11 L13,39 L47,44 Z" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <path d="M45,11 L17,15 L17,35 L45,39 Z" fill="${hex}" opacity=".14"/>
+    <rect x="53" y="8" width="122" height="34" rx="3" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <rect x="55" y="10" width="118" height="6" rx="1" fill="${hex}" opacity=".08"/>
+    <rect x="55" y="34" width="118" height="6" rx="1" fill="${hex}" opacity=".08"/>
+    <rect x="27" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="27" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="77" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="117" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="151" y="1" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="77" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="117" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="151" y="42" width="14" height="7" rx="3" fill="${hex}" opacity=".8"/>
+  </svg>`;
+}
+// ── SVG CAMION: apunta ↑ (PV1)
+function svgArriba(hex) {
+  return `<svg width="50" height="175" viewBox="0 0 50 175" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+    <path d="M6,47 L11,13 L39,13 L44,47 Z" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <path d="M11,45 L15,17 L35,17 L39,45 Z" fill="${hex}" opacity=".14"/>
+    <rect x="8" y="53" width="34" height="122" rx="3" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <rect x="10" y="55" width="6" height="118" rx="1" fill="${hex}" opacity=".08"/>
+    <rect x="34" y="55" width="6" height="118" rx="1" fill="${hex}" opacity=".08"/>
+    <rect x="1" y="27" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="27" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="1" y="77" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="1" y="117" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="1" y="151" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="77" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="117" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="151" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+  </svg>`;
+}
+// ── SVG CAMION: apunta ↓ (liberados)
+function svgAbajo(hex) {
+  return `<svg width="50" height="175" viewBox="0 0 50 175" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+    <rect x="8" y="0" width="34" height="122" rx="3" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <rect x="10" y="2" width="6" height="118" rx="1" fill="${hex}" opacity=".08"/>
+    <rect x="34" y="2" width="6" height="118" rx="1" fill="${hex}" opacity=".08"/>
+    <path d="M6,128 L11,162 L39,162 L44,128 Z" fill="${hex}22" stroke="${hex}" stroke-width="1.5"/>
+    <path d="M11,130 L15,158 L35,158 L39,130 Z" fill="${hex}" opacity=".14"/>
+    <rect x="1" y="10" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="1" y="50" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="1" y="88" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="10" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="50" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="88" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="1" y="132" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+    <rect x="42" y="132" width="7" height="14" rx="3" fill="${hex}" opacity=".8"/>
+  </svg>`;
+}
+
+// ── RENDER ALL ──────────────────────────────────────────────
+function renderAll(){
+  const acceso=cache.filter(d=>ESTADOS_ACCESO.includes(d.data().estado));
+  const liberados=cache.filter(d=>d.data().estado==="LIBERADO");
+  renderAcceso(acceso);
+  renderSector("docksConvenio","countConvenio","bodyConvenio",DOCKS_CONVENIO,"v");
+  renderSector("docksFiscal","countFiscal","bodyFiscal",DOCKS_FISCAL,"h");
+  renderLiberados(liberados);
+}
+
+function renderAcceso(docs){
+  const el=document.getElementById("listaAcceso");
+  if(!docs.length){el.innerHTML=`<div style="font-size:11px;color:var(--muted);font-style:italic;text-align:center;padding:10px 0;">Sin vehículos</div>`;return;}
+  el.innerHTML=docs.map(d=>{
+    const data=d.data(),p=data.planificacion||{},g=data.guardia||{};
+    const hex=EC[data.estado||""]||"#6b7f99";
+    const cliente=(p.cliente||"—").slice(0,15);
+    const pat=g.patente_tractor||p.patente_tractor||data.estado||"";
+    return `<div class="c-card" style="--ec:${hex};max-width:144px;" onclick="abrirModal('${d.id}')" onmouseenter="showTT(event,'${d.id}')" onmouseleave="hideTT()">
+      ${svgDerecha(hex)}
+      <div class="c-label" style="max-width:136px;">${cliente}</div>
+      <div class="c-sub" style="max-width:136px;">${pat}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderSector(cid,countId,bodyId,nums,dir){
+  const container=document.getElementById(cid);
+  const countEl=document.getElementById(countId);
+  const bodyEl=document.getElementById(bodyId);
+  const rot=dir==="v"?0:90; // convenio → derecha, fiscal → abajo
+
+  const ocupados=cache.filter(d=>{
+    const dock=d.data().supervisor?.dock;
+    return dock && nums.includes(parseInt(dock)) && ESTADOS_PLANTA.includes(d.data().estado);
+  });
+  countEl.textContent=`${ocupados.length}/${nums.length} ocupados`;
+  bodyEl.innerHTML=ocupados.length
+    ? ocupados.map(d=>{
+        const p=d.data().planificacion||{},sv=d.data().supervisor||{};
+        const hex=EC[d.data().estado]||"#6b7f99";
+        return `<div class="sector-item">
+          <span style="color:${hex};font-weight:700;font-family:var(--mono);">D${sv.dock}</span>
+          <span style="color:var(--text);font-weight:600;">${(p.cliente||"—").slice(0,13)}</span>
+          <span style="color:var(--muted);font-family:var(--mono);font-size:11px;">${p.movimiento||""}</span>
+        </div>`;
+      }).join("")
+    : `<span style="color:var(--muted);font-style:italic;font-size:11px;">Sin movimientos</span>`;
+
+  container.innerHTML=nums.map(num=>{
+    const doc=cache.find(d=>{
+      const dock=d.data().supervisor?.dock;
+      return dock && parseInt(dock)===num && ESTADOS_PLANTA.includes(d.data().estado);
+    });
+    const hex=doc?(EC[doc.data().estado]||"#6b7f99"):"#6b7f99";
+    const p=doc?doc.data().planificacion||{}:{};
+    const id=doc?doc.id:"";
+    const cliente=doc?(p.cliente||"—").slice(0,8):"";
+
+    if(dir==="v"){
+      return `<div class="dock-slot-v">
+        ${doc
+          ?`<div class="c-card" onclick="abrirModal('${id}')" onmouseenter="showTT(event,'${id}')" onmouseleave="hideTT()">
+              ${svgIzquierda(hex)}
+              <div class="c-label">${cliente}</div>
+            </div>`
+          :`<div class="dock-libre-v">libre</div>`
+        }
+        <div class="dock-id">D${num}</div>
+      </div>`;
+    } else {
+      return `<div class="dock-slot-h">
+        <div class="dock-id">D${num}</div>
+        ${doc
+          ?`<div class="c-card" onclick="abrirModal('${id}')" onmouseenter="showTT(event,'${id}')" onmouseleave="hideTT()">
+              ${svgArriba(hex)}
+              <div class="c-label">${cliente}</div>
+            </div>`
+          :`<div class="dock-libre-h">libre</div>`
+        }
+      </div>`;
+    }
+  }).join("");
+}
+
+function renderLiberados(docs){
+  const row=document.getElementById("liberadosRow");
+  const el=document.getElementById("listaLiberados");
+  if(!docs.length){
+    el.innerHTML=`<div style="font-size:11px;color:var(--muted);font-style:italic;padding:40px 0 0 8px;">Sin liberados aún</div>`;
+    return;
+  }
+  el.innerHTML=docs.map(d=>{
+    const data=d.data(),p=data.planificacion||{},sv=data.supervisor||{};
+    const cliente=(p.cliente||"—").slice(0,10);
+    const dock=sv.dock?`D${sv.dock}`:"";
+    return `<div class="c-card" style="--ec:#67e8f9;" onclick="abrirModal('${d.id}')" onmouseenter="showTT(event,'${d.id}')" onmouseleave="hideTT()">
+      ${svgAbajo("#67e8f9")}
+      <div class="c-label" style="max-width:46px;color:#67e8f9;">${cliente}</div>
+      <div class="c-sub" style="max-width:46px;">${dock}</div>
+    </div>`;
+  }).join("");
+}
+
+// ── TOOLTIP ────────────────────────────────────────────────
+const tt=document.getElementById("tooltip");
+window.showTT=function(e,id){
+  const doc=cache.find(d=>d.id===id);if(!doc)return;
+  const data=doc.data(),p=data.planificacion||{},g=data.guardia||{};
+  const hex=EC[data.estado||""]||"#6b7f99";
+  document.getElementById("ttTitle").style.color=hex;
+  document.getElementById("ttTitle").textContent=p.cliente||"—";
+  document.getElementById("ttBody").innerHTML=`
+    <div class="tt-row"><span class="tt-label">Transporte</span><span class="tt-val">${g.transporte||p.transporte||"—"}</span></div>
+    <div class="tt-row"><span class="tt-label">Destino</span><span class="tt-val">${p.destino||"—"}</span></div>
+    <div class="tt-row"><span class="tt-label">Patente</span><span class="tt-val">${g.patente_tractor||p.patente_tractor||"—"}</span></div>
+    <div class="tt-row"><span class="tt-label">Movimiento</span><span class="tt-val">${p.movimiento||"—"}</span></div>
+    <div class="tt-row"><span class="tt-label">Hora est.</span><span class="tt-val">${p.hora_estipulada||"—"}</span></div>
+    <div class="tt-row"><span class="tt-label">Estado</span><span class="tt-val" style="color:${hex};font-weight:700;">${data.estado||"—"}</span></div>
+  `;
+  tt.style.display="block";posTT(e);
+};
+document.addEventListener("mousemove",e=>{if(tt.style.display==="block")posTT(e);});
+function posTT(e){const x=e.clientX+14,y=e.clientY+14,tw=tt.offsetWidth,th=tt.offsetHeight;tt.style.left=(x+tw>window.innerWidth?e.clientX-tw-6:x)+"px";tt.style.top=(y+th>window.innerHeight?e.clientY-th-6:y)+"px";}
+window.hideTT=function(){tt.style.display="none";};
+
+// ── MODAL ──────────────────────────────────────────────────
+window.abrirModal=function(id){
+  hideTT();
+  const doc=cache.find(d=>d.id===id);if(!doc)return;
+  const data=doc.data(),p=data.planificacion||{},g=data.guardia||{};
+  const sv=data.supervisor||{},svw=data.supervisor_web||{},pl=data.planillero||{};
+  const est=data.estado||"";
+  const hex=EC[est]||"#6b7f99";
+  const dock=sv.dock?`D${sv.dock}`:null;
+  const sector=sv.dock?(DOCKS_CONVENIO.includes(parseInt(sv.dock))?"Convenio PV2":"Fiscal PV1"):"Sin dock";
+  document.getElementById("mDockId").textContent=dock||est;
+  document.getElementById("mDockId").style.color=hex;
+  document.getElementById("mSector").textContent=sector;
+  const fv=(v,mono)=>v?`<div class="m-val${mono?" mono":""}">${v}</div>`:`<div class="m-val" style="color:var(--muted)">—</div>`;
+  document.getElementById("mBody").innerHTML=`
+    <div class="m-estado" style="color:${hex};background:${hex}22;"><div class="m-dot" style="background:${hex}"></div>${est}</div>
+    <div class="m-sec">Planificación</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="m-label">Cliente</div>${fv(p.cliente)}</div>
+      <div class="m-field"><div class="m-label">Movimiento</div>${fv(p.movimiento,true)}</div>
+      <div class="m-field"><div class="m-label">Hora est.</div>${fv(p.hora_estipulada,true)}</div>
+      <div class="m-field"><div class="m-label">Referencia</div>${fv(p.referencia,true)}</div>
+      <div class="m-field"><div class="m-label">Destino</div>${fv(p.destino)}</div>
+      <div class="m-field"><div class="m-label">Booking</div>${fv(p.booking,true)}</div>
+      <div class="m-field"><div class="m-label">Contenedor</div>${fv(p.contenedor,true)}</div>
+      <div class="m-field"><div class="m-label">Lugar carga</div>${fv(p.lugar_carga)}</div>
+    </div>
+    <div class="m-sec">Transporte</div>
+    <div class="m-grid">
+      <div class="m-field"><div class="m-label">Empresa</div>${fv(g.transporte||p.transporte)}</div>
+      <div class="m-field"><div class="m-label">Chofer</div>${fv(g.chofer)}</div>
+      <div class="m-field"><div class="m-label">Pat. Tractor</div>${fv(g.patente_tractor||p.patente_tractor,true)}</div>
+      <div class="m-field"><div class="m-label">Pat. Semi</div>${fv(g.patente_semi||p.patente_semi,true)}</div>
+      <div class="m-field"><div class="m-label">Hora arribo</div>${fv(g.hora_arribo,true)}</div>
+      <div class="m-field"><div class="m-label">DNI</div>${fv(g.dni,true)}</div>
+    </div>
+    ${sv.dock?`<div class="m-sec">En planta</div><div class="m-grid">
+      <div class="m-field"><div class="m-label">Dock</div>${fv(`D${sv.dock}`,true)}</div>
+      <div class="m-field"><div class="m-label">Hora ingreso</div>${fv(sv.hora_ingreso,true)}</div>
+      ${pl.hora_inicio?`<div class="m-field"><div class="m-label">Inicio mov.</div>${fv(pl.hora_inicio,true)}</div>`:""}
+      ${pl.hora_finalizado?`<div class="m-field"><div class="m-label">Fin mov.</div>${fv(pl.hora_finalizado,true)}</div>`:""}
+      ${pl.cantidad_operarios?`<div class="m-field"><div class="m-label">Operarios</div>${fv(pl.cantidad_operarios,true)}</div>`:""}
+    </div>`:""}
+    ${p.observaciones||g.observaciones_guardia?`<div class="m-sec">Observaciones</div>
+      ${p.observaciones?`<div style="font-size:11px;color:var(--muted);margin-bottom:3px;">${p.observaciones}</div>`:""}
+      ${g.observaciones_guardia?`<div style="font-size:11px;color:var(--muted);">🛡 ${g.observaciones_guardia}</div>`:""}
+    `:""}
+  `;
+  document.getElementById("modalDet").classList.add("show");
+};
+window.cerrarModal=function(){document.getElementById("modalDet").classList.remove("show");};
+document.getElementById("modalDet").addEventListener("click",e=>{if(e.target===document.getElementById("modalDet"))cerrarModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")cerrarModal();});
+</script>
+<script type="module" src="./js/nav.js"></script>
+</body>
+</html>
