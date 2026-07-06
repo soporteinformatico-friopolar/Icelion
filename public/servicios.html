@@ -287,6 +287,17 @@
             </a>
           </div>
         </div>
+        <div class="form-group span2">
+          <label class="form-label">Link Packing orden</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" class="form-input" id="fLinkPackingOrden"
+              placeholder="https://drive.google.com/..." style="text-transform:none;flex:1;">
+            <a id="fLinkPackingOrdenLink" href="#" target="_blank"
+              style="display:none;padding:7px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--accent2);text-decoration:none;white-space:nowrap;">
+              📁 Abrir
+            </a>
+          </div>
+        </div>
       </div>
       <!-- campos hidden para compatibilidad -->
       <input type="hidden" id="fEstado" value="PENDIENTE">
@@ -596,6 +607,12 @@ document.addEventListener("DOMContentLoaded", () => {
     link.href = inp.value.trim();
     link.style.display = inp.value.trim() ? "" : "none";
   });
+  const inp2  = document.getElementById("fLinkPackingOrden");
+  const link2 = document.getElementById("fLinkPackingOrdenLink");
+  if (inp2 && link2) inp2.addEventListener("input", () => {
+    link2.href = inp2.value.trim();
+    link2.style.display = inp2.value.trim() ? "" : "none";
+  });
 });
 
 // ── MODAL ABRIR / CERRAR ──────────────────────────────────────
@@ -617,6 +634,8 @@ window.abrirNueva = function() {
   document.getElementById("fObservacion").value     = "";
   document.getElementById("fFotoCarpeta").value     = "";
   document.getElementById("fFotoCarpetaLink").style.display = "none";
+  document.getElementById("fLinkPackingOrden").value = "";
+  document.getElementById("fLinkPackingOrdenLink").style.display = "none";
   document.getElementById("itemsList").innerHTML    = "";
   agregarItem(); // fila vacía inicial
   document.getElementById("modal").classList.remove("hidden");
@@ -645,6 +664,10 @@ window.abrirOrden = function(id) {
   document.getElementById("fFotoCarpeta").value      = _fc;
   const _fcLink = document.getElementById("fFotoCarpetaLink");
   _fcLink.href = _fc; _fcLink.style.display = _fc ? "" : "none";
+  const _lpo = data.link_packing_orden || "";
+  document.getElementById("fLinkPackingOrden").value = _lpo;
+  const _lpoLink = document.getElementById("fLinkPackingOrdenLink");
+  _lpoLink.href = _lpo; _lpoLink.style.display = _lpo ? "" : "none";
 
   // Items
   document.getElementById("itemsList").innerHTML = "";
@@ -704,6 +727,7 @@ window.guardarOrden = async function() {
     estado:             document.getElementById("fEstado").value,
     observacion:        document.getElementById("fObservacion").value.trim(),
     foto_carpeta:       document.getElementById("fFotoCarpeta").value.trim(),
+    link_packing_orden: document.getElementById("fLinkPackingOrden").value.trim(),
     items
   };
 
