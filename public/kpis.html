@@ -81,6 +81,8 @@
   .tab.active{background:var(--panel);color:var(--text);border:1px solid var(--border);}
   .tab-pane{display:none;}
   .tabs-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:14px 0 6px;}
+  .kpi-resumen{font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:600;}
+  .kpi-resumen span{font-size:16px;color:var(--text);font-weight:700;}
   .tab-pane.active{display:block;}
 
   /* TABLA */
@@ -189,37 +191,24 @@
     <div class="info-bar" id="infoBar">—</div>
   </div>
 
-  <!-- KPI CARDS -->
-  <div class="kpi-grid">
-    <div class="kpi-card kpi-neutral">
-      <div class="kpi-label">Movimientos analizados</div>
-      <div class="kpi-value" id="kpiTotal">—</div>
-      <div class="kpi-sub">Con arribo registrado</div>
-    </div>
-    <div class="kpi-card" id="cardPunt">
-      <div class="kpi-label">Puntualidad</div>
-      <div class="kpi-value" id="kpiPuntPct">—</div>
-      <div class="kpi-sub" id="kpiPuntSub">% a tiempo (≤ 0 min tarde)</div>
-      <div class="puntualidad-bar" id="barPunt"></div>
-    </div>
-    <div class="kpi-card kpi-neutral">
-      <div class="kpi-label">Demora promedio</div>
-      <div class="kpi-value" id="kpiDemoraAvg">—</div>
-      <div class="kpi-sub">Solo movimientos tardíos</div>
-    </div>
-    <div class="kpi-card kpi-neutral">
-      <div class="kpi-label">Permanencia promedio</div>
-      <div class="kpi-value" id="kpiPermAvg">—</div>
-      <div class="kpi-sub">Arribo → Egreso (con dato)</div>
-    </div>
-    <div class="kpi-card kpi-neutral">
-      <div class="kpi-label">Permanencia máxima</div>
-      <div class="kpi-value" id="kpiPermMax">—</div>
-      <div class="kpi-sub" id="kpiPermMaxSub">—</div>
-    </div>
+  <!-- RESUMEN -->
+  <div class="kpi-resumen" id="kpiResumenLine">
+    <span id="kpiTotal">—</span> movimientos analizados
+  </div>
+
+  <!-- SELECTOR DE CATEGORÍA -->
+  <div class="filtros-group" style="max-width:340px;margin-bottom:10px;">
+    <label>Categoría de KPI</label>
+    <select class="form-input" id="catSelector" onchange="switchCat(this.value)">
+      <option value="servicio">Nivel de Servicio y Cumplimiento</option>
+      <option value="planificacion">Planificación Efectiva</option>
+      <option value="costos">Costos Ocultos y Calidad</option>
+      <option value="detalle">Detalle</option>
+    </select>
   </div>
 
   <!-- TABS -->
+  <div class="cat-group" data-cat="servicio">
   <div class="tabs-group-label">Nivel de Servicio y Cumplimiento</div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('puntualidad',this)">Puntualidad</button>
@@ -227,19 +216,27 @@
     <button class="tab" onclick="switchTab('porCliente',this)">Por cliente</button>
     <button class="tab" onclick="switchTab('porTransporte',this)">Por transporte</button>
   </div>
+  </div>
+  <div class="cat-group" data-cat="planificacion" style="display:none;">
   <div class="tabs-group-label">Planificación Efectiva</div>
+
   <div class="tabs">
-    <button class="tab" onclick="switchTab('planificacion',this)">Planificación efectiva</button>
+    <button class="tab active" onclick="switchTab('planificacion',this)">Planificación efectiva</button>
     <button class="tab" onclick="switchTab('tiempoMov',this)">Tiempo mov.</button>
     <button class="tab" onclick="switchTab('flujoSemanal',this)">Flujo semanal</button>
   </div>
+  </div>
+  <div class="cat-group" data-cat="costos" style="display:none;">
   <div class="tabs-group-label">Costos Ocultos y Calidad del Proceso</div>
   <div class="tabs">
-    <button class="tab" onclick="switchTab('desvios',this)">Desvíos</button>
+    <button class="tab active" onclick="switchTab('desvios',this)">Desvíos</button>
   </div>
+  </div>
+  <div class="cat-group" data-cat="detalle" style="display:none;">
   <div class="tabs-group-label">Detalle</div>
   <div class="tabs">
-    <button class="tab" onclick="switchTab('detalle',this)">Detalle</button>
+    <button class="tab active" onclick="switchTab('detalle',this)">Detalle</button>
+  </div>
   </div>
 
   <!-- TAB: PUNTUALIDAD -->
@@ -764,38 +761,9 @@ function calcularKPIs(docs) {
   // KPI Cards
   const conDiff   = enriched.filter(d => d.diff !== null);
   const aTiempo   = conDiff.filter(d => d.diff <= 0);
-  const tardios   = conDiff.filter(d => d.diff > 0);
   const conPerm   = enriched.filter(d => d.permAbs !== null);
-  const puntPct   = conDiff.length ? Math.round(aTiempo.length / conDiff.length * 100) : null;
-  const demoraAvg = tardios.length ? tardios.reduce((s,d)=>s+d.diff,0)/tardios.length : null;
-  const permAvg   = conPerm.length ? conPerm.reduce((s,d)=>s+d.permAbs,0)/conPerm.length : null;
-  const permMaxD  = conPerm.length ? conPerm.reduce((a,b)=>b.permAbs>a.permAbs?b:a) : null;
 
   document.getElementById("kpiTotal").textContent    = enriched.length;
-  document.getElementById("kpiPuntPct").textContent  = puntPct !== null ? `${puntPct}%` : "—";
-  document.getElementById("kpiDemoraAvg").textContent= fmtMinAbs(demoraAvg);
-  document.getElementById("kpiPermAvg").textContent  = fmtMinAbs(permAvg);
-  document.getElementById("kpiPermMax").textContent  = permMaxD ? fmtMinAbs(permMaxD.permAbs) : "—";
-  document.getElementById("kpiPermMaxSub").textContent = permMaxD ? `${permMaxD.cliente} · ${permMaxD.fecha}` : "—";
-
-  // Color del card de puntualidad
-  const card = document.getElementById("cardPunt");
-  card.className = "kpi-card " + (puntPct===null?"kpi-neutral":puntPct>=85?"kpi-ok":puntPct>=60?"kpi-warn":"kpi-err");
-
-  // Barra de puntualidad
-  if(conDiff.length) {
-    const leve = conDiff.filter(d=>d.diff>0&&d.diff<=30);
-    const tard = conDiff.filter(d=>d.diff>30);
-    const pOk   = aTiempo.length/conDiff.length*100;
-    const pLeve = leve.length/conDiff.length*100;
-    const pTard = tard.length/conDiff.length*100;
-    document.getElementById("barPunt").innerHTML =
-      `<div class="bar-ok"  style="width:${pOk}%"></div>` +
-      `<div class="bar-warn"style="width:${pLeve}%"></div>` +
-      `<div class="bar-err" style="width:${pTard}%"></div>`;
-    document.getElementById("kpiPuntSub").textContent =
-      `${aTiempo.length} a tiempo · ${leve.length} leve · ${tard.length} tardíos`;
-  }
 
   document.getElementById("infoBar").textContent = `${enriched.length} movimientos · ${conDiff.length} con dato de puntualidad · ${conPerm.length} con permanencia`;
 
@@ -1120,6 +1088,16 @@ function renderDesvios(docs) {
       return `<tr><td><strong>${m}</strong></td><td class="td-right td-mono">${c}</td><td class="td-right td-mono">${pct}%</td></tr>`;
     }).join("")}</tbody></table></div>`;
 }
+
+// ── CATEGORÍAS ────────────────────────────────────────────────
+window.switchCat = function(name) {
+  document.querySelectorAll(".cat-group").forEach(g=>{
+    g.style.display = (g.dataset.cat === name) ? "" : "none";
+  });
+  const activeGroup = document.querySelector(`.cat-group[data-cat="${name}"]`);
+  const firstBtn = activeGroup.querySelector(".tab");
+  if (firstBtn) firstBtn.click();
+};
 
 // ── TABS ──────────────────────────────────────────────────────
 window.switchTab = function(name, btn) {
