@@ -2027,7 +2027,7 @@ document.getElementById("btnGuardarForm").addEventListener("click", async()=>{
   const btn=document.getElementById("btnGuardarForm");
   btn.disabled=true; btn.textContent="Guardando...";
 
-  const nombre = sessionStorage.getItem("icelion_nombre") || usuarioActual?.email || "—";
+  const nombre = sessionStorage.getItem("icelion_nombre") || auth.currentUser?.email || "—";
 
   const planData={
     cliente:             document.getElementById("fCliente").value.trim(),
@@ -2129,7 +2129,7 @@ document.getElementById("btnGuardarRepetir").addEventListener("click", async()=>
   if(!estado){toast("err","Falta dato","El estado es obligatorio");return;}
   const btn=document.getElementById("btnGuardarRepetir");
   btn.disabled=true; btn.textContent="Guardando...";
-  const nombre = sessionStorage.getItem("icelion_nombre") || usuarioActual?.email || "—";
+  const nombre = sessionStorage.getItem("icelion_nombre") || auth.currentUser?.email || "—";
   const planData={
     cliente:             document.getElementById("fCliente").value.trim(),
     movimiento:          document.getElementById("fMovimiento").value,
@@ -2189,7 +2189,7 @@ window.confirmarCancelar=function(id){
 );
 document.getElementById("btnSiConfirm").addEventListener("click", async()=>{
   if(!cancelarId) return;
-  const nombre = sessionStorage.getItem("icelion_nombre") || usuarioActual?.email || "—";
+  const nombre = sessionStorage.getItem("icelion_nombre") || auth.currentUser?.email || "—";
   try {
     // Obtener penalidades existentes para no pisar
     const snapCan = await getDoc(doc(db,COL,cancelarId));
@@ -2423,7 +2423,7 @@ document.getElementById("btnGuardarProds").addEventListener("click", async()=>{
   if(!currentProdId) return;
   const btn=document.getElementById("btnGuardarProds");
   btn.disabled=true; btn.textContent="Guardando...";
-  const nombre = sessionStorage.getItem("icelion_nombre") || usuarioActual?.email || "—";
+  const nombre = sessionStorage.getItem("icelion_nombre") || auth.currentUser?.email || "—";
 
   // Preservar URLs existentes (cargadas por consolidador)
   const snapActual = await getDoc(doc(db,COL,currentProdId));
