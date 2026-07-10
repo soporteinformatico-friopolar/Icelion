@@ -224,6 +224,7 @@
     <button class="tab active" onclick="switchTab('planificacion',this)">Planificación efectiva</button>
     <button class="tab" onclick="switchTab('tiempoMov',this)">Tiempo mov.</button>
     <button class="tab" onclick="switchTab('flujoSemanal',this)">Flujo semanal</button>
+    <button class="tab" onclick="switchTab('ocupacionPuertas',this)">Ocupación de puertas</button>
   </div>
   </div>
   <div class="cat-group" data-cat="costos" style="display:none;">
@@ -353,7 +354,7 @@
   <div class="tab-pane" id="tab-planificacion">
     <div class="section">
       <div class="section-header">
-        <div class="section-title">Planificación efectiva (Inicio real vs. Planificado)</div>
+        <div class="section-title">Planificación efectiva (Dock asignado vs. Planificado)</div>
       </div>
       <div class="section-body">
         <div id="distribPlanif"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
@@ -373,24 +374,40 @@
     </div>
   </div>
 
+  <!-- TAB: OCUPACIÓN DE PUERTAS -->
+  <div class="tab-pane" id="tab-ocupacionPuertas">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Ocupación de puertas (dock × horario)</div>
+      </div>
+      <div class="section-body">
+        <div id="distribOcupPuertas"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB: DESVÍOS -->
   <div class="tab-pane" id="tab-desvios">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Frecuencia de desvíos por tipo de movimiento</div>
-        </div>
-        <div class="section-body">
-          <div id="tablaDesviosMov"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
-        </div>
+    <div class="filtros-group" style="margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap;">
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:2px;">Movimiento</label>
+        <select class="form-input" id="fDesvMov" onchange="renderDesvios(window._enrichedCache||[])">
+          <option value="">Todos</option>
+        </select>
       </div>
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Tasa de reincidencia por motivo</div>
-        </div>
-        <div class="section-body">
-          <div id="tablaDesviosMotivo"><div class="empty">—</div></div>
-        </div>
+      <div>
+        <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:2px;">Cliente</label>
+        <select class="form-input" id="fDesvCliente" onchange="renderDesvios(window._enrichedCache||[])">
+          <option value="">Todos</option>
+        </select>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">% de desvíos por tipo (nombre de desvío)</div>
+      </div>
+      <div class="section-body">
+        <div id="pieDesvios"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
       </div>
     </div>
   </div>
@@ -660,6 +677,7 @@ function calcularKPIs(docs) {
     const g  = d.data.guardia       || {};
     const pl = d.data.playero       || {};
     const pll= d.data.planillero    || {};
+    const sv = d.data.supervisor    || {};
 
     const fechaArr = g.fecha_arribo   || null;
     const fechaPrev= p.fecha_prevista || null;
@@ -718,6 +736,18 @@ function calcularKPIs(docs) {
     const diffPlan = (p.hora_estipulada && pll.hora_inicio)
       ? difMin(p.hora_estipulada, pll.hora_inicio) : null;
 
+    // Efectiva (nueva definición): dock asignado <= hora planificada
+    const horaDockAsig = sv.hora_ingreso || "";
+    const dockNum = sv.dock || "";
+    const esEfectiva = (p.hora_estipulada && horaDockAsig)
+      ? (toMin(horaDockAsig) !== null && toMin(p.hora_estipulada) !== null
+          ? toMin(horaDockAsig) <= toMin(p.hora_estipulada) : null)
+      : null;
+
+    // Hora planificada en bucket (0-23) para heatmaps
+    const horaEstBucket = p.hora_estipulada ? Math.floor(toMin(p.hora_estipulada)/60) : null;
+    const horaDockBucket = horaDockAsig ? Math.floor(toMin(horaDockAsig)/60) : null;
+
     // Eficiencia despacho
     const horaFinMov  = pll.hora_finalizado || "";
     const despachoMin = (horaFinMov && pl.hora_egreso)
@@ -746,6 +776,7 @@ function calcularKPIs(docs) {
     const diaSemana = fechaObj ? fechaObj.getDay() : null;
 
     return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
+      esEfectiva, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
       cliente:    p.cliente    || "—",
       movimiento: p.movimiento || "—",
       transporte: p.transporte || "—",
@@ -778,6 +809,7 @@ function calcularKPIs(docs) {
   renderDetalle(enriched);
   renderPlanificacion(enriched);
   renderFlujoSemanal(enriched);
+  renderOcupacionPuertas(enriched);
   renderDesvios(enriched);
 }
 
@@ -1021,72 +1053,118 @@ function agrupar(arr, keyFn) {
 // ── PLANIFICACIÓN EFECTIVA ───────────────────────────────────
 function renderPlanificacion(docs) {
   const el = document.getElementById("distribPlanif");
-  const conD = docs.filter(d=>d.diffPlan!==null);
-  if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos de planificación efectiva</div>`; return; }
-  const cumple = conD.filter(d=>d.diffPlan<=15).length;
-  const leve   = conD.filter(d=>d.diffPlan>15 && d.diffPlan<=45).length;
-  const tarde  = conD.filter(d=>d.diffPlan>45).length;
-  const pct = Math.round(cumple/conD.length*100);
-  el.innerHTML = `
-    <div style="display:flex;gap:20px;margin-bottom:14px;">
-      <div><div class="kpi-label">Cumple (≤15min)</div><div class="kpi-value" style="font-size:20px;">${pct}%</div></div>
-      <div><div class="kpi-label">Leve (15-45min)</div><div class="kpi-value" style="font-size:20px;">${leve}</div></div>
-      <div><div class="kpi-label">Tardío (&gt;45min)</div><div class="kpi-value" style="font-size:20px;">${tarde}</div></div>
-    </div>
-    <div class="puntualidad-bar">
-      <div class="bar-ok"  style="width:${cumple/conD.length*100}%"></div>
-      <div class="bar-warn"style="width:${leve/conD.length*100}%"></div>
-      <div class="bar-err" style="width:${tarde/conD.length*100}%"></div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos con hora planificada e inicio real</div>`;
+  const conD = docs.filter(d=>d.esEfectiva!==null);
+  if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos de dock asignado / hora planificada</div>`; return; }
+  const efectivos = conD.filter(d=>d.esEfectiva).length;
+  const noEfectivos = conD.length - efectivos;
+  const slices = [
+    { label:"Efectiva",    value:efectivos,   color:"#4ade80" },
+    { label:"No efectiva", value:noEfectivos, color:"#f87171" },
+  ];
+  el.innerHTML = pieHTML(slices, conD.length) +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">
+      Efectiva: dock asignado a hora ≤ hora planificada · ${conD.length} movimientos con datos de dock
+    </div>`;
 }
 
-// ── FLUJO SEMANAL ─────────────────────────────────────────────
+// ── FLUJO SEMANAL (heatmap) ───────────────────────────────────
+function heatColor(count, max) {
+  if(!count) return "var(--panel3)";
+  const pct = max ? count/max : 0;
+  // escala de color: azul tenue -> naranja intenso
+  const r = Math.round(56  + pct*(249-56));
+  const g = Math.round(139 + pct*(115-139));
+  const b = Math.round(253 + pct*(22-253));
+  return `rgb(${r},${g},${b})`;
+}
+
+function renderHeatmapGrid(containerId, rowsLabels, colsLabels, matrix, rowHeaderLabel) {
+  const max = Math.max(1, ...matrix.flat());
+  const cellW = 40;
+  let html = `<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:10px;">`;
+  html += `<tr><th style="padding:4px 6px;text-align:left;color:var(--muted);">${rowHeaderLabel}</th>` +
+    colsLabels.map(c=>`<th style="padding:2px 4px;color:var(--muted);font-weight:600;min-width:${cellW}px;text-align:center;">${c}</th>`).join("") + `</tr>`;
+  rowsLabels.forEach((rl, ri) => {
+    html += `<tr><td style="padding:4px 6px;color:var(--text);font-weight:600;white-space:nowrap;">${rl}</td>`;
+    colsLabels.forEach((_, ci) => {
+      const v = matrix[ri][ci];
+      const bg = heatColor(v, max);
+      html += `<td style="padding:1px;"><div title="${rl} · ${colsLabels[ci]} · ${v} mov." style="width:${cellW}px;height:26px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${v>max*0.55?'#0a0f16':'var(--muted)'};font-weight:700;">${v||""}</div></td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</table></div>`;
+  return html;
+}
+
 function renderFlujoSemanal(docs) {
   const el = document.getElementById("distribFlujo");
-  const conD = docs.filter(d=>d.diaSemana!==null);
-  if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos de fecha</div>`; return; }
-  const nombres = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-  const orden = [1,2,3,4,5,6,0];
-  const total = conD.length;
-  el.innerHTML = `<div class="table-wrap"><table><thead><tr>
-      <th>Día</th><th class="td-right">Movimientos</th><th class="td-right">%</th>
-    </tr></thead><tbody>${orden.map(dia=>{
-      const cant = conD.filter(d=>d.diaSemana===dia).length;
-      const pct = total ? (cant/total*100).toFixed(1) : "0.0";
-      return `<tr><td><strong>${nombres[dia]}</strong></td><td class="td-right td-mono">${cant}</td><td class="td-right td-mono">${pct}%</td></tr>`;
-    }).join("")}</tbody></table></div>`;
+  const conD = docs.filter(d=>d.diaSemana!==null && d.horaEstBucket!==null && d.horaEstBucket>=6 && d.horaEstBucket<=20);
+  if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos de hora planificada</div>`; return; }
+  const diasLbl = ["Lun","Mar","Mié","Jue","Vie"];
+  const diasNum = [1,2,3,4,5];
+  const horas = Array.from({length:15}, (_,i)=>6+i); // 6..20
+  const matrix = diasNum.map(dia => horas.map(h =>
+    conD.filter(d=>d.diaSemana===dia && d.horaEstBucket===h).length
+  ));
+  el.innerHTML = renderHeatmapGrid("distribFlujo", diasLbl, horas.map(h=>`${h}h`), matrix, "Día \\ Hora") +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–20:00) según hora planificada</div>`;
+}
+
+function renderOcupacionPuertas(docs) {
+  const el = document.getElementById("distribOcupPuertas");
+  const conD = docs.filter(d=>d.dockNum && d.horaDockBucket!==null && d.horaDockBucket>=6 && d.horaDockBucket<=20);
+  if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos de dock asignado</div>`; return; }
+  const docks = [...new Set(conD.map(d=>String(d.dockNum)))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const horas = Array.from({length:15}, (_,i)=>6+i); // 6..20
+  const matrix = docks.map(dk => horas.map(h =>
+    conD.filter(d=>String(d.dockNum)===dk && d.horaDockBucket===h).length
+  ));
+  el.innerHTML = renderHeatmapGrid("distribOcupPuertas", docks.map(d=>`Dock ${d}`), horas.map(h=>`${h}h`), matrix, "Dock \\ Hora") +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos con dock y horario de asignación (6:00–20:00)</div>`;
 }
 
 // ── DESVÍOS ───────────────────────────────────────────────────
+const DESV_COLORS = ["#f87171","#fbbf24","#4ade80","#60a5fa","#c084fc","#f64dfc","#67e8f9","#fb923c","#a3e635","#94a3b8"];
+
+function poblarFiltrosDesvios(docs) {
+  const selMov = document.getElementById("fDesvMov");
+  const selCli = document.getElementById("fDesvCliente");
+  if (!selMov || !selMov.dataset.poblado) {
+    const movs = [...new Set(docs.map(d=>d.movimiento).filter(Boolean))].sort();
+    selMov.innerHTML = `<option value="">Todos</option>` + movs.map(m=>`<option value="${m}">${m}</option>`).join("");
+    selMov.dataset.poblado = "1";
+  }
+  if (!selCli || !selCli.dataset.poblado) {
+    const clis = [...new Set(docs.map(d=>d.cliente).filter(Boolean))].sort();
+    selCli.innerHTML = `<option value="">Todos</option>` + clis.map(c=>`<option value="${c}">${c}</option>`).join("");
+    selCli.dataset.poblado = "1";
+  }
+}
+
 function renderDesvios(docs) {
-  const elMov = document.getElementById("tablaDesviosMov");
-  const elMot = document.getElementById("tablaDesviosMotivo");
+  window._enrichedCache = docs;
+  poblarFiltrosDesvios(docs);
+  const elPie = document.getElementById("pieDesvios");
+  const fMov = document.getElementById("fDesvMov")?.value || "";
+  const fCli = document.getElementById("fDesvCliente")?.value || "";
 
-  const byMov = agrupar(docs, d=>d.movimiento);
-  const sortedMov = Object.entries(byMov).sort((a,b)=>b[1].length-a[1].length);
-  elMov.innerHTML = `<div class="table-wrap"><table><thead><tr>
-      <th>Movimiento</th><th class="td-right">Total</th><th class="td-right">Con desvío</th><th class="td-right">%</th>
-    </tr></thead><tbody>${sortedMov.map(([mov,items])=>{
-      const conDesv = items.filter(d=>d.tieneDesvio).length;
-      const pct = items.length ? (conDesv/items.length*100).toFixed(1) : "0.0";
-      return `<tr><td><strong>${mov}</strong></td><td class="td-right td-mono">${items.length}</td><td class="td-right td-mono">${conDesv}</td><td class="td-right td-mono">${pct}%</td></tr>`;
-    }).join("")}</tbody></table></div>`;
+  let filtrados = docs;
+  if (fMov) filtrados = filtrados.filter(d=>d.movimiento===fMov);
+  if (fCli) filtrados = filtrados.filter(d=>d.cliente===fCli);
 
-  const motivos = {};
-  docs.forEach(d => (d.listaDesvios||[]).forEach(x => {
-    const m = x.motivo || "Sin motivo";
-    motivos[m] = (motivos[m]||0) + 1;
+  const nombres = {};
+  filtrados.forEach(d => (d.listaDesvios||[]).forEach(x => {
+    const n = x.desvio || "Sin especificar";
+    nombres[n] = (nombres[n]||0) + 1;
   }));
-  const totalDesv = Object.values(motivos).reduce((a,b)=>a+b,0);
-  const sortedMot = Object.entries(motivos).sort((a,b)=>b[1]-a[1]);
-  if(!sortedMot.length){ elMot.innerHTML = `<div class="empty">Sin desvíos registrados</div>`; return; }
-  elMot.innerHTML = `<div class="table-wrap"><table><thead><tr>
-      <th>Motivo</th><th class="td-right">Cant.</th><th class="td-right">% sobre desvíos</th>
-    </tr></thead><tbody>${sortedMot.map(([m,c])=>{
-      const pct = totalDesv ? (c/totalDesv*100).toFixed(1) : "0.0";
-      return `<tr><td><strong>${m}</strong></td><td class="td-right td-mono">${c}</td><td class="td-right td-mono">${pct}%</td></tr>`;
-    }).join("")}</tbody></table></div>`;
+  const total = Object.values(nombres).reduce((a,b)=>a+b,0);
+  if (!total) { elPie.innerHTML = `<div class="empty">Sin desvíos registrados para este filtro</div>`; return; }
+
+  const sorted = Object.entries(nombres).sort((a,b)=>b[1]-a[1]);
+  const slices = sorted.map(([label,value],i) => ({ label, value, color: DESV_COLORS[i % DESV_COLORS.length] }));
+  elPie.innerHTML = pieHTML(slices, total) +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${total} desvíos registrados${fMov?` · Movimiento: ${fMov}`:""}${fCli?` · Cliente: ${fCli}`:""}</div>`;
 }
 
 // ── CATEGORÍAS ────────────────────────────────────────────────
