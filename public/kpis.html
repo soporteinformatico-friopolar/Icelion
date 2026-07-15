@@ -453,6 +453,12 @@
       <div class="section">
         <div class="section-header">
           <div class="section-title">PISO — cajas/hora-hombre por operarios <span id="tProdCargaCountPiso"></span></div>
+          <select id="filtroRotuloPiso" class="form-input" style="width:auto;font-size:11px;padding:4px 8px;" onchange="filtrarProdCargaPiso(this.value)">
+            <option value="TODOS">Todos los rótulos</option>
+            <option value="FP">Insumo FP</option>
+            <option value="CLIENTE">Insumo Cliente</option>
+            <option value="NO">Sin insumo (NO)</option>
+          </select>
         </div>
         <div class="section-body">
           <div id="chartProdOperariosPiso"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
@@ -850,6 +856,14 @@ function calcularKPIs(docs) {
     const cajasPorHoraHombre= (cajas && horasHombre) ? cajas / horasHombre   : null;
     const tiposCarga = [...new Set(detallesProd.map(x=>x.piso_o_pallet).filter(Boolean))];
     const pisoOPallet = tiposCarga.length === 1 ? tiposCarga[0] : (tiposCarga.length > 1 ? "MIXTO" : null);
+    const clasificarRotulo = (txt) => {
+      const t = (txt||"").toUpperCase();
+      if (t.includes("FP")) return "FP";
+      if (t.includes("CLIENTE")) return "CLIENTE";
+      return "NO";
+    };
+    const tiposRotulo = [...new Set(detallesProd.map(x=>clasificarRotulo(x.rotulo)))];
+    const rotuloTipo = tiposRotulo.length === 1 ? tiposRotulo[0] : (tiposRotulo.length > 1 ? "MIXTO" : "NO");
 
     // Desvíos
     const desvios = d.data.calidad_desvios;
@@ -864,7 +878,7 @@ function calcularKPIs(docs) {
     const fechaObj = fechaPrev ? new Date(fechaPrev+"T12:00:00") : null;
     const diaSemana = fechaObj ? fechaObj.getDay() : null;
 
-    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
+    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, rotuloTipo, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
       esEfectiva, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
       cliente:    p.cliente    || "—",
       movimiento: p.movimiento || "—",
@@ -998,12 +1012,24 @@ function renderProductividadCarga(docs) {
       document.getElementById(`chartProdOperarios${s}`).innerHTML = diag;
       document.getElementById(`tablaProdOperarios${s}`).innerHTML = `<div class="empty">—</div>`;
     });
+    _prodCargaPisoBase = [];
     return;
   }
 
   renderBloqueProdCarga(base.filter(d=>d.pisoOPallet==="PISO"),   "Piso");
   renderBloqueProdCarga(base.filter(d=>d.pisoOPallet==="PALLET"), "Pallet");
+
+  _prodCargaPisoBase = base.filter(d=>d.pisoOPallet==="PISO");
+  const selRotulo = document.getElementById("filtroRotuloPiso");
+  const filtroActivo = selRotulo ? selRotulo.value : "TODOS";
+  if(filtroActivo !== "TODOS") window.filtrarProdCargaPiso(filtroActivo);
 }
+
+let _prodCargaPisoBase = [];
+window.filtrarProdCargaPiso = function(tipo) {
+  const data = tipo === "TODOS" ? _prodCargaPisoBase : _prodCargaPisoBase.filter(d=>d.rotuloTipo===tipo);
+  renderBloqueProdCarga(data, "Piso");
+};
 
 // ── HORAS HOMBRE ───────────────────────────────────────────────
 function renderHorasHombre(docs) {
