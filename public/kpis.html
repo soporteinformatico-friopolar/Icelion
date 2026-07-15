@@ -447,23 +447,39 @@
   <!-- TAB: PRODUCTIVIDAD DE CARGA -->
   <div class="tab-pane" id="tab-productividadCarga">
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
-      Analiza CARGA EXPO: relaciona cajas cargadas, tiempo de movimiento y operarios asignados, para ver si sumar operarios rinde proporcionalmente o hay rendimientos decrecientes.
+      Analiza CARGA EXPO: relaciona cajas cargadas, tiempo de movimiento y operarios asignados, diferenciando PISO vs PALLET, para ver si sumar operarios rinde proporcionalmente o hay rendimientos decrecientes.
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div class="section" style="grid-column:1 / -1;">
+      <div class="section">
         <div class="section-header">
-          <div class="section-title">Cajas por hora-hombre según cantidad de operarios <span id="tProdCargaCount"></span></div>
+          <div class="section-title">PISO — cajas/hora-hombre por operarios <span id="tProdCargaCountPiso"></span></div>
         </div>
         <div class="section-body">
-          <div id="chartProdOperarios"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+          <div id="chartProdOperariosPiso"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
         </div>
       </div>
-      <div class="section" style="grid-column:1 / -1;">
+      <div class="section">
         <div class="section-header">
-          <div class="section-title">Detalle por cantidad de operarios</div>
+          <div class="section-title">PALLET — cajas/hora-hombre por operarios <span id="tProdCargaCountPallet"></span></div>
         </div>
         <div class="section-body">
-          <div id="tablaProdOperarios"><div class="empty">—</div></div>
+          <div id="chartProdOperariosPallet"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Detalle PISO</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaProdOperariosPiso"><div class="empty">—</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Detalle PALLET</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaProdOperariosPallet"><div class="empty">—</div></div>
         </div>
       </div>
     </div>
@@ -832,6 +848,8 @@ function calcularKPIs(docs) {
       : null;
     const cajasPorHora      = (cajas && tiempoMov)   ? cajas / (tiempoMov/60) : null;
     const cajasPorHoraHombre= (cajas && horasHombre) ? cajas / horasHombre   : null;
+    const tiposCarga = [...new Set(detallesProd.map(x=>x.piso_o_pallet).filter(Boolean))];
+    const pisoOPallet = tiposCarga.length === 1 ? tiposCarga[0] : (tiposCarga.length > 1 ? "MIXTO" : null);
 
     // Desvíos
     const desvios = d.data.calidad_desvios;
@@ -846,7 +864,7 @@ function calcularKPIs(docs) {
     const fechaObj = fechaPrev ? new Date(fechaPrev+"T12:00:00") : null;
     const diaSemana = fechaObj ? fechaObj.getDay() : null;
 
-    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
+    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
       esEfectiva, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
       cliente:    p.cliente    || "—",
       movimiento: p.movimiento || "—",
@@ -903,51 +921,25 @@ function barSVGVert(data, width=560, height=220) {
   return `<svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}">${bars}</svg>`;
 }
 
-function renderProductividadCarga(docs) {
-  const validos = docs.filter(d =>
-    d.movimiento === "CARGA EXPO" &&
-    d.cajas !== null && d.horasHombre !== null && d.operarios
-  );
-  const elCount = document.getElementById("tProdCargaCount");
-  if(elCount) elCount.textContent = `${validos.length} registros`;
-
-  const elChart = document.getElementById("chartProdOperarios");
-  const elTabla = document.getElementById("tablaProdOperarios");
-
-  if(!validos.length) {
-    const totMov = docs.filter(d=>d.movimiento === "CARGA EXPO").length;
-    const conCajas = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.cajas !== null).length;
-    const conHH = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.horasHombre !== null).length;
-    const conOp = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.operarios).length;
-    elChart.innerHTML = `<div class="empty">Sin datos de cajas + tiempo + operarios para CARGA EXPO</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">
-        Diagnóstico: ${totMov} movs CARGA EXPO · ${conCajas} con cajas detectadas · ${conHH} con horas-hombre (tiempoMov+operarios) · ${conOp} con cantidad_operarios
-      </div>`;
-    elTabla.innerHTML = `<div class="empty">—</div>`;
-    return;
-  }
-
-  // Agrupar por cantidad de operarios (5+ se agrupa)
+function statsPorOperarios(validos) {
   const byOp = {};
   validos.forEach(d => {
     const key = d.operarios >= 5 ? "5+" : String(d.operarios);
     (byOp[key] = byOp[key] || []).push(d);
   });
   const orden = Object.keys(byOp).sort((a,b)=> (a==="5+"?5:+a) - (b==="5+"?5:+b));
-
-  const stats = orden.map(op => {
+  return orden.map(op => {
     const items = byOp[op];
     const n = items.length;
-    const avgCajas   = items.reduce((s,d)=>s+d.cajas,0)/n;
-    const avgHoras   = items.reduce((s,d)=>s+d.horasHombre,0)/n;
-    const avgCxH     = items.reduce((s,d)=>s+d.cajasPorHora,0)/n;
-    const avgCxHH    = items.reduce((s,d)=>s+d.cajasPorHoraHombre,0)/n;
+    const avgCajas = items.reduce((s,d)=>s+d.cajas,0)/n;
+    const avgHoras = items.reduce((s,d)=>s+d.horasHombre,0)/n;
+    const avgCxH   = items.reduce((s,d)=>s+d.cajasPorHora,0)/n;
+    const avgCxHH  = items.reduce((s,d)=>s+d.cajasPorHoraHombre,0)/n;
     return { op, n, avgCajas, avgHoras, avgCxH, avgCxHH };
   });
+}
 
-  elChart.innerHTML = barSVGVert(stats.map(s=>({label:`${s.op} op.`, value:s.avgCxHH}))) +
-    `<div style="font-size:11px;color:var(--muted);margin-top:6px;">Cajas/hora-hombre promedio por cantidad de operarios asignados. Si la barra baja al aumentar operarios → rendimientos decrecientes.</div>`;
-
+function tablaProdHTML(stats) {
   let tbl = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
     <thead><tr>
       <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Operarios</th>
@@ -968,7 +960,49 @@ function renderProductividadCarga(docs) {
     </tr>`;
   });
   tbl += `</tbody></table>`;
-  elTabla.innerHTML = tbl;
+  return tbl;
+}
+
+function renderBloqueProdCarga(validos, sufijo) {
+  const elCount = document.getElementById(`tProdCargaCount${sufijo}`);
+  if(elCount) elCount.textContent = `${validos.length} registros`;
+  const elChart = document.getElementById(`chartProdOperarios${sufijo}`);
+  const elTabla = document.getElementById(`tablaProdOperarios${sufijo}`);
+  if(!validos.length) {
+    elChart.innerHTML = `<div class="empty">Sin datos</div>`;
+    elTabla.innerHTML  = `<div class="empty">—</div>`;
+    return;
+  }
+  const stats = statsPorOperarios(validos);
+  elChart.innerHTML = barSVGVert(stats.map(s=>({label:`${s.op} op.`, value:s.avgCxHH}))) +
+    `<div style="font-size:11px;color:var(--muted);margin-top:6px;">Cajas/hora-hombre promedio por cantidad de operarios. Si la barra baja al aumentar operarios → rendimientos decrecientes.</div>`;
+  elTabla.innerHTML = tablaProdHTML(stats);
+}
+
+function renderProductividadCarga(docs) {
+  const base = docs.filter(d =>
+    d.movimiento === "CARGA EXPO" &&
+    d.cajas !== null && d.horasHombre !== null && d.operarios
+  );
+
+  if(!base.length) {
+    const totMov = docs.filter(d=>d.movimiento === "CARGA EXPO").length;
+    const conCajas = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.cajas !== null).length;
+    const conHH = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.horasHombre !== null).length;
+    const conOp = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.operarios).length;
+    const diag = `<div class="empty">Sin datos de cajas + tiempo + operarios para CARGA EXPO</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">
+        Diagnóstico: ${totMov} movs CARGA EXPO · ${conCajas} con cajas detectadas · ${conHH} con horas-hombre (tiempoMov+operarios) · ${conOp} con cantidad_operarios
+      </div>`;
+    ["Piso","Pallet"].forEach(s=>{
+      document.getElementById(`chartProdOperarios${s}`).innerHTML = diag;
+      document.getElementById(`tablaProdOperarios${s}`).innerHTML = `<div class="empty">—</div>`;
+    });
+    return;
+  }
+
+  renderBloqueProdCarga(base.filter(d=>d.pisoOPallet==="PISO"),   "Piso");
+  renderBloqueProdCarga(base.filter(d=>d.pisoOPallet==="PALLET"), "Pallet");
 }
 
 // ── HORAS HOMBRE ───────────────────────────────────────────────
