@@ -915,7 +915,14 @@ function renderProductividadCarga(docs) {
   const elTabla = document.getElementById("tablaProdOperarios");
 
   if(!validos.length) {
-    elChart.innerHTML = `<div class="empty">Sin datos de cajas + tiempo + operarios para CARGA EXPO</div>`;
+    const totMov = docs.filter(d=>d.movimiento === "CARGA EXPO").length;
+    const conCajas = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.cajas !== null).length;
+    const conHH = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.horasHombre !== null).length;
+    const conOp = docs.filter(d=>d.movimiento === "CARGA EXPO" && d.operarios).length;
+    elChart.innerHTML = `<div class="empty">Sin datos de cajas + tiempo + operarios para CARGA EXPO</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">
+        Diagnóstico: ${totMov} movs CARGA EXPO · ${conCajas} con cajas detectadas · ${conHH} con horas-hombre (tiempoMov+operarios) · ${conOp} con cantidad_operarios
+      </div>`;
     elTabla.innerHTML = `<div class="empty">—</div>`;
     return;
   }
