@@ -231,6 +231,7 @@
   <div class="tabs-group-label">Costos Ocultos y Calidad del Proceso</div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('desvios',this)">Desvíos</button>
+    <button class="tab" onclick="switchTab('horasHombre',this)">Horas Hombre</button>
   </div>
   </div>
   <div class="cat-group" data-cat="detalle" style="display:none;">
@@ -408,6 +409,36 @@
       </div>
       <div class="section-body">
         <div id="pieDesvios"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: HORAS HOMBRE -->
+  <div class="tab-pane" id="tab-horasHombre">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Horas hombre totales <span id="tHHCount"></span></div>
+        </div>
+        <div class="section-body">
+          <div id="resumenHorasHombre"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Por tipo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaHorasHombreMov"><div class="empty">—</div></div>
+        </div>
+      </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Por cliente</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaHorasHombreCliente"><div class="empty">—</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -762,6 +793,12 @@ function calcularKPIs(docs) {
       return m >= 0 ? m : m + 1440;
     })() : null;
 
+    // Horas hombre: tiempo de movimiento (min) x operarios asignados por el planillero, / 60
+    const operarios = Number(pll.cantidad_operarios) || null;
+    const horasHombre = (tiempoMov !== null && operarios)
+      ? (tiempoMov * operarios) / 60
+      : null;
+
     // Desvíos
     const desvios = d.data.calidad_desvios;
     const tieneDesvio = Array.isArray(desvios)
@@ -775,7 +812,7 @@ function calcularKPIs(docs) {
     const fechaObj = fechaPrev ? new Date(fechaPrev+"T12:00:00") : null;
     const diaSemana = fechaObj ? fechaObj.getDay() : null;
 
-    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
+    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
       esEfectiva, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
       cliente:    p.cliente    || "—",
       movimiento: p.movimiento || "—",
@@ -811,6 +848,59 @@ function calcularKPIs(docs) {
   renderFlujoSemanal(enriched);
   renderOcupacionPuertas(enriched);
   renderDesvios(enriched);
+  renderHorasHombre(enriched);
+}
+
+// ── HORAS HOMBRE ───────────────────────────────────────────────
+function renderHorasHombre(docs) {
+  const validos = docs.filter(d => MOVS_VALIDOS.has(d.movimiento) && d.horasHombre !== null);
+  const totalHH = validos.reduce((s,d)=>s+d.horasHombre,0);
+  const elCount = document.getElementById("tHHCount");
+  if(elCount) elCount.textContent = `${validos.length} registros`;
+
+  const elResumen = document.getElementById("resumenHorasHombre");
+  elResumen.innerHTML = validos.length
+    ? `<div style="font-size:32px;font-weight:700;font-family:var(--mono);">${totalHH.toFixed(1)} hs</div>
+       <div style="font-size:12px;color:var(--muted);margin-top:4px;">promedio ${(totalHH/validos.length).toFixed(2)} hs/movimiento</div>`
+    : `<div class="empty">Sin datos de tiempo de movimiento + operarios</div>`;
+
+  // Por tipo de movimiento
+  const byMov = agrupar(validos, d=>d.movimiento);
+  const sortedMov = Object.entries(byMov).sort((a,b)=>b[1].reduce((s,d)=>s+d.horasHombre,0)-a[1].reduce((s,d)=>s+d.horasHombre,0));
+  let tblMov = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tipo</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Total hs</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Prom. hs</th>
+    </tr></thead><tbody>`;
+  for(const [mov, items] of sortedMov) {
+    const tot = items.reduce((s,d)=>s+d.horasHombre,0);
+    tblMov += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${tot.toFixed(1)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${(tot/items.length).toFixed(2)}</td>
+    </tr>`;
+  }
+  tblMov += `</tbody></table>`;
+  document.getElementById("tablaHorasHombreMov").innerHTML = sortedMov.length ? tblMov : `<div class="empty">Sin datos</div>`;
+
+  // Por cliente
+  const byCli = agrupar(validos, d=>d.cliente);
+  const sortedCli = Object.entries(byCli).sort((a,b)=>b[1].reduce((s,d)=>s+d.horasHombre,0)-a[1].reduce((s,d)=>s+d.horasHombre,0));
+  let tblCli = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Total hs</th>
+    </tr></thead><tbody>`;
+  for(const [cli, items] of sortedCli) {
+    const tot = items.reduce((s,d)=>s+d.horasHombre,0);
+    tblCli += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${cli}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${tot.toFixed(1)}</td>
+    </tr>`;
+  }
+  tblCli += `</tbody></table>`;
+  document.getElementById("tablaHorasHombreCliente").innerHTML = sortedCli.length ? tblCli : `<div class="empty">Sin datos</div>`;
 }
 
 
