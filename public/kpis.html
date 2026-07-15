@@ -825,8 +825,8 @@ function calcularKPIs(docs) {
       ? (tiempoMov * operarios) / 60
       : null;
 
-    // Productividad de carga (CARGA EXPO): cajas totales según planificación (detalles[])
-    const detallesProd = Array.isArray(p.detalles) ? p.detalles : [];
+    // Productividad de carga (CARGA EXPO): cajas totales según planificación (detalles[] es campo raíz del doc)
+    const detallesProd = Array.isArray(d.data.detalles) ? d.data.detalles : [];
     const cajas = detallesProd.some(x => /caja/i.test(x.unidad||""))
       ? detallesProd.filter(x => /caja/i.test(x.unidad||"")).reduce((s,x)=>s+(parseFloat(x.cantidad)||0),0)
       : null;
