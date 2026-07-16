@@ -112,6 +112,31 @@
     .badge-finmov{background:rgba(22,163,74,.2);color:#16a34a;}
     .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
     .badge-expo{background:rgba(234,179,8,.15);color:#fde047;}
+
+    /* SERVICIOS ADICIONALES */
+    .badge-srv-pendiente{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .badge-srv-proceso{background:rgba(59,130,246,.15);color:#60a5fa;}
+    .badge-srv-pausado{background:rgba(239,68,68,.12);color:#f87171;}
+    .badge-srv-finalizado{background:rgba(34,197,94,.2);color:#4ade80;}
+    .badge-srv-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
+    .badge-alta{background:rgba(239,68,68,.15);color:#f87171;}
+    .badge-media{background:rgba(245,158,11,.15);color:#fbbf24;}
+    .badge-baja{background:rgba(107,127,153,.15);color:#6b7f99;}
+    .modal-srv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;}
+    .modal-srv-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;box-shadow:0 32px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:92vh;}
+    .modal-srv-header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .modal-srv-body{padding:16px 20px;overflow-y:auto;flex:1;}
+    .modal-srv-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;flex-shrink:0;}
+    .srv-item-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+    .srv-item-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+    .srv-item-nombre{font-size:13px;font-weight:700;flex:1;}
+    .srv-item-detail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;color:var(--muted);}
+    .srv-item-detail span strong{color:var(--text);}
+    .btn-habilitar{padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;border:none;transition:all .2s;}
+    .btn-habilitar.off{background:var(--panel3);border:1px solid var(--border);color:var(--muted);}
+    .btn-habilitar.off:hover{border-color:var(--ok);color:var(--ok);}
+    .btn-habilitar.on{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:var(--ok);}
+    .btn-habilitar.on:hover{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#f87171;}
     /* LOADING */
     .loading-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
     .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;}
@@ -341,6 +366,9 @@
     <button class="tab-btn" id="tabActivos" onclick="cambiarTab('activos')">
       Activos <span class="tab-count" id="countActivos">0</span>
     </button>
+    <button class="tab-btn" id="tabServicios" onclick="cambiarTab('servicios')">
+      Servicios Adicionales <span class="tab-count" id="countServicios">0</span>
+    </button>
   </div>
 
   <div class="filters">
@@ -360,7 +388,7 @@
     <div class="read-info" id="readInfo">—</div>
   </div>
 
-  <div class="table-wrap">
+  <div class="table-wrap" id="tableWrapPrincipal">
     <table>
       <thead>
         <tr>
@@ -384,6 +412,45 @@
       </tbody>
     </table>
     <div class="table-info" id="tableInfo">—</div>
+  </div>
+
+  <!-- PANEL SERVICIOS ADICIONALES -->
+  <div class="table-wrap hidden" id="tableWrapServicios">
+    <table>
+      <thead><tr>
+        <th>Nro Orden</th>
+        <th>F. Pedido</th>
+        <th>F. Necesidad</th>
+        <th>Cliente</th>
+        <th>Servicios</th>
+        <th>Packing</th>
+        <th>Packing Orden</th>
+        <th>Controlado por</th>
+        <th>Prioridad</th>
+        <th>Estado</th>
+      </tr></thead>
+      <tbody id="tbodyServicios">
+        <tr class="loading-row"><td colspan="10"><span class="spinner"></span>Cargando...</td></tr>
+      </tbody>
+    </table>
+    <div class="table-info" id="infoServicios">—</div>
+  </div>
+</div>
+
+<!-- MODAL SERVICIOS -->
+<div class="modal-srv-overlay hidden" id="modalSrv">
+  <div class="modal-srv-box">
+    <div class="modal-srv-header">
+      <div>
+        <div style="font-size:15px;font-weight:700;" id="srvModalTitulo">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="srvModalSub">—</div>
+      </div>
+      <button class="btn-close-modal" onclick="cerrarModalSrv()">✕</button>
+    </div>
+    <div class="modal-srv-body" id="srvModalBody"></div>
+    <div class="modal-srv-footer">
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalSrv()">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -476,9 +543,179 @@ function cambiarTab(tab) {
   tabActual=tab;
   document.getElementById("tabPendientes").classList.toggle("activa",tab==="pendientes");
   document.getElementById("tabActivos").classList.toggle("activa",tab==="activos");
+  document.getElementById("tabServicios").classList.toggle("activa",tab==="servicios");
+  document.getElementById("tableWrapPrincipal").classList.toggle("hidden", tab==="servicios");
+  document.getElementById("tableWrapServicios").classList.toggle("hidden", tab!=="servicios");
+  if(tab==="servicios") { renderServicios(); return; }
   aplicarFiltros();
 }
 window.cambiarTab=cambiarTab;
+
+// ── SERVICIOS ADICIONALES ────────────────────────────────────
+let srvCache = [];
+let srvActual = null;
+let _unsubSrv = null;
+
+function cargarServicios(fecha) {
+  if (_unsubSrv) _unsubSrv();
+  const q = query(
+    collection(db, "servicios_adicionales"),
+    where("fecha_necesidad", ">=", fecha),
+    where("estado", "not-in", ["FINALIZADO", "CANCELADO"])
+  );
+  _unsubSrv = onSnapshot(q, snap => {
+    srvCache = snap.docs.filter(d => {
+      const fp = d.data().fecha_pedido || "";
+      return fp <= fecha;
+    });
+    document.getElementById("countServicios").textContent = srvCache.length;
+    if (tabActual === "servicios") renderServicios();
+  }, err => console.error("servicios:", err));
+}
+
+function renderServicios() {
+  const tbody = document.getElementById("tbodyServicios");
+  document.getElementById("infoServicios").textContent = `${srvCache.length} servicio${srvCache.length!==1?"s":""}`;
+  if (!srvCache.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Sin servicios activos para este día</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = srvCache.map(d => {
+    const id = d.id, data = d.data();
+    const svcs = [...new Set((data.items||[]).map(i=>i.servicio).filter(Boolean))];
+    const svcsHtml = svcs.slice(0,2).map(s=>`<span style="font-size:10px;background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;">${s}</span>`).join(" ")
+      + (svcs.length>2?`<span style="font-size:10px;color:var(--muted);"> +${svcs.length-2}</span>`:"");
+    const prioMap = {ALTA:"badge-alta",MEDIA:"badge-media",BAJA:"badge-baja"};
+    const estMap  = {PENDIENTE:"badge-srv-pendiente","EN PROCESO":"badge-srv-proceso",PAUSADO:"badge-srv-pausado",FINALIZADO:"badge-srv-finalizado",CANCELADO:"badge-srv-cancelado"};
+    const itemControl = (data.items||[]).find(i => i.servicio === "CONTROL" && (i.link_packing || i.nombre_control));
+    const packingHtml = itemControl && itemControl.link_packing
+      ? `<a href="${itemControl.link_packing}" target="_blank" onclick="event.stopPropagation();"
+           style="display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
+      : `<span style="color:var(--muted);">—</span>`;
+    const controladoPorHtml = itemControl && itemControl.nombre_control
+      ? itemControl.nombre_control
+      : `<span style="color:var(--muted);">—</span>`;
+    const packingOrdenHtml = data.link_packing_orden
+      ? `<a href="${data.link_packing_orden}" target="_blank" onclick="event.stopPropagation();"
+           style="display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
+      : `<span style="color:var(--muted);">—</span>`;
+    return `<tr onclick="abrirModalSrv('${id}')" style="cursor:pointer;">
+      <td>${data.nro_orden||"—"}</td>
+      <td class="td-mono">${data.fecha_pedido||"—"}</td>
+      <td class="td-mono">${data.fecha_necesidad||"—"}</td>
+      <td><strong>${data.cliente||"—"}</strong></td>
+      <td>${svcsHtml||"—"}</td>
+      <td style="text-align:center;">${packingHtml}</td>
+      <td style="text-align:center;">${packingOrdenHtml}</td>
+      <td>${controladoPorHtml}</td>
+      <td><span class="badge ${prioMap[data.prioridad]||"badge-baja"}">${data.prioridad||"—"}</span></td>
+      <td><span class="badge ${estMap[data.estado]||"badge-srv-pendiente"}">${data.estado||"—"}</span></td>
+    </tr>`;
+  }).join("");
+}
+
+window.abrirModalSrv = function(id) {
+  const d = srvCache.find(x => x.id === id);
+  if (!d) return;
+  srvActual = d;
+  const data = d.data();
+  document.getElementById("srvModalTitulo").textContent = `${data.nro_orden||id} — ${data.cliente||"—"}`;
+  document.getElementById("srvModalSub").innerHTML = `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${data.estado||"—"}` +
+    (data.link_packing_orden
+      ? ` · <a href="${data.link_packing_orden}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">📁 PACKING ORDEN</a>`
+      : "");
+  renderModalSrvBody(data);
+  document.getElementById("modalSrv").classList.remove("hidden");
+};
+
+function renderModalSrvBody(data) {
+  const items = data.items || [];
+  const body = document.getElementById("srvModalBody");
+  if (!items.length) { body.innerHTML = `<p style="color:var(--muted);text-align:center;padding:20px;">Sin ítems cargados</p>`; return; }
+  body.innerHTML = `
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">
+      ${items.length} ítem${items.length!==1?"s":""} · Habilitá los que el equipo debe realizar hoy
+    </div>
+    ${items.map((it, idx) => {
+      const hab   = it.habilitado === true;
+      const estado= it.estado_tarea || "pendiente";
+      const estBadge = {pendiente:"badge-srv-pendiente","en_proceso":"badge-srv-proceso",pausado:"badge-srv-pausado",finalizado:"badge-srv-finalizado"}[estado]||"badge-srv-pendiente";
+      return `<div class="srv-item-card" id="srvCard-${idx}">
+        <div class="srv-item-top">
+          <div class="srv-item-nombre">${it.servicio||"—"}</div>
+          <span class="badge ${estBadge}">${estado.replace("_"," ")}</span>
+          <button class="btn-habilitar ${hab?"on":"off"}" id="btnHab-${idx}"
+            onclick="toggleHabilitar(${idx})">
+            ${hab?"✓ Habilitado":"Habilitar"}
+          </button>
+        </div>
+        <div class="srv-item-detail">
+          ${it.servicio === "CONTROL" ? `
+            <span>Controlado por: <strong>${it.nombre_control||"—"}</strong></span>
+            ${it.link_packing ? `<a href="${it.link_packing}" target="_blank" onclick="event.stopPropagation();"
+                style="display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
+              : `<span style="color:var(--muted);">Sin link de packing</span>`}
+          ` : `
+            <span>A fact.: <strong>${it.a_facturar||"—"}</strong></span>
+            <span>Cantidad: <strong>${it.cantidad||"—"}</strong></span>
+            <span>Insumo: <strong>${it.insumo||"—"}</strong></span>
+          `}
+        </div>
+      </div>`;
+    }).join("")}
+    ${data.observacion ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:10px 12px;background:var(--panel2);border-radius:8px;border:1px solid var(--border);">${data.observacion}</div>` : ""}
+  `;
+}
+
+function calcularEstadoOrdenSrv(items) {
+  const habilitados = (items||[]).filter(i => i.habilitado === true);
+  if (items.some(i => i.estado_tarea === "en_proceso")) return "EN PROCESO";
+  if (items.some(i => i.estado_tarea === "pausado"))    return "PAUSADO";
+  if (habilitados.length && habilitados.every(i => i.estado_tarea === "finalizado")) return "FINALIZADO";
+  return "PENDIENTE";
+}
+
+window.toggleHabilitar = async function(idx) {
+  if (!srvActual) return;
+  const data  = srvActual.data();
+  const items = JSON.parse(JSON.stringify(data.items || []));
+  if (!items[idx]) return;
+  const habActual  = items[idx].habilitado === true;
+  items[idx].habilitado       = !habActual;
+  items[idx].habilitado_fecha = !habActual ? hoy() : "";
+  const nuevoEstado = calcularEstadoOrdenSrv(items);
+
+  const btn = document.getElementById(`btnHab-${idx}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.toggle("on", !habActual);
+    btn.classList.toggle("off", habActual);
+    btn.textContent = !habActual ? "✓ Habilitado" : "Habilitar";
+  }
+  const datosOptimistas = { ...data, items, estado: nuevoEstado };
+  renderModalSrvBody(datosOptimistas);
+  document.getElementById("srvModalSub").textContent =
+    `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${nuevoEstado}`;
+
+  try {
+    await updateDoc(doc(db, "servicios_adicionales", srvActual.id), {
+      items,
+      estado: nuevoEstado,
+      modificado_por: sessionStorage.getItem("icelion_nombre")||"—",
+      modificado_en:  serverTimestamp()
+    });
+  } catch(err) {
+    toast("err","Error",err.message);
+    renderModalSrvBody(data);
+    document.getElementById("srvModalSub").textContent =
+      `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${data.estado||"—"}`;
+  }
+};
+
+window.cerrarModalSrv = function() {
+  document.getElementById("modalSrv").classList.add("hidden");
+  srvActual = null;
+};
 
 // ── CARGAR DÍA ────────────────────────────────────────────────
 let _unsubDataentry=null;
@@ -487,6 +724,7 @@ function cargarDia(fecha) {
   document.getElementById("campoBuscar").value="";
   document.getElementById("diaLabel").textContent=fmtLabel(fecha);
   renderLoading();
+  cargarServicios(fecha);
   if(typeof _unsubDataentry !== "undefined" && _unsubDataentry){_unsubDataentry();_unsubDataentry=null;}
   _unsubDataentry = onSnapshot(query(collection(db,COL),
     where("planificacion.fecha_prevista","==",fecha),
