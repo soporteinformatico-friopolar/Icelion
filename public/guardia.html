@@ -658,7 +658,10 @@ function _mergeSrvDocs(fecha) {
   _srvDocsRango.forEach(d => {
     const data = d.data();
     if (data.estado === "CANCELADO") return;
-    if (data.estado === "FINALIZADO" && data.fecha_finalizado !== fecha) return;
+    if (data.estado === "FINALIZADO") {
+      const fechaFin = data.fecha_finalizacion || (data.finalizado_en||"").slice(0,10);
+      if (fechaFin !== fecha) return;
+    }
     map.set(d.id, d);
   });
   _srvDocsFin.forEach(d => map.set(d.id, d));
@@ -679,7 +682,7 @@ function cargarServicios(fecha) {
   }, err => console.error("servicios:", err));
   const qB = query(
     collection(db, "servicios_adicionales"),
-    where("fecha_finalizado", "==", fecha)
+    where("fecha_finalizacion", "==", fecha)
   );
   _unsubSrvFin = onSnapshot(qB, snap => {
     _srvDocsFin = snap.docs;

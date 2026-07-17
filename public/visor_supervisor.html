@@ -487,7 +487,10 @@ function _mergeSrvDocs(fecha) {
   _srvDocsRango.forEach(d => {
     const data = d.data();
     if (data.estado === "CANCELADO") return;
-    if (data.estado === "FINALIZADO" && data.fecha_finalizado !== fecha) return;
+    if (data.estado === "FINALIZADO") {
+      const fechaFin = data.fecha_finalizacion || (data.finalizado_en||"").slice(0,10);
+      if (fechaFin !== fecha) return;
+    }
     map.set(d.id, d);
   });
   _srvDocsFin.forEach(d => map.set(d.id, d));
@@ -510,7 +513,7 @@ function cargarServicios(fecha) {
   // Query B: finalizados exactamente ese día (aunque su fecha_necesidad ya haya pasado)
   const qB = query(
     collection(db, "servicios_adicionales"),
-    where("fecha_finalizado", "==", fecha)
+    where("fecha_finalizacion", "==", fecha)
   );
   _unsubSrvFin = onSnapshot(qB, snap => {
     _srvDocsFin = snap.docs;
@@ -660,7 +663,7 @@ window.toggleHabilitar = async function(idx) {
     };
     if (nuevoEstado === "FINALIZADO") {
       updatePayload.finalizado_en    = `${hoy()} ${new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}`;
-      updatePayload.fecha_finalizado = hoy();
+      updatePayload.fecha_finalizacion = hoy();
       updatePayload.finalizado_por   = sessionStorage.getItem("icelion_nombre")||"—";
     }
     await updateDoc(doc(db, "servicios_adicionales", srvActual.id), updatePayload);
