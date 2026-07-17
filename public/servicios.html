@@ -429,9 +429,18 @@ function aplicarFiltros() {
   let docs = [...docsCache].sort((a,b) => (b.data().fecha_pedido||"").localeCompare(a.data().fecha_pedido||""));
 
   if (fEstado) {
-    // Si se eligió un estado puntual (ej. FINALIZADO/CANCELADO), no aplicar el
-    // recorte de rango por fecha — se quiere ver esa orden puntual, esté vencida o no.
-    docs = docs.filter(d => d.data().estado === fEstado);
+    // Estado puntual elegido: igual se acota al día activo.
+    // FINALIZADO se compara contra fecha_finalizacion (el día que se cerró),
+    // los demás estados usan el mismo rango fecha_pedido/fecha_necesidad de siempre.
+    docs = docs.filter(d => {
+      const data = d.data();
+      if (data.estado !== fEstado) return false;
+      if (fEstado === "FINALIZADO") return data.fecha_finalizacion === diaActual;
+      const fp = data.fecha_pedido    || "";
+      const fn = data.fecha_necesidad || "";
+      if (!fn) return fp <= diaActual;
+      return fp <= diaActual && diaActual <= fn;
+    });
   } else {
     // Sin filtro de estado: vista "activa" por defecto (oculta FINALIZADO/CANCELADO
     // y acota por rango fecha_pedido <= diaActual <= fecha_necesidad)
