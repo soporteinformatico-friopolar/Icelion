@@ -442,11 +442,11 @@ function aplicarFiltros() {
       return fp <= diaActual && diaActual <= fn;
     });
   } else {
-    // Sin filtro de estado: vista "activa" por defecto (oculta FINALIZADO/CANCELADO
-    // y acota por rango fecha_pedido <= diaActual <= fecha_necesidad)
+    // Sin filtro de estado: se ve todo lo que corresponde al día activo,
+    // incluidos los FINALIZADO que se cerraron ese mismo día.
     docs = docs.filter(d => {
       const data = d.data();
-      if (["FINALIZADO","CANCELADO"].includes(data.estado)) return false;
+      if (data.estado === "FINALIZADO") return data.fecha_finalizacion === diaActual;
       const fp = data.fecha_pedido    || "";
       const fn = data.fecha_necesidad || "";
       if (!fn) return fp <= diaActual;
