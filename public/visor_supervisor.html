@@ -216,6 +216,10 @@
     .badge-srv-finalizado{background:rgba(34,197,94,.2);color:#4ade80;}
     .badge-srv-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
     .badge-alta{background:rgba(239,68,68,.12);color:#fca5a5;}
+    .btn-link-icon{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 3px;border-radius:5px;transition:all .2s;line-height:1;text-decoration:none;display:inline-block;}
+    .btn-link-icon.activo{filter:none;opacity:1;}
+    .btn-link-icon.inactivo{filter:grayscale(1);opacity:.25;cursor:default;}
+    .btn-link-icon.activo:hover{transform:scale(1.2);}
     .badge-media{background:rgba(251,191,36,.12);color:#fbbf24;}
     .badge-baja{background:rgba(107,127,153,.12);color:#6b7f99;}
 
@@ -359,12 +363,13 @@
           <th>Servicios</th>
           <th>Packing</th>
           <th>Packing Orden</th>
+          <th title="Carpeta de fotos del control">📁</th>
           <th>Controlado por</th>
           <th>Prioridad</th>
           <th>Estado</th>
         </tr></thead>
         <tbody id="tbodyServicios">
-          <tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr>
+          <tr class="loading-row"><td colspan="11"><span class="spinner"></span></td></tr>
         </tbody>
       </table>
     </div>
@@ -525,7 +530,7 @@ function renderServicios() {
   const tbody = document.getElementById("tbodyServicios");
   document.getElementById("countServicios").textContent = `${srvCache.length} servicio${srvCache.length!==1?"s":""}`;
   if (!srvCache.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Sin servicios activos para este día</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Sin servicios activos para este día</td></tr>`;
     return;
   }
   tbody.innerHTML = srvCache.map(d => {
@@ -535,11 +540,14 @@ function renderServicios() {
       + (svcs.length>2?`<span style="font-size:10px;color:var(--muted);"> +${svcs.length-2}</span>`:"");
     const prioMap = {ALTA:"badge-alta",MEDIA:"badge-media",BAJA:"badge-baja"};
     const estMap  = {PENDIENTE:"badge-srv-pendiente","EN PROCESO":"badge-srv-proceso",PAUSADO:"badge-srv-pausado",FINALIZADO:"badge-srv-finalizado",CANCELADO:"badge-srv-cancelado"};
-    const itemControl = (data.items||[]).find(i => i.servicio === "CONTROL" && (i.link_packing || i.nombre_control));
+    const itemControl = (data.items||[]).find(i => i.servicio === "CONTROL" && (i.link_packing || i.nombre_control || i.link_fotos_control));
     const packingHtml = itemControl && itemControl.link_packing
       ? `<a href="${itemControl.link_packing}" target="_blank" onclick="event.stopPropagation();"
            style="display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
       : `<span style="color:var(--muted);">—</span>`;
+    const fotosHtml = itemControl && itemControl.link_fotos_control
+      ? `<a href="${itemControl.link_fotos_control}" target="_blank" onclick="event.stopPropagation();" class="btn-link-icon activo" title="Abrir carpeta de fotos">📁</a>`
+      : `<span class="btn-link-icon inactivo" title="Sin carpeta de fotos">📁</span>`;
     const controladoPorHtml = itemControl && itemControl.nombre_control
       ? itemControl.nombre_control
       : `<span style="color:var(--muted);">—</span>`;
@@ -555,6 +563,7 @@ function renderServicios() {
       <td>${svcsHtml||"—"}</td>
       <td style="text-align:center;">${packingHtml}</td>
       <td style="text-align:center;">${packingOrdenHtml}</td>
+      <td style="text-align:center;">${fotosHtml}</td>
       <td>${controladoPorHtml}</td>
       <td><span class="badge ${prioMap[data.prioridad]||"badge-baja"}">${data.prioridad||"—"}</span></td>
       <td><span class="badge ${estMap[data.estado]||"badge-srv-pendiente"}">${data.estado||"—"}</span></td>

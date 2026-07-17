@@ -85,6 +85,10 @@
     .badge-finalizado{background:rgba(22,163,74,.2);color:#4ade80;}
     .badge-cancelado{background:rgba(107,127,153,.1);color:#6b7f99;}
     .badge-alta{background:rgba(239,68,68,.12);color:#fca5a5;}
+    .btn-link-icon{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 3px;border-radius:5px;transition:all .2s;line-height:1;text-decoration:none;display:inline-block;}
+    .btn-link-icon.activo{filter:none;opacity:1;}
+    .btn-link-icon.inactivo{filter:grayscale(1);opacity:.25;cursor:default;}
+    .btn-link-icon.activo:hover{transform:scale(1.2);}
     .badge-media{background:rgba(251,191,36,.12);color:#fbbf24;}
     .badge-baja{background:rgba(107,127,153,.12);color:#6b7f99;}
 
@@ -215,6 +219,7 @@
         <th>Cliente</th>
         <th>Servicios</th>
         <th>Packing</th>
+        <th title="Carpeta de fotos del control">📁</th>
         <th>Controlado por</th>
         <th>Prioridad</th>
         <th>Estado</th>
@@ -471,7 +476,7 @@ function aplicarFiltros() {
 function renderTabla(docs) {
   const tbody = document.getElementById("tbody");
   if (!docs.length) {
-    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Sin órdenes</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="empty-state">Sin órdenes</td></tr>`;
     return;
   }
   tbody.innerHTML = docs.map(d => {
@@ -486,11 +491,14 @@ function renderTabla(docs) {
     const hhTotal = (data.bloques||[]).reduce((acc, b) => acc + (parseFloat(b.hh)||0), 0);
     const fact = data.facturado;
 
-    const itemControl = (data.items||[]).find(i => i.servicio === "CONTROL" && (i.link_packing || i.nombre_control));
+    const itemControl = (data.items||[]).find(i => i.servicio === "CONTROL" && (i.link_packing || i.nombre_control || i.link_fotos_control));
     const packingHtml = itemControl && itemControl.link_packing
       ? `<a href="${itemControl.link_packing}" target="_blank" onclick="event.stopPropagation();"
            style="display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
       : `<span style="color:var(--muted);">—</span>`;
+    const fotosHtml = itemControl && itemControl.link_fotos_control
+      ? `<a href="${itemControl.link_fotos_control}" target="_blank" onclick="event.stopPropagation();" class="btn-link-icon activo" title="Abrir carpeta de fotos">📁</a>`
+      : `<span class="btn-link-icon inactivo" title="Sin carpeta de fotos">📁</span>`;
     const controladoPorHtml = itemControl && itemControl.nombre_control
       ? itemControl.nombre_control
       : `<span style="color:var(--muted);">—</span>`;
@@ -502,6 +510,7 @@ function renderTabla(docs) {
       <td><strong>${data.cliente||"—"}</strong></td>
       <td style="white-space:normal;max-width:200px;">${svcsHtml}</td>
       <td style="text-align:center;">${packingHtml}</td>
+      <td style="text-align:center;">${fotosHtml}</td>
       <td>${controladoPorHtml}</td>
       <td>${badgePrioridad(data.prioridad)}</td>
       <td>${badgeEstado(estado)}</td>
