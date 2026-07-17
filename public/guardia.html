@@ -649,20 +649,42 @@ let srvCache = [];
 let srvActual = null;
 let _unsubSrv = null;
 
+let _unsubSrvFin = null;
+let _srvDocsRango = [];
+let _srvDocsFin   = [];
+
+function _mergeSrvDocs(fecha) {
+  const map = new Map();
+  _srvDocsRango.forEach(d => {
+    const data = d.data();
+    if (data.estado === "CANCELADO") return;
+    if (data.estado === "FINALIZADO" && data.fecha_finalizado !== fecha) return;
+    map.set(d.id, d);
+  });
+  _srvDocsFin.forEach(d => map.set(d.id, d));
+  srvCache = [...map.values()];
+  renderServicios();
+}
+
 function cargarServicios(fecha) {
   if (_unsubSrv) _unsubSrv();
-  const q = query(
+  if (_unsubSrvFin) _unsubSrvFin();
+  const qA = query(
     collection(db, "servicios_adicionales"),
-    where("fecha_necesidad", ">=", fecha),
-    where("estado", "not-in", ["FINALIZADO", "CANCELADO"])
+    where("fecha_necesidad", ">=", fecha)
   );
-  _unsubSrv = onSnapshot(q, snap => {
-    srvCache = snap.docs.filter(d => {
-      const fp = d.data().fecha_pedido || "";
-      return fp <= fecha;
-    });
-    renderServicios();
+  _unsubSrv = onSnapshot(qA, snap => {
+    _srvDocsRango = snap.docs.filter(d => (d.data().fecha_pedido||"") <= fecha);
+    _mergeSrvDocs(fecha);
   }, err => console.error("servicios:", err));
+  const qB = query(
+    collection(db, "servicios_adicionales"),
+    where("fecha_finalizado", "==", fecha)
+  );
+  _unsubSrvFin = onSnapshot(qB, snap => {
+    _srvDocsFin = snap.docs;
+    _mergeSrvDocs(fecha);
+  }, err => console.error("servicios finalizados:", err));
 }
 
 function renderServicios() {

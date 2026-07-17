@@ -478,21 +478,44 @@ let _unsubSrv = null;
 let srvCache = [];
 let srvActual = null;
 
+let _unsubSrvFin = null;
+let _srvDocsRango = [];
+let _srvDocsFin   = [];
+
+function _mergeSrvDocs(fecha) {
+  const map = new Map();
+  _srvDocsRango.forEach(d => {
+    const data = d.data();
+    if (data.estado === "CANCELADO") return;
+    if (data.estado === "FINALIZADO" && data.fecha_finalizado !== fecha) return;
+    map.set(d.id, d);
+  });
+  _srvDocsFin.forEach(d => map.set(d.id, d));
+  srvCache = [...map.values()];
+  renderServicios();
+}
+
 function cargarServicios(fecha) {
   if (_unsubSrv) _unsubSrv();
-  // Query: fecha_necesidad >= fecha (filtra en Firestore) + fecha_pedido <= fecha (filtra en cliente)
-  const q = query(
+  if (_unsubSrvFin) _unsubSrvFin();
+  // Query A: rango normal (fecha_necesidad >= fecha, fecha_pedido <= fecha en cliente)
+  const qA = query(
     collection(db, "servicios_adicionales"),
-    where("fecha_necesidad", ">=", fecha),
-    where("estado", "not-in", ["FINALIZADO", "CANCELADO"])
+    where("fecha_necesidad", ">=", fecha)
   );
-  _unsubSrv = onSnapshot(q, snap => {
-    srvCache = snap.docs.filter(d => {
-      const fp = d.data().fecha_pedido || "";
-      return fp <= fecha;
-    });
-    renderServicios();
+  _unsubSrv = onSnapshot(qA, snap => {
+    _srvDocsRango = snap.docs.filter(d => (d.data().fecha_pedido||"") <= fecha);
+    _mergeSrvDocs(fecha);
   }, err => console.error("servicios:", err));
+  // Query B: finalizados exactamente ese día (aunque su fecha_necesidad ya haya pasado)
+  const qB = query(
+    collection(db, "servicios_adicionales"),
+    where("fecha_finalizado", "==", fecha)
+  );
+  _unsubSrvFin = onSnapshot(qB, snap => {
+    _srvDocsFin = snap.docs;
+    _mergeSrvDocs(fecha);
+  }, err => console.error("servicios finalizados:", err));
 }
 
 function renderServicios() {
@@ -629,12 +652,18 @@ window.toggleHabilitar = async function(idx) {
     `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${nuevoEstado}`;
 
   try {
-    await updateDoc(doc(db, "servicios_adicionales", srvActual.id), {
+    const updatePayload = {
       items,
       estado: nuevoEstado,
       modificado_por: sessionStorage.getItem("icelion_nombre")||"—",
       modificado_en:  serverTimestamp()
-    });
+    };
+    if (nuevoEstado === "FINALIZADO") {
+      updatePayload.finalizado_en    = `${hoy()} ${new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}`;
+      updatePayload.fecha_finalizado = hoy();
+      updatePayload.finalizado_por   = sessionStorage.getItem("icelion_nombre")||"—";
+    }
+    await updateDoc(doc(db, "servicios_adicionales", srvActual.id), updatePayload);
     // El onSnapshot de cargarServicios() actualizará srvCache/srvActual con el dato real
   } catch(err) {
     toast("err","Error",err.message);
