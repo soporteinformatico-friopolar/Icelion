@@ -634,24 +634,22 @@ function renderModalSrvBody(data) {
   if (!items.length) { body.innerHTML = `<p style="color:var(--muted);text-align:center;padding:20px;">Sin ítems cargados</p>`; return; }
   body.innerHTML = `
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">
-      ${items.length} ítem${items.length!==1?"s":""} · Habilitá los que el equipo debe realizar hoy
+      ${items.length} ítem${items.length!==1?"s":""}
     </div>
     ${items.map((it, idx) => {
-      const hab   = it.habilitado === true;
       const estado= it.estado_tarea || "pendiente";
       const estBadge = {pendiente:"badge-srv-pendiente","en_proceso":"badge-srv-proceso",pausado:"badge-srv-pausado",finalizado:"badge-srv-finalizado"}[estado]||"badge-srv-pendiente";
+      const llegado = it.control_llegado === true;
       return `<div class="srv-item-card" id="srvCard-${idx}">
         <div class="srv-item-top">
           <div class="srv-item-nombre">${it.servicio||"—"}</div>
           <span class="badge ${estBadge}">${estado.replace("_"," ")}</span>
-          <button class="btn-habilitar ${hab?"on":"off"}" id="btnHab-${idx}"
-            onclick="toggleHabilitar(${idx})">
-            ${hab?"✓ Habilitado":"Habilitar"}
-          </button>
+          ${it.servicio === "CONTROL" ? `<span class="badge ${llegado?"badge-srv-finalizado":"badge-srv-pendiente"}">${llegado?"✓ Llegó":"No llegó"}</span>` : ""}
         </div>
         <div class="srv-item-detail">
           ${it.servicio === "CONTROL" ? `
             <span>Controlado por: <strong>${it.nombre_control||"—"}</strong></span>
+            <span>Llegó: <strong>${llegado ? (it.control_llegado_hora||"Sí") : "—"}</strong></span>
             ${it.link_packing ? `<a href="${it.link_packing}" target="_blank" onclick="event.stopPropagation();"
                 style="display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
               : `<span style="color:var(--muted);">Sin link de packing</span>`}
@@ -661,54 +659,37 @@ function renderModalSrvBody(data) {
             <span>Insumo: <strong>${it.insumo||"—"}</strong></span>
           `}
         </div>
+        ${it.servicio === "CONTROL" ? `
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <input type="text" class="search-input" style="flex:1;text-transform:none;" id="inputFotosControl-${idx}"
+            placeholder="Link carpeta Drive (fotos del control)" value="${it.link_fotos_control||""}">
+          <button class="btn btn-ghost btn-sm" onclick="guardarLinkFotosControl(${idx})">Guardar</button>
+          ${it.link_fotos_control ? `<a href="${it.link_fotos_control}" target="_blank"
+              style="display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">📁 Abrir</a>` : ""}
+        </div>` : ""}
       </div>`;
     }).join("")}
     ${data.observacion ? `<div style="font-size:12px;color:var(--muted);margin-top:8px;padding:10px 12px;background:var(--panel2);border-radius:8px;border:1px solid var(--border);">${data.observacion}</div>` : ""}
   `;
 }
 
-function calcularEstadoOrdenSrv(items) {
-  const habilitados = (items||[]).filter(i => i.habilitado === true);
-  if (items.some(i => i.estado_tarea === "en_proceso")) return "EN PROCESO";
-  if (items.some(i => i.estado_tarea === "pausado"))    return "PAUSADO";
-  if (habilitados.length && habilitados.every(i => i.estado_tarea === "finalizado")) return "FINALIZADO";
-  return "PENDIENTE";
-}
-
-window.toggleHabilitar = async function(idx) {
+window.guardarLinkFotosControl = async function(idx) {
   if (!srvActual) return;
   const data  = srvActual.data();
   const items = JSON.parse(JSON.stringify(data.items || []));
-  if (!items[idx]) return;
-  const habActual  = items[idx].habilitado === true;
-  items[idx].habilitado       = !habActual;
-  items[idx].habilitado_fecha = !habActual ? hoy() : "";
-  const nuevoEstado = calcularEstadoOrdenSrv(items);
-
-  const btn = document.getElementById(`btnHab-${idx}`);
-  if (btn) {
-    btn.disabled = true;
-    btn.classList.toggle("on", !habActual);
-    btn.classList.toggle("off", habActual);
-    btn.textContent = !habActual ? "✓ Habilitado" : "Habilitar";
-  }
-  const datosOptimistas = { ...data, items, estado: nuevoEstado };
-  renderModalSrvBody(datosOptimistas);
-  document.getElementById("srvModalSub").textContent =
-    `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${nuevoEstado}`;
-
+  if (!items[idx] || items[idx].servicio !== "CONTROL") return;
+  const input = document.getElementById(`inputFotosControl-${idx}`);
+  const link = input ? input.value.trim() : "";
+  items[idx].link_fotos_control = link;
   try {
     await updateDoc(doc(db, "servicios_adicionales", srvActual.id), {
       items,
-      estado: nuevoEstado,
       modificado_por: sessionStorage.getItem("icelion_nombre")||"—",
       modificado_en:  serverTimestamp()
     });
+    toast("ok","Guardado","Link de fotos actualizado");
   } catch(err) {
     toast("err","Error",err.message);
-    renderModalSrvBody(data);
-    document.getElementById("srvModalSub").textContent =
-      `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${data.estado||"—"}`;
   }
 };
 

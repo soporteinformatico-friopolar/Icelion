@@ -727,24 +727,27 @@ function renderModalSrvBody(data) {
   if (!items.length) { body.innerHTML = `<p style="color:var(--muted);text-align:center;padding:20px;">Sin ítems cargados</p>`; return; }
   body.innerHTML = `
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;">
-      ${items.length} ítem${items.length!==1?"s":""} · Habilitá los que el equipo debe realizar hoy
+      ${items.length} ítem${items.length!==1?"s":""} · Marcá la llegada de los controles a planta
     </div>
     ${items.map((it, idx) => {
-      const hab   = it.habilitado === true;
       const estado= it.estado_tarea || "pendiente";
       const estBadge = {pendiente:"badge-srv-pendiente","en_proceso":"badge-srv-proceso",pausado:"badge-srv-pausado",finalizado:"badge-srv-finalizado"}[estado]||"badge-srv-pendiente";
+      const llegado = it.control_llegado === true;
       return `<div class="srv-item-card" id="srvCard-${idx}">
         <div class="srv-item-top">
           <div class="srv-item-nombre">${it.servicio||"—"}</div>
           <span class="badge ${estBadge}">${estado.replace("_"," ")}</span>
-          <button class="btn-habilitar ${hab?"on":"off"}" id="btnHab-${idx}"
-            onclick="toggleHabilitar(${idx})">
-            ${hab?"✓ Habilitado":"Habilitar"}
-          </button>
+          ${it.servicio === "CONTROL" ? `
+            <button class="btn-habilitar ${llegado?"on":"off"}" id="btnLlego-${idx}"
+              onclick="toggleLlegadaControl(${idx})">
+              ${llegado?"✓ Llegó":"Marcar llegada"}
+            </button>
+          ` : ""}
         </div>
         <div class="srv-item-detail">
           ${it.servicio === "CONTROL" ? `
             <span>Controlado por: <strong>${it.nombre_control||"—"}</strong></span>
+            <span>Llegó: <strong>${llegado ? (it.control_llegado_hora||"Sí") : "—"}</strong></span>
             ${it.link_packing ? `<a href="${it.link_packing}" target="_blank" onclick="event.stopPropagation();"
                 style="display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;">PACKING</a>`
               : `<span style="color:var(--muted);">Sin link de packing</span>`}
@@ -768,40 +771,35 @@ function calcularEstadoOrdenSrv(items) {
   return "PENDIENTE";
 }
 
-window.toggleHabilitar = async function(idx) {
+window.toggleLlegadaControl = async function(idx) {
   if (!srvActual) return;
   const data  = srvActual.data();
   const items = JSON.parse(JSON.stringify(data.items || []));
-  if (!items[idx]) return;
-  const habActual  = items[idx].habilitado === true;
-  items[idx].habilitado       = !habActual;
-  items[idx].habilitado_fecha = !habActual ? hoy() : "";
-  const nuevoEstado = calcularEstadoOrdenSrv(items);
+  if (!items[idx] || items[idx].servicio !== "CONTROL") return;
+  const llegoActual = items[idx].control_llegado === true;
+  const nombre = sessionStorage.getItem("icelion_nombre")||"—";
+  items[idx].control_llegado      = !llegoActual;
+  items[idx].control_llegado_hora = !llegoActual ? new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}) : "";
+  items[idx].control_llegado_por  = !llegoActual ? nombre : "";
 
-  const btn = document.getElementById(`btnHab-${idx}`);
+  const btn = document.getElementById(`btnLlego-${idx}`);
   if (btn) {
     btn.disabled = true;
-    btn.classList.toggle("on", !habActual);
-    btn.classList.toggle("off", habActual);
-    btn.textContent = !habActual ? "✓ Habilitado" : "Habilitar";
+    btn.classList.toggle("on", !llegoActual);
+    btn.classList.toggle("off", llegoActual);
+    btn.textContent = !llegoActual ? "✓ Llegó" : "Marcar llegada";
   }
-  const datosOptimistas = { ...data, items, estado: nuevoEstado };
-  renderModalSrvBody(datosOptimistas);
-  document.getElementById("srvModalSub").textContent =
-    `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${nuevoEstado}`;
+  renderModalSrvBody({ ...data, items });
 
   try {
     await updateDoc(doc(db, "servicios_adicionales", srvActual.id), {
       items,
-      estado: nuevoEstado,
-      modificado_por: sessionStorage.getItem("icelion_nombre")||"—",
+      modificado_por: nombre,
       modificado_en:  serverTimestamp()
     });
   } catch(err) {
     toast("err","Error",err.message);
     renderModalSrvBody(data);
-    document.getElementById("srvModalSub").textContent =
-      `F. Pedido: ${data.fecha_pedido||"—"} · F. Necesidad: ${data.fecha_necesidad||"—"} · ${data.estado||"—"}`;
   }
 };
 
