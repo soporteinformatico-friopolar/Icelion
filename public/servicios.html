@@ -312,15 +312,13 @@
       <button class="btn-add-item" onclick="agregarItem()">+ Agregar servicio / insumo</button>
 
       <div class="form-group span2" style="margin-top:12px;">
-        <label class="form-label">Link Packing orden</label>
+        <label class="form-label">Links Packing orden</label>
         <div style="display:flex;gap:8px;align-items:center;">
           <input type="text" class="form-input" id="fLinkPackingOrden"
             placeholder="https://drive.google.com/..." style="text-transform:none;flex:1;">
-          <a id="fLinkPackingOrdenLink" href="#" target="_blank"
-            style="display:none;padding:7px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--accent2);text-decoration:none;white-space:nowrap;">
-            📁 Abrir
-          </a>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="agregarLinkPackingOrden()">+ Agregar</button>
         </div>
+        <div id="listaLinksPackingOrden" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
       </div>
 
       <!-- BLOQUES DE TRABAJO (solo lectura) -->
@@ -362,6 +360,36 @@ initTema();
 let docsCache     = [];
 let diaActual     = hoy();
 let docActual     = null;
+let packingOrdenLinks = [];
+
+function getPackingOrdenLinks(data) {
+  if (Array.isArray(data.links_packing_orden)) return data.links_packing_orden.filter(Boolean);
+  if (data.link_packing_orden) return [data.link_packing_orden]; // compat dato viejo
+  return [];
+}
+
+function renderListaLinksPackingOrden() {
+  const cont = document.getElementById("listaLinksPackingOrden");
+  cont.innerHTML = packingOrdenLinks.map((url, i) => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:3px 4px 3px 10px;">
+      <a href="${url}" target="_blank" style="font-size:11px;font-weight:700;color:var(--accent2);text-decoration:none;">📁 Packing ${i+1}</a>
+      <button type="button" onclick="quitarLinkPackingOrden(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:3px 6px;" title="Quitar">✕</button>
+    </span>`).join("");
+}
+
+window.agregarLinkPackingOrden = function() {
+  const input = document.getElementById("fLinkPackingOrden");
+  const val = input.value.trim();
+  if (!val) return;
+  packingOrdenLinks.push(val);
+  input.value = "";
+  renderListaLinksPackingOrden();
+};
+
+window.quitarLinkPackingOrden = function(idx) {
+  packingOrdenLinks.splice(idx, 1);
+  renderListaLinksPackingOrden();
+};
 let listaTipos    = [];
 let listaInsumos  = [];
 let listaClientes = [];
@@ -632,12 +660,6 @@ document.addEventListener("DOMContentLoaded", () => {
     link.href = inp.value.trim();
     link.style.display = inp.value.trim() ? "" : "none";
   });
-  const inp2  = document.getElementById("fLinkPackingOrden");
-  const link2 = document.getElementById("fLinkPackingOrdenLink");
-  if (inp2 && link2) inp2.addEventListener("input", () => {
-    link2.href = inp2.value.trim();
-    link2.style.display = inp2.value.trim() ? "" : "none";
-  });
 });
 
 // ── MODAL ABRIR / CERRAR ──────────────────────────────────────
@@ -660,7 +682,8 @@ window.abrirNueva = function() {
   document.getElementById("fFotoCarpeta").value     = "";
   document.getElementById("fFotoCarpetaLink").style.display = "none";
   document.getElementById("fLinkPackingOrden").value = "";
-  document.getElementById("fLinkPackingOrdenLink").style.display = "none";
+  packingOrdenLinks = [];
+  renderListaLinksPackingOrden();
   document.getElementById("itemsList").innerHTML    = "";
   agregarItem(); // fila vacía inicial
   document.getElementById("modal").classList.remove("hidden");
@@ -690,9 +713,9 @@ window.abrirOrden = function(id) {
   const _fcLink = document.getElementById("fFotoCarpetaLink");
   _fcLink.href = _fc; _fcLink.style.display = _fc ? "" : "none";
   const _lpo = data.link_packing_orden || "";
-  document.getElementById("fLinkPackingOrden").value = _lpo;
-  const _lpoLink = document.getElementById("fLinkPackingOrdenLink");
-  _lpoLink.href = _lpo; _lpoLink.style.display = _lpo ? "" : "none";
+  document.getElementById("fLinkPackingOrden").value = "";
+  packingOrdenLinks = getPackingOrdenLinks(data);
+  renderListaLinksPackingOrden();
 
   // Items
   document.getElementById("itemsList").innerHTML = "";
@@ -752,7 +775,8 @@ window.guardarOrden = async function() {
     estado:             document.getElementById("fEstado").value,
     observacion:        document.getElementById("fObservacion").value.trim(),
     foto_carpeta:       document.getElementById("fFotoCarpeta").value.trim(),
-    link_packing_orden: document.getElementById("fLinkPackingOrden").value.trim(),
+    link_packing_orden: packingOrdenLinks[0] || "", // compat: primer link también en el campo viejo
+    links_packing_orden: packingOrdenLinks,
     items
   };
 
