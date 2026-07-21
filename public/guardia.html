@@ -648,6 +648,7 @@ let modoSearch     = false;
 // Cuando un movimiento pasa a LIBERADO, el/los servicios adicionales
 // asociados (nro_orden === planificacion.referencia) se finalizan solos.
 async function autoFinalizarServiciosDeLiberados(docs) {
+  const SERVICIOS_AUTO_FINALIZAR = ["SOPORTE FOTOGRAFICO"];
   const referencias = [...new Set(
     docs.filter(d => d.data().estado === "LIBERADO")
         .map(d => (d.data().planificacion||{}).referencia)
@@ -662,6 +663,8 @@ async function autoFinalizarServiciosDeLiberados(docs) {
       for (const docSnap of snap.docs) {
         const data = docSnap.data();
         if (["FINALIZADO","CANCELADO"].includes(data.estado)) continue;
+        const tieneServicioElegible = (data.items||[]).some(it => SERVICIOS_AUTO_FINALIZAR.includes(it.servicio));
+        if (!tieneServicioElegible) continue;
         await updateDoc(doc(db, "servicios_adicionales", docSnap.id), {
           estado: "FINALIZADO",
           finalizado_en:      `${hoy()} ${new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"})}`,
