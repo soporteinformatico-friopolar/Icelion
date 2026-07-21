@@ -484,47 +484,22 @@ let _unsubSrv = null;
 let srvCache = [];
 let srvActual = null;
 
-let _unsubSrvFin = null;
-let _srvDocsRango = [];
-let _srvDocsFin   = [];
-
-function _mergeSrvDocs(fecha) {
-  const map = new Map();
-  _srvDocsRango.forEach(d => {
-    const data = d.data();
-    if (data.estado === "CANCELADO") return;
-    if (data.estado === "FINALIZADO") {
-      const fechaFin = data.fecha_finalizacion || (data.finalizado_en||"").slice(0,10);
-      if (fechaFin !== fecha) return;
-    }
-    map.set(d.id, d);
-  });
-  _srvDocsFin.forEach(d => map.set(d.id, d));
-  srvCache = [...map.values()];
-  renderServicios();
-}
-
+// Visible desde fecha_pedido hasta que se finalice (fecha_necesidad es solo referencia).
 function cargarServicios(fecha) {
   if (_unsubSrv) _unsubSrv();
-  if (_unsubSrvFin) _unsubSrvFin();
-  // Query A: rango normal (fecha_necesidad >= fecha, fecha_pedido <= fecha en cliente)
-  const qA = query(
+  const q = query(
     collection(db, "servicios_adicionales"),
-    where("fecha_necesidad", ">=", fecha)
+    where("fecha_pedido", "<=", fecha)
   );
-  _unsubSrv = onSnapshot(qA, snap => {
-    _srvDocsRango = snap.docs.filter(d => (d.data().fecha_pedido||"") <= fecha);
-    _mergeSrvDocs(fecha);
+  _unsubSrv = onSnapshot(q, snap => {
+    srvCache = snap.docs.filter(d => {
+      const data = d.data();
+      if (data.estado === "CANCELADO") return false;
+      if (data.estado === "FINALIZADO") return !!data.fecha_finalizacion && fecha <= data.fecha_finalizacion;
+      return true;
+    });
+    renderServicios();
   }, err => console.error("servicios:", err));
-  // Query B: finalizados exactamente ese día (aunque su fecha_necesidad ya haya pasado)
-  const qB = query(
-    collection(db, "servicios_adicionales"),
-    where("fecha_finalizacion", "==", fecha)
-  );
-  _unsubSrvFin = onSnapshot(qB, snap => {
-    _srvDocsFin = snap.docs;
-    _mergeSrvDocs(fecha);
-  }, err => console.error("servicios finalizados:", err));
 }
 
 function getPackingOrdenLinks(data) {

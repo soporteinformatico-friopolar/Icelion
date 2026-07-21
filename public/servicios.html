@@ -462,28 +462,24 @@ function aplicarFiltros() {
   let docs = [...docsCache].sort((a,b) => (b.data().fecha_pedido||"").localeCompare(a.data().fecha_pedido||""));
 
   if (fEstado) {
-    // Estado puntual elegido: igual se acota al día activo.
-    // FINALIZADO se compara contra fecha_finalizacion (el día que se cerró),
-    // los demás estados usan el mismo rango fecha_pedido/fecha_necesidad de siempre.
+    // Estado puntual elegido: filtra por ese estado.
+    // FINALIZADO/CANCELADO no tienen límite de fecha (se buscan en todo el historial);
+    // los demás usan fecha_pedido <= diaActual (fecha_necesidad es solo referencia, no filtra).
     docs = docs.filter(d => {
       const data = d.data();
       if (data.estado !== fEstado) return false;
-      if (fEstado === "FINALIZADO") return data.fecha_finalizacion === diaActual;
-      const fp = data.fecha_pedido    || "";
-      const fn = data.fecha_necesidad || "";
-      if (!fn) return fp <= diaActual;
-      return fp <= diaActual && diaActual <= fn;
+      if (["FINALIZADO","CANCELADO"].includes(fEstado)) return true;
+      return (data.fecha_pedido||"") <= diaActual;
     });
   } else {
-    // Sin filtro de estado: se ve todo lo que corresponde al día activo,
-    // incluidos los FINALIZADO que se cerraron ese mismo día.
+    // Sin filtro de estado: visible desde fecha_pedido; los FINALIZADO siguen
+    // visibles hasta su fecha_finalizacion (inclusive). CANCELADO se oculta siempre.
     docs = docs.filter(d => {
       const data = d.data();
-      if (data.estado === "FINALIZADO") return data.fecha_finalizacion === diaActual;
-      const fp = data.fecha_pedido    || "";
-      const fn = data.fecha_necesidad || "";
-      if (!fn) return fp <= diaActual;
-      return fp <= diaActual && diaActual <= fn;
+      if (data.estado === "CANCELADO") return false;
+      if ((data.fecha_pedido||"") > diaActual) return false;
+      if (data.estado === "FINALIZADO") return !!data.fecha_finalizacion && diaActual <= data.fecha_finalizacion;
+      return true;
     });
   }
 
