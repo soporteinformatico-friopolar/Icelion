@@ -522,6 +522,22 @@
           <div id="tablaPausasCliente"><div class="empty">—</div></div>
         </div>
       </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Por motivo</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaPausasMotivo"><div class="empty">—</div></div>
+        </div>
+      </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Movimientos con pausa: desvío y solución</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaPausasDesvioSolucion"><div class="empty">—</div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -666,7 +682,11 @@ function poblarSelect(id, values) {
 }
 
 // ── FILTROS Y CÁLCULO ─────────────────────────────────────────
+let _ultimoRangoCargado = null; // {desde, hasta} del último fetch real a Firestore
+
 // Único punto de entrada que lee la base: se dispara solo al tocar "Calcular".
+// Si el rango de fechas es el mismo que la última consulta, NO vuelve a leer
+// Firestore: solo re-filtra en memoria por cliente/movimiento/transporte.
 window.aplicarFiltros = async function() {
   const desde     = document.getElementById("fDesde").value;
   const hasta     = document.getElementById("fHasta").value;
@@ -676,8 +696,23 @@ window.aplicarFiltros = async function() {
 
   if (!desde || !hasta) { toast("err","Error","Elegí un rango de fechas"); return; }
 
-  const ok = await cargarDatos(desde, hasta);
-  if (!ok) return;
+  const mismoRango = _ultimoRangoCargado
+    && _ultimoRangoCargado.desde === desde
+    && _ultimoRangoCargado.hasta === hasta
+    && datosCargados;
+
+  if (mismoRango) {
+    document.getElementById("infoBar").textContent = `${docsData.length} movimientos con arribo (sin nueva lectura, mismo rango)`;
+  } else {
+    const dias = Math.round((new Date(hasta) - new Date(desde)) / 86400000);
+    if (dias > 120) {
+      const seguro = confirm(`El rango elegido es de ${dias} días. Rangos muy amplios leen muchos documentos de la base. ¿Continuar?`);
+      if (!seguro) return;
+    }
+    const ok = await cargarDatos(desde, hasta);
+    if (!ok) return;
+    _ultimoRangoCargado = { desde, hasta };
+  }
 
   let filtered = docsData.filter(d => {
     const p = d.data.planificacion || {};
@@ -790,6 +825,7 @@ function calcularKPIs(docs) {
     const pl = d.data.playero       || {};
     const pll= d.data.planillero    || {};
     const sv = d.data.supervisor    || {};
+    const svw= d.data.supervisor_web|| {};
 
     const fechaArr = g.fecha_arribo   || null;
     const fechaPrev= p.fecha_prevista || null;
@@ -909,6 +945,10 @@ function calcularKPIs(docs) {
         }, 0)
       : 0;
     const cantidadPausas = pausas.length;
+    const pausasDetalle = pausasCerradas.map(x => ({
+      motivo: (x.motivo||"").trim() || "Sin especificar",
+      minutos: Math.max(0, difMin(x.inicio, x.fin) || 0)
+    }));
 
     // Desvíos
     const desvios = d.data.calidad_desvios;
@@ -919,11 +959,16 @@ function calcularKPIs(docs) {
       ? desvios.filter(x=>x.desvio).map(x=>({ desvio:x.desvio, motivo:x.motivo_desvio||"" }))
       : (desvios?.desvio ? [{ desvio:desvios.desvio, motivo:desvios.motivo_desvio||"" }] : []);
 
+    // Soluciones (supervisor_web.resoluciones[] = [{solucion, personal}], con compat al campo viejo único)
+    const listaSoluciones = Array.isArray(svw.resoluciones)
+      ? svw.resoluciones.filter(x=>x.solucion).map(x=>({ solucion:x.solucion, personal:x.personal||"" }))
+      : (svw.solucion_desvio ? [{ solucion:svw.solucion_desvio, personal:svw.personal_implicado||"" }] : []);
+
     // Día de semana
     const fechaObj = fechaPrev ? new Date(fechaPrev+"T12:00:00") : null;
     const diaSemana = fechaObj ? fechaObj.getDay() : null;
 
-    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, rotuloTipo, minutosPausados, cantidadPausas, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
+    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, rotuloTipo, minutosPausados, cantidadPausas, pausasDetalle, tieneDesvio, listaDesvios, listaSoluciones, diaSemana, arriboFueAyer,
       esEfectiva, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
       cliente:    p.cliente    || "—",
       movimiento: p.movimiento || "—",
@@ -975,6 +1020,8 @@ function renderPausas(docs) {
     elResumen.innerHTML = `<div class="empty">Sin pausas registradas para este filtro</div>`;
     document.getElementById("tablaPausasMov").innerHTML = `<div class="empty">—</div>`;
     document.getElementById("tablaPausasCliente").innerHTML = `<div class="empty">—</div>`;
+    document.getElementById("tablaPausasMotivo").innerHTML = `<div class="empty">—</div>`;
+    document.getElementById("tablaPausasDesvioSolucion").innerHTML = `<div class="empty">—</div>`;
     return;
   }
 
@@ -1028,6 +1075,60 @@ function renderPausas(docs) {
   }
   tblCli += `</tbody></table>`;
   document.getElementById("tablaPausasCliente").innerHTML = sortedCli.length ? tblCli : `<div class="empty">Sin datos</div>`;
+
+  // Por motivo: se agrupan las pausas individuales (no los movimientos)
+  const todasPausas = validos.flatMap(d => d.pausasDetalle);
+  const byMotivo = agrupar(todasPausas, p=>p.motivo);
+  const sortedMotivo = Object.entries(byMotivo).sort((a,b)=>b[1].reduce((s,p)=>s+p.minutos,0)-a[1].reduce((s,p)=>s+p.minutos,0));
+  let tblMot = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Motivo</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cant. pausas</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Total perdido</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Prom./pausa</th>
+    </tr></thead><tbody>`;
+  for(const [motivo, items] of sortedMotivo) {
+    const tot = items.reduce((s,p)=>s+p.minutos,0);
+    tblMot += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${motivo}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtMin(tot)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtMin(Math.round(tot/items.length))}</td>
+    </tr>`;
+  }
+  tblMot += `</tbody></table>`;
+  document.getElementById("tablaPausasMotivo").innerHTML = sortedMotivo.length ? tblMot : `<div class="empty">Sin datos</div>`;
+
+  // Detalle: movimientos con pausa + sus desvíos + solución cargada por supervisor
+  const sortedDetalle = [...validos].sort((a,b)=>b.minutosPausados-a.minutosPausados);
+  let tblDet = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Movimiento</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Pausado</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Motivo(s) pausa</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Desvío(s)</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Solución (supervisor)</th>
+    </tr></thead><tbody>`;
+  sortedDetalle.forEach(d=>{
+    const motivosPausa = [...new Set(d.pausasDetalle.map(p=>p.motivo))].join(", ") || "—";
+    const desviosTxt = d.listaDesvios.length
+      ? d.listaDesvios.map(x=>x.desvio).join(", ")
+      : `<span style="color:var(--muted);">Sin desvío registrado</span>`;
+    const solucionesTxt = d.listaSoluciones.length
+      ? d.listaSoluciones.map(x=>x.solucion).join(" · ")
+      : (d.listaDesvios.length ? `<span style="color:var(--warn);">Desvío sin solución cargada</span>` : `<span style="color:var(--muted);">—</span>`);
+    tblDet += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${d.movimiento||"—"}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.cliente||"—"}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${fmtMin(d.minutosPausados)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${motivosPausa}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${desviosTxt}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${solucionesTxt}</td>
+    </tr>`;
+  });
+  tblDet += `</tbody></table>`;
+  document.getElementById("tablaPausasDesvioSolucion").innerHTML = sortedDetalle.length ? tblDet : `<div class="empty">Sin datos</div>`;
 }
 
 // ── PRODUCTIVIDAD DE CARGA (CARGA EXPO) ─────────────────────────
