@@ -941,15 +941,17 @@ function statsPorOperarios(validos) {
     (byOp[key] = byOp[key] || []).push(d);
   });
   const orden = Object.keys(byOp).sort((a,b)=> (a==="5+"?5:+a) - (b==="5+"?5:+b));
-  return orden.map(op => {
-    const items = byOp[op];
-    const n = items.length;
-    const avgCajas = items.reduce((s,d)=>s+d.cajas,0)/n;
-    const avgHoras = items.reduce((s,d)=>s+d.horasHombre,0)/n;
-    const avgCxH   = items.reduce((s,d)=>s+d.cajasPorHora,0)/n;
-    const avgCxHH  = items.reduce((s,d)=>s+d.cajasPorHoraHombre,0)/n;
-    return { op, n, avgCajas, avgHoras, avgCxH, avgCxHH };
-  });
+  return orden
+    .map(op => {
+      const items = byOp[op];
+      const n = items.length;
+      const avgCajas = items.reduce((s,d)=>s+d.cajas,0)/n;
+      const avgHoras = items.reduce((s,d)=>s+d.horasHombre,0)/n;
+      const avgCxH   = items.reduce((s,d)=>s+d.cajasPorHora,0)/n;
+      const avgCxHH  = items.reduce((s,d)=>s+d.cajasPorHoraHombre,0)/n;
+      return { op, n, avgCajas, avgHoras, avgCxH, avgCxHH };
+    })
+    .filter(s => s.n >= 2); // menos de 2 casos no es representativo, se excluye
 }
 
 function tablaProdHTML(stats) {
@@ -987,8 +989,13 @@ function renderBloqueProdCarga(validos, sufijo) {
     return;
   }
   const stats = statsPorOperarios(validos);
+  if (!stats.length) {
+    elChart.innerHTML = `<div class="empty">Sin grupos con al menos 2 casos</div>`;
+    elTabla.innerHTML  = `<div class="empty">—</div>`;
+    return;
+  }
   elChart.innerHTML = barSVGVert(stats.map(s=>({label:`${s.op} op.`, value:s.avgCxHH}))) +
-    `<div style="font-size:11px;color:var(--muted);margin-top:6px;">Cajas/hora-hombre promedio por cantidad de operarios. Si la barra baja al aumentar operarios → rendimientos decrecientes.</div>`;
+    `<div style="font-size:11px;color:var(--muted);margin-top:6px;">Cajas/hora-hombre promedio por cantidad de operarios. Si la barra baja al aumentar operarios → rendimientos decrecientes. Grupos con menos de 2 casos no se muestran.</div>`;
   elTabla.innerHTML = tablaProdHTML(stats);
 }
 
@@ -1431,9 +1438,13 @@ function renderDesvios(docs) {
   if (!total) { elPie.innerHTML = `<div class="empty">Sin desvíos registrados para este filtro</div>`; return; }
 
   const sorted = Object.entries(nombres).sort((a,b)=>b[1]-a[1]);
-  const slices = sorted.map(([label,value],i) => ({ label, value, color: DESV_COLORS[i % DESV_COLORS.length] }));
+  const top10 = sorted.slice(0, 10);
+  const resto = sorted.slice(10);
+  const restoTotal = resto.reduce((s,[,v])=>s+v, 0);
+  const final = restoTotal > 0 ? [...top10, [`Otros (${resto.length})`, restoTotal]] : top10;
+  const slices = final.map(([label,value],i) => ({ label, value, color: DESV_COLORS[i % DESV_COLORS.length] }));
   elPie.innerHTML = pieHTML(slices, total) +
-    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${total} desvíos registrados${fMov?` · Movimiento: ${fMov}`:""}${fCli?` · Cliente: ${fCli}`:""}</div>`;
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${total} desvíos registrados${fMov?` · Movimiento: ${fMov}`:""}${fCli?` · Cliente: ${fCli}`:""}${restoTotal>0?` · mostrando top 10, ${resto.length} tipos agrupados en "Otros"`:""}</div>`;
 }
 
 // ── CATEGORÍAS ────────────────────────────────────────────────
