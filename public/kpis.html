@@ -516,22 +516,6 @@
       </div>
       <div class="section" style="grid-column:1 / -1;">
         <div class="section-header">
-          <div class="section-title">Por cliente</div>
-        </div>
-        <div class="section-body">
-          <div id="tablaPausasCliente"><div class="empty">—</div></div>
-        </div>
-      </div>
-      <div class="section" style="grid-column:1 / -1;">
-        <div class="section-header">
-          <div class="section-title">Por motivo</div>
-        </div>
-        <div class="section-body">
-          <div id="tablaPausasMotivo"><div class="empty">—</div></div>
-        </div>
-      </div>
-      <div class="section" style="grid-column:1 / -1;">
-        <div class="section-header">
           <div class="section-title">Movimientos con pausa: desvío y solución</div>
         </div>
         <div class="section-body">
@@ -1019,8 +1003,6 @@ function renderPausas(docs) {
   if (!validos.length) {
     elResumen.innerHTML = `<div class="empty">Sin pausas registradas para este filtro</div>`;
     document.getElementById("tablaPausasMov").innerHTML = `<div class="empty">—</div>`;
-    document.getElementById("tablaPausasCliente").innerHTML = `<div class="empty">—</div>`;
-    document.getElementById("tablaPausasMotivo").innerHTML = `<div class="empty">—</div>`;
     document.getElementById("tablaPausasDesvioSolucion").innerHTML = `<div class="empty">—</div>`;
     return;
   }
@@ -1055,54 +1037,12 @@ function renderPausas(docs) {
   tblMov += `</tbody></table>`;
   document.getElementById("tablaPausasMov").innerHTML = sortedMov.length ? tblMov : `<div class="empty">Sin datos</div>`;
 
-  const byCli = agrupar(validos, d=>d.cliente);
-  const sortedCli = Object.entries(byCli).sort((a,b)=>b[1].reduce((s,d)=>s+d.minutosPausados,0)-a[1].reduce((s,d)=>s+d.minutosPausados,0));
-  let tblCli = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
-    <thead><tr>
-      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
-      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">N</th>
-      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Total perdido</th>
-      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Prom./mov.</th>
-    </tr></thead><tbody>`;
-  for(const [cli, items] of sortedCli) {
-    const tot = items.reduce((s,d)=>s+d.minutosPausados,0);
-    tblCli += `<tr>
-      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${cli}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtMin(tot)}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtMin(Math.round(tot/items.length))}</td>
-    </tr>`;
-  }
-  tblCli += `</tbody></table>`;
-  document.getElementById("tablaPausasCliente").innerHTML = sortedCli.length ? tblCli : `<div class="empty">Sin datos</div>`;
-
-  // Por motivo: se agrupan las pausas individuales (no los movimientos)
-  const todasPausas = validos.flatMap(d => d.pausasDetalle);
-  const byMotivo = agrupar(todasPausas, p=>p.motivo);
-  const sortedMotivo = Object.entries(byMotivo).sort((a,b)=>b[1].reduce((s,p)=>s+p.minutos,0)-a[1].reduce((s,p)=>s+p.minutos,0));
-  let tblMot = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
-    <thead><tr>
-      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Motivo</th>
-      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cant. pausas</th>
-      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Total perdido</th>
-      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Prom./pausa</th>
-    </tr></thead><tbody>`;
-  for(const [motivo, items] of sortedMotivo) {
-    const tot = items.reduce((s,p)=>s+p.minutos,0);
-    tblMot += `<tr>
-      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${motivo}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtMin(tot)}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtMin(Math.round(tot/items.length))}</td>
-    </tr>`;
-  }
-  tblMot += `</tbody></table>`;
-  document.getElementById("tablaPausasMotivo").innerHTML = sortedMotivo.length ? tblMot : `<div class="empty">Sin datos</div>`;
-
-  // Detalle: movimientos con pausa + sus desvíos + solución cargada por supervisor
+  // Detalle: movimientos con pausa + fecha/referencia + sus desvíos + solución cargada por supervisor
   const sortedDetalle = [...validos].sort((a,b)=>b.minutosPausados-a.minutosPausados);
   let tblDet = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
     <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Fecha</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Referencia</th>
       <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Movimiento</th>
       <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
       <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Pausado</th>
@@ -1119,6 +1059,8 @@ function renderPausas(docs) {
       ? d.listaSoluciones.map(x=>x.solucion).join(" · ")
       : (d.listaDesvios.length ? `<span style="color:var(--warn);">Desvío sin solución cargada</span>` : `<span style="color:var(--muted);">—</span>`);
     tblDet += `<tr>
+      <td class="td-mono" style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.fecha||"—"}</td>
+      <td class="td-mono" style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.referencia||"—"}</td>
       <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${d.movimiento||"—"}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.cliente||"—"}</td>
       <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${fmtMin(d.minutosPausados)}</td>
