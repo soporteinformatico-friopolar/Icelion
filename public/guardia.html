@@ -648,7 +648,7 @@ let modoSearch     = false;
 // Cuando un movimiento pasa a LIBERADO, el/los servicios adicionales
 // asociados (nro_orden === planificacion.referencia) se finalizan solos.
 async function autoFinalizarServiciosDeLiberados(docs) {
-  const SERVICIOS_AUTO_FINALIZAR = ["SOPORTE FOTOGRAFICO"];
+  const SERVICIOS_AUTO_FINALIZAR = ["SOPORTE FOTOGRAFICO", "IMPRESION DE ETIQUETAS"];
   const referencias = [...new Set(
     docs.filter(d => d.data().estado === "LIBERADO")
         .map(d => (d.data().planificacion||{}).referencia)

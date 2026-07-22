@@ -38,7 +38,7 @@
   .btn-logout:hover{border-color:var(--err);color:var(--err);}
 
   /* LAYOUT */
-  .page{padding:24px;max-width:1400px;margin:0 auto;}
+  .page{padding:24px 32px;width:100%;margin:0;}
   .page-header{margin-bottom:20px;}
   .page-title{font-size:20px;font-weight:700;}
   .page-sub{font-size:12px;color:var(--muted);margin-top:3px;}
@@ -156,6 +156,52 @@
     <div class="page-sub">Puntualidad del transporte · Tiempos de permanencia</div>
   </div>
 
+  <!-- SELECTOR DE CATEGORÍA + TABS DE LA CATEGORÍA -->
+  <div style="display:flex;align-items:center;gap:24px;margin-bottom:14px;flex-wrap:wrap;">
+    <div class="filtros-group" style="max-width:340px;">
+      <label>Categoría de KPI</label>
+      <select class="form-input" id="catSelector" onchange="switchCat(this.value)">
+        <option value="servicio">Nivel de Servicio y Cumplimiento</option>
+        <option value="planificacion">Planificación Efectiva</option>
+        <option value="costos">Costos Ocultos y Calidad</option>
+        <option value="detalle">Detalle</option>
+      </select>
+    </div>
+
+    <div class="cat-group" data-cat="servicio" style="margin:0;">
+    <div class="tabs-group-label" style="margin:0 0 6px;">Nivel de Servicio y Cumplimiento</div>
+    <div class="tabs" style="margin-bottom:0;">
+      <button class="tab active" onclick="switchTab('puntualidad',this)">Puntualidad</button>
+      <button class="tab" onclick="switchTab('permanencia',this)">Permanencia</button>
+      <button class="tab" onclick="switchTab('porCliente',this)">Por cliente</button>
+      <button class="tab" onclick="switchTab('porTransporte',this)">Por transporte</button>
+    </div>
+    </div>
+    <div class="cat-group" data-cat="planificacion" style="display:none;margin:0;">
+    <div class="tabs-group-label" style="margin:0 0 6px;">Planificación Efectiva</div>
+    <div class="tabs" style="margin-bottom:0;">
+      <button class="tab active" onclick="switchTab('planificacion',this)">Planificación efectiva</button>
+      <button class="tab" onclick="switchTab('tiempoMov',this)">Tiempo mov.</button>
+      <button class="tab" onclick="switchTab('flujoSemanal',this)">Flujo semanal</button>
+      <button class="tab" onclick="switchTab('ocupacionPuertas',this)">Ocupación de puertas</button>
+    </div>
+    </div>
+    <div class="cat-group" data-cat="costos" style="display:none;margin:0;">
+    <div class="tabs-group-label" style="margin:0 0 6px;">Costos Ocultos y Calidad del Proceso</div>
+    <div class="tabs" style="margin-bottom:0;">
+      <button class="tab active" onclick="switchTab('desvios',this)">Desvíos</button>
+      <button class="tab" onclick="switchTab('horasHombre',this)">Horas Hombre</button>
+      <button class="tab" onclick="switchTab('productividadCarga',this)">Productividad de Carga</button>
+    </div>
+    </div>
+    <div class="cat-group" data-cat="detalle" style="display:none;margin:0;">
+    <div class="tabs-group-label" style="margin:0 0 6px;">Detalle</div>
+    <div class="tabs" style="margin-bottom:0;">
+      <button class="tab active" onclick="switchTab('detalle',this)">Detalle</button>
+    </div>
+    </div>
+  </div>
+
   <!-- FILTROS -->
   <div class="filtros">
     <div class="filtros-group">
@@ -194,52 +240,6 @@
   <!-- RESUMEN -->
   <div class="kpi-resumen" id="kpiResumenLine">
     <span id="kpiTotal">—</span> movimientos analizados
-  </div>
-
-  <!-- SELECTOR DE CATEGORÍA -->
-  <div class="filtros-group" style="max-width:340px;margin-bottom:10px;">
-    <label>Categoría de KPI</label>
-    <select class="form-input" id="catSelector" onchange="switchCat(this.value)">
-      <option value="servicio">Nivel de Servicio y Cumplimiento</option>
-      <option value="planificacion">Planificación Efectiva</option>
-      <option value="costos">Costos Ocultos y Calidad</option>
-      <option value="detalle">Detalle</option>
-    </select>
-  </div>
-
-  <!-- TABS -->
-  <div class="cat-group" data-cat="servicio">
-  <div class="tabs-group-label">Nivel de Servicio y Cumplimiento</div>
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('puntualidad',this)">Puntualidad</button>
-    <button class="tab" onclick="switchTab('permanencia',this)">Permanencia</button>
-    <button class="tab" onclick="switchTab('porCliente',this)">Por cliente</button>
-    <button class="tab" onclick="switchTab('porTransporte',this)">Por transporte</button>
-  </div>
-  </div>
-  <div class="cat-group" data-cat="planificacion" style="display:none;">
-  <div class="tabs-group-label">Planificación Efectiva</div>
-
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('planificacion',this)">Planificación efectiva</button>
-    <button class="tab" onclick="switchTab('tiempoMov',this)">Tiempo mov.</button>
-    <button class="tab" onclick="switchTab('flujoSemanal',this)">Flujo semanal</button>
-    <button class="tab" onclick="switchTab('ocupacionPuertas',this)">Ocupación de puertas</button>
-  </div>
-  </div>
-  <div class="cat-group" data-cat="costos" style="display:none;">
-  <div class="tabs-group-label">Costos Ocultos y Calidad del Proceso</div>
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('desvios',this)">Desvíos</button>
-    <button class="tab" onclick="switchTab('horasHombre',this)">Horas Hombre</button>
-    <button class="tab" onclick="switchTab('productividadCarga',this)">Productividad de Carga</button>
-  </div>
-  </div>
-  <div class="cat-group" data-cat="detalle" style="display:none;">
-  <div class="tabs-group-label">Detalle</div>
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('detalle',this)">Detalle</button>
-  </div>
   </div>
 
   <!-- TAB: PUNTUALIDAD -->
@@ -571,8 +571,8 @@ initSesion(async u => {
   }
 
   inicializarFiltrosFecha();
-  await cargarDatos();
-  aplicarFiltros();
+  // No se cargan datos automáticamente: recién se lee la base cuando el usuario
+  // toca "Calcular", para evitar lecturas innecesarias.
 });
 
 function inicializarFiltrosFecha() {
@@ -588,33 +588,29 @@ function inicializarFiltrosFecha() {
 const EXCLUIR      = new Set(["VINCULADO","CANCELADO","SIN IDENTIFICAR","CANCELA MOVIMIENTO"]);
 const MOVS_VALIDOS = new Set(["CARGA MI","CARGA EXPO","DESCARGA","ICO4/05"]);
 const DIAS         = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+let datosCargados = false;
 
-async function cargarDatos() {
+// Trae SOLO el rango de fechas pedido (acotado por planificacion.fecha_prevista),
+// para no leer toda la colección. Se llama únicamente desde aplicarFiltros().
+async function cargarDatos(desde, hasta) {
   document.getElementById("infoBar").textContent = "Cargando…";
   try {
     const snap = await getDocs(query(
       collection(db, COL),
-      where("guardia.hora_arribo", "!=", ""),
-      orderBy("guardia.hora_arribo"),
+      where("planificacion.fecha_prevista", ">=", desde),
+      where("planificacion.fecha_prevista", "<=", hasta),
       orderBy("planificacion.fecha_prevista")
     ));
     docsData = snap.docs
       .map(d => ({ id: d.id, data: d.data() }))
-      .filter(d => !EXCLUIR.has(d.data.estado||""));
+      .filter(d => d.data.guardia?.hora_arribo && !EXCLUIR.has(d.data.estado||""));
     document.getElementById("infoBar").textContent = `${docsData.length} movimientos con arribo`;
     poblarSelects();
+    datosCargados = true;
+    return true;
   } catch(e) {
-    // Fallback: trae todo y filtra en cliente (índice compuesto puede no existir)
-    try {
-      const snap2 = await getDocs(query(collection(db, COL), orderBy("planificacion.fecha_prevista", "desc")));
-      docsData = snap2.docs
-        .map(d => ({ id: d.id, data: d.data() }))
-        .filter(d => d.data.guardia?.hora_arribo && !EXCLUIR.has(d.data.estado||""));
-      document.getElementById("infoBar").textContent = `${docsData.length} movimientos con arribo`;
-      poblarSelects();
-    } catch(e2) {
-      toast("err","Error",e2.message);
-    }
+    toast("err","Error",e.message);
+    return false;
   }
 }
 
@@ -636,18 +632,21 @@ function poblarSelect(id, values) {
 }
 
 // ── FILTROS Y CÁLCULO ─────────────────────────────────────────
-window.aplicarFiltros = function() {
+// Único punto de entrada que lee la base: se dispara solo al tocar "Calcular".
+window.aplicarFiltros = async function() {
   const desde     = document.getElementById("fDesde").value;
   const hasta     = document.getElementById("fHasta").value;
   const cliente   = document.getElementById("fCliente").value;
   const movimiento= document.getElementById("fMovimiento").value;
   const transporte= document.getElementById("fTransporte").value;
 
+  if (!desde || !hasta) { toast("err","Error","Elegí un rango de fechas"); return; }
+
+  const ok = await cargarDatos(desde, hasta);
+  if (!ok) return;
+
   let filtered = docsData.filter(d => {
     const p = d.data.planificacion || {};
-    const fecha = p.fecha_prevista || "";
-    if(desde && fecha < desde) return false;
-    if(hasta && fecha > hasta)  return false;
     if(cliente    && p.cliente    !== cliente)    return false;
     if(movimiento && p.movimiento !== movimiento) return false;
     if(transporte && p.transporte !== transporte) return false;
@@ -662,7 +661,7 @@ window.resetFiltros = function() {
   document.getElementById("fMovimiento").value = "";
   document.getElementById("fTransporte").value = "";
   inicializarFiltrosFecha();
-  aplicarFiltros();
+  // No dispara Calcular automáticamente: el usuario decide cuándo leer la base.
 };
 
 // ── HELPERS DE TIEMPO ─────────────────────────────────────────
