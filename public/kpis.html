@@ -192,6 +192,7 @@
       <button class="tab active" onclick="switchTab('desvios',this)">Desvíos</button>
       <button class="tab" onclick="switchTab('horasHombre',this)">Horas Hombre</button>
       <button class="tab" onclick="switchTab('productividadCarga',this)">Productividad de Carga</button>
+      <button class="tab" onclick="switchTab('pausas',this)">Pausas</button>
     </div>
     </div>
     <div class="cat-group" data-cat="detalle" style="display:none;margin:0;">
@@ -491,6 +492,39 @@
     </div>
   </div>
 
+  <!-- TAB: PAUSAS -->
+  <div class="tab-pane" id="tab-pausas">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      Tiempo perdido en pausas del planillero durante el movimiento (<span class="td-mono">planillero.pausas[]</span>). Solo se cuentan pausas ya cerradas (con hora de reanudación).
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Resumen <span id="tPausasCount"></span></div>
+        </div>
+        <div class="section-body">
+          <div id="resumenPausas"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Por tipo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaPausasMov"><div class="empty">—</div></div>
+        </div>
+      </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Por cliente</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaPausasCliente"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB: DETALLE -->
   <div class="tab-pane" id="tab-detalle">
     <div class="section">
@@ -744,7 +778,7 @@ function pieHTML(slices, total, tablaLateral=null) {
     return `<div class="pie-legend-item"><div class="pie-dot" style="background:${s.color}"></div><span class="pie-leg-label">${s.label}</span><span class="pie-leg-val">${s.value} (${pct}%)</span></div>`;
   }).join("");
   const tablaHtml = tablaLateral ? `<div style="flex:1;min-width:180px;">${tablaLateral}</div>` : "";
-  return `<div class="pie-wrap" style="justify-content:space-between;">${pieSVG(slices)}<div class="pie-legend">${legend}</div>${tablaHtml}</div>`;
+  return `<div class="pie-wrap">${pieSVG(slices)}<div class="pie-legend">${legend}</div>${tablaHtml}</div>`;
 }
 
 // ── CÁLCULO PRINCIPAL ─────────────────────────────────────────
@@ -864,6 +898,18 @@ function calcularKPIs(docs) {
     const tiposRotulo = [...new Set(detallesProd.map(x=>clasificarRotulo(x.rotulo)))];
     const rotuloTipo = tiposRotulo.length === 1 ? tiposRotulo[0] : (tiposRotulo.length > 1 ? "MIXTO" : "NO");
 
+    // Tiempo perdido en pausas: planillero.pausas[] = [{inicio, fin}], solo cuenta
+    // las que ya tienen fin (pausas abiertas/en curso no suman).
+    const pausas = Array.isArray(pll.pausas) ? pll.pausas : [];
+    const pausasCerradas = pausas.filter(x => x.inicio && x.fin);
+    const minutosPausados = pausasCerradas.length
+      ? pausasCerradas.reduce((s,x) => {
+          const m = difMin(x.inicio, x.fin);
+          return s + (m !== null && m > 0 ? m : 0);
+        }, 0)
+      : 0;
+    const cantidadPausas = pausas.length;
+
     // Desvíos
     const desvios = d.data.calidad_desvios;
     const tieneDesvio = Array.isArray(desvios)
@@ -877,7 +923,7 @@ function calcularKPIs(docs) {
     const fechaObj = fechaPrev ? new Date(fechaPrev+"T12:00:00") : null;
     const diaSemana = fechaObj ? fechaObj.getDay() : null;
 
-    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, rotuloTipo, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
+    return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, rotuloTipo, minutosPausados, cantidadPausas, tieneDesvio, listaDesvios, diaSemana, arriboFueAyer,
       esEfectiva, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
       cliente:    p.cliente    || "—",
       movimiento: p.movimiento || "—",
@@ -915,6 +961,73 @@ function calcularKPIs(docs) {
   renderDesvios(enriched);
   renderHorasHombre(enriched);
   renderProductividadCarga(enriched);
+  renderPausas(enriched);
+}
+
+// ── PAUSAS (TIEMPO PERDIDO) ──────────────────────────────────
+function renderPausas(docs) {
+  const validos = docs.filter(d => MOVS_VALIDOS.has(d.movimiento) && d.cantidadPausas > 0);
+  const elCount = document.getElementById("tPausasCount");
+  if(elCount) elCount.textContent = `${validos.length} movs con pausas`;
+
+  const elResumen = document.getElementById("resumenPausas");
+  if (!validos.length) {
+    elResumen.innerHTML = `<div class="empty">Sin pausas registradas para este filtro</div>`;
+    document.getElementById("tablaPausasMov").innerHTML = `<div class="empty">—</div>`;
+    document.getElementById("tablaPausasCliente").innerHTML = `<div class="empty">—</div>`;
+    return;
+  }
+
+  const totalMin = validos.reduce((s,d)=>s+d.minutosPausados,0);
+  const totalPausas = validos.reduce((s,d)=>s+d.cantidadPausas,0);
+  elResumen.innerHTML = `
+    <div style="font-size:32px;font-weight:700;font-family:var(--mono);">${fmtMin(totalMin)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">
+      ${totalPausas} pausa${totalPausas!==1?"s":""} en ${validos.length} movimiento${validos.length!==1?"s":""} ·
+      promedio ${fmtMin(Math.round(totalMin/validos.length))}/movimiento
+    </div>`;
+
+  const byMov = agrupar(validos, d=>d.movimiento);
+  const sortedMov = Object.entries(byMov).sort((a,b)=>b[1].reduce((s,d)=>s+d.minutosPausados,0)-a[1].reduce((s,d)=>s+d.minutosPausados,0));
+  let tblMov = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tipo</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">N</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Total perdido</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Prom./mov.</th>
+    </tr></thead><tbody>`;
+  for(const [mov, items] of sortedMov) {
+    const tot = items.reduce((s,d)=>s+d.minutosPausados,0);
+    tblMov += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtMin(tot)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtMin(Math.round(tot/items.length))}</td>
+    </tr>`;
+  }
+  tblMov += `</tbody></table>`;
+  document.getElementById("tablaPausasMov").innerHTML = sortedMov.length ? tblMov : `<div class="empty">Sin datos</div>`;
+
+  const byCli = agrupar(validos, d=>d.cliente);
+  const sortedCli = Object.entries(byCli).sort((a,b)=>b[1].reduce((s,d)=>s+d.minutosPausados,0)-a[1].reduce((s,d)=>s+d.minutosPausados,0));
+  let tblCli = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">N</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Total perdido</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Prom./mov.</th>
+    </tr></thead><tbody>`;
+  for(const [cli, items] of sortedCli) {
+    const tot = items.reduce((s,d)=>s+d.minutosPausados,0);
+    tblCli += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${cli}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtMin(tot)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtMin(Math.round(tot/items.length))}</td>
+    </tr>`;
+  }
+  tblCli += `</tbody></table>`;
+  document.getElementById("tablaPausasCliente").innerHTML = sortedCli.length ? tblCli : `<div class="empty">Sin datos</div>`;
 }
 
 // ── PRODUCTIVIDAD DE CARGA (CARGA EXPO) ─────────────────────────
