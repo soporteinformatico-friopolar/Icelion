@@ -1702,23 +1702,60 @@ function heatColor(count, max) {
   return `rgb(${r},${g},${b})`;
 }
 
-function renderHeatmapGrid(containerId, rowsLabels, colsLabels, matrix, rowHeaderLabel) {
-  const max = Math.max(1, ...matrix.flat());
+function renderHeatmapGrid(containerId, rowsLabels, colsLabels, matrix, rowHeaderLabel, opts={}) {
+  const relativeRowScale = opts.relativeRowScale !== false; // default: escala por fila
+  const showTotals       = opts.showTotals !== false;       // default: sí
+  const globalMax = Math.max(1, ...matrix.flat());
+  const rowMax    = matrix.map(row => Math.max(1, ...row));
+  const rowTotals = matrix.map(row => row.reduce((a,b)=>a+b,0));
+  const colTotals = colsLabels.map((_,ci) => matrix.reduce((s,row)=>s+row[ci],0));
+  const grandTotal= rowTotals.reduce((a,b)=>a+b,0);
+
   const cellW = 40;
   let html = `<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:10px;">`;
   html += `<tr><th style="padding:4px 6px;text-align:left;color:var(--muted);">${rowHeaderLabel}</th>` +
-    colsLabels.map(c=>`<th style="padding:2px 4px;color:var(--muted);font-weight:600;min-width:${cellW}px;text-align:center;">${c}</th>`).join("") + `</tr>`;
+    colsLabels.map(c=>`<th style="padding:2px 4px;color:var(--muted);font-weight:600;min-width:${cellW}px;text-align:center;">${c}</th>`).join("") +
+    (showTotals ? `<th style="padding:2px 6px;color:var(--text);font-weight:700;text-align:center;border-left:2px solid var(--border);">Total</th>` : "") +
+    `</tr>`;
   rowsLabels.forEach((rl, ri) => {
+    const maxForRow = relativeRowScale ? rowMax[ri] : globalMax;
     html += `<tr><td style="padding:4px 6px;color:var(--text);font-weight:600;white-space:nowrap;">${rl}</td>`;
     colsLabels.forEach((_, ci) => {
       const v = matrix[ri][ci];
-      const bg = heatColor(v, max);
-      html += `<td style="padding:1px;"><div title="${rl} · ${colsLabels[ci]} · ${v} mov." style="width:${cellW}px;height:26px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${v>max*0.55?'#0a0f16':'var(--muted)'};font-weight:700;">${v||""}</div></td>`;
+      const bg = heatColor(v, maxForRow);
+      html += `<td style="padding:1px;"><div title="${rl} · ${colsLabels[ci]} · ${v} mov." style="width:${cellW}px;height:26px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${v>maxForRow*0.55?'#0a0f16':'var(--muted)'};font-weight:700;">${v||""}</div></td>`;
     });
+    if (showTotals) {
+      html += `<td style="padding:1px;border-left:2px solid var(--border);"><div style="width:${cellW}px;height:26px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);">${rowTotals[ri]}</div></td>`;
+    }
     html += `</tr>`;
   });
+  if (showTotals) {
+    html += `<tr style="border-top:2px solid var(--border);"><td style="padding:4px 6px;color:var(--muted);font-weight:700;">Total</td>`;
+    colTotals.forEach(v => {
+      html += `<td style="padding:1px;"><div style="width:${cellW}px;height:22px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted);">${v}</div></td>`;
+    });
+    html += `<td style="padding:1px;border-left:2px solid var(--border);"><div style="width:${cellW}px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);">${grandTotal}</div></td>`;
+    html += `</tr>`;
+  }
   html += `</table></div>`;
   return html;
+}
+
+// Ranking horizontal simple (barras con % relativo al máximo)
+function barHorizontalHTML(data) {
+  const max = Math.max(1, ...data.map(d=>d.value));
+  return `<div style="display:flex;flex-direction:column;gap:6px;">` +
+    data.map(d => {
+      const pct = Math.round((d.value/max)*100);
+      return `<div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:80px;font-size:11px;font-weight:600;text-align:right;flex-shrink:0;">${d.label}</div>
+        <div style="flex:1;background:var(--panel3);border-radius:4px;height:16px;position:relative;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:var(--accent2);border-radius:4px;"></div>
+        </div>
+        <div style="width:32px;font-size:11px;color:var(--muted);font-family:var(--mono);flex-shrink:0;">${d.value}</div>
+      </div>`;
+    }).join("") + `</div>`;
 }
 
 function renderFlujoSemanal(docs) {
@@ -1731,8 +1768,26 @@ function renderFlujoSemanal(docs) {
   const matrix = diasNum.map(dia => horas.map(h =>
     conD.filter(d=>d.diaSemana===dia && d.horaEstBucket===h).length
   ));
-  el.innerHTML = renderHeatmapGrid("distribFlujo", diasLbl, horas.map(h=>`${h}h`), matrix, "Día \\ Hora") +
-    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–20:00) según hora planificada</div>`;
+
+  let peakVal=-1, peakDia=0, peakHora=0;
+  matrix.forEach((row,ri)=>row.forEach((v,ci)=>{ if(v>peakVal){peakVal=v;peakDia=ri;peakHora=ci;} }));
+  const totalesDia = matrix.map(row=>row.reduce((a,b)=>a+b,0));
+  const diaMasOcupadoIdx = totalesDia.indexOf(Math.max(...totalesDia));
+
+  const insight = `<div style="font-size:13px;margin-bottom:16px;padding:10px 14px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;">
+    📈 Pico de actividad: <strong>${diasLbl[peakDia]} ${horas[peakHora]}h</strong>, con ${peakVal} movimiento${peakVal!==1?"s":""} ·
+    Día más ocupado en total: <strong>${diasLbl[diaMasOcupadoIdx]}</strong> (${totalesDia[diaMasOcupadoIdx]} movimientos)
+  </div>`;
+
+  const barras = `<div style="margin-bottom:20px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Total de movimientos por día</div>
+    ${barSVGVert(diasLbl.map((d,i)=>({label:d, value:totalesDia[i]})))}
+  </div>`;
+
+  el.innerHTML = insight + barras +
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por día y hora</div>` +
+    renderHeatmapGrid("distribFlujo", diasLbl, horas.map(h=>`${h}h`), matrix, "Día \\ Hora") +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–20:00) según hora planificada · color relativo al máximo de cada día</div>`;
 }
 
 function renderOcupacionPuertas(docs) {
@@ -1744,8 +1799,38 @@ function renderOcupacionPuertas(docs) {
   const matrix = docks.map(dk => horas.map(h =>
     conD.filter(d=>String(d.dockNum)===dk && d.horaDockBucket===h).length
   ));
-  el.innerHTML = renderHeatmapGrid("distribOcupPuertas", docks.map(d=>`Dock ${d}`), horas.map(h=>`${h}h`), matrix, "Dock \\ Hora") +
-    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos con dock y horario de asignación (6:00–20:00)</div>`;
+
+  const totalesDock = matrix.map(row=>row.reduce((a,b)=>a+b,0));
+  const grandTotal  = totalesDock.reduce((a,b)=>a+b,0);
+  const maxIdx = totalesDock.indexOf(Math.max(...totalesDock));
+  const pctMax = ((totalesDock[maxIdx]/grandTotal)*100).toFixed(0);
+
+  // Docks "ociosos": números de dock dentro del rango usado que directamente no aparecen
+  const docksNumericos = docks.map(d=>parseInt(d,10)).filter(n=>!isNaN(n));
+  let ociosos = [];
+  if (docksNumericos.length) {
+    const minDock = Math.min(...docksNumericos), maxDock = Math.max(...docksNumericos);
+    for (let n=minDock; n<=maxDock; n++) if (!docks.includes(String(n))) ociosos.push(String(n));
+  }
+  // Docks presentes pero con uso mínimo (≤1 movimiento en todo el período)
+  const pocoUso = docks.filter((dk,i)=>totalesDock[i] <= 1);
+  const bajaOcupacion = [...new Set([...ociosos, ...pocoUso])].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+
+  const insight = `<div style="font-size:13px;margin-bottom:16px;padding:10px 14px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;">
+    🚪 Dock más usado: <strong>Dock ${docks[maxIdx]}</strong> (${totalesDock[maxIdx]} movimientos, ${pctMax}% del total)
+    ${bajaOcupacion.length ? `<br>⚠️ Poco o nada usados: <strong>${bajaOcupacion.map(d=>`Dock ${d}`).join(", ")}</strong> — posible capacidad ociosa` : ""}
+  </div>`;
+
+  const ranking = docks.map((dk,i)=>({label:`Dock ${dk}`, value: totalesDock[i]})).sort((a,b)=>b.value-a.value);
+  const barras = `<div style="margin-bottom:20px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Ranking de uso por dock (total del período)</div>
+    ${barHorizontalHTML(ranking)}
+  </div>`;
+
+  el.innerHTML = insight + barras +
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por dock y hora</div>` +
+    renderHeatmapGrid("distribOcupPuertas", docks.map(d=>`Dock ${d}`), horas.map(h=>`${h}h`), matrix, "Dock \\ Hora") +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos con dock y horario de asignación (6:00–20:00) · color relativo al máximo de cada dock</div>`;
 }
 
 // ── DESVÍOS ───────────────────────────────────────────────────
