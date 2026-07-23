@@ -193,6 +193,7 @@
       <button class="tab" onclick="switchTab('horasHombre',this)">Horas Hombre</button>
       <button class="tab" onclick="switchTab('productividadCarga',this)">Productividad de Carga</button>
       <button class="tab" onclick="switchTab('pausas',this)">Pausas</button>
+      <button class="tab" onclick="switchTab('documentacion',this)">Documentación</button>
     </div>
     </div>
     <div class="cat-group" data-cat="detalle" style="display:none;margin:0;">
@@ -520,6 +521,39 @@
         </div>
         <div class="section-body">
           <div id="tablaPausasDesvioSolucion"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: DOCUMENTACIÓN -->
+  <div class="tab-pane" id="tab-documentacion">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      Tiempo desde FIN MOVIMIENTO (<span class="td-mono">planillero.hora_finalizado</span>) hasta LIBERADO (<span class="td-mono">playero.hora_egreso</span>), es decir el tiempo administrativo/documentación después de terminada la carga o descarga física.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Resumen <span id="tDocCount"></span></div>
+        </div>
+        <div class="section-body">
+          <div id="resumenDocumentacion"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Por tipo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaDocumentacionMov"><div class="empty">—</div></div>
+        </div>
+      </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Detalle (mayor tiempo primero)</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaDocumentacionDetalle"><div class="empty">—</div></div>
         </div>
       </div>
     </div>
@@ -997,6 +1031,75 @@ function calcularKPIs(docs) {
   renderHorasHombre(enriched);
   renderProductividadCarga(enriched);
   renderPausas(enriched);
+  renderDocumentacion(enriched);
+}
+
+// ── DOCUMENTACIÓN (FIN MOVIMIENTO → LIBERADO) ────────────────
+function renderDocumentacion(docs) {
+  const validos = docs.filter(d => MOVS_VALIDOS.has(d.movimiento) && d.despachoMin !== null);
+  const elCount = document.getElementById("tDocCount");
+  if(elCount) elCount.textContent = `${validos.length} registros`;
+
+  const elResumen = document.getElementById("resumenDocumentacion");
+  if (!validos.length) {
+    elResumen.innerHTML = `<div class="empty">Sin datos de fin de movimiento + liberación</div>`;
+    document.getElementById("tablaDocumentacionMov").innerHTML = `<div class="empty">—</div>`;
+    document.getElementById("tablaDocumentacionDetalle").innerHTML = `<div class="empty">—</div>`;
+    return;
+  }
+
+  const totalMin = validos.reduce((s,d)=>s+d.despachoMin,0);
+  elResumen.innerHTML = `
+    <div style="display:flex;gap:28px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:32px;font-weight:700;font-family:var(--mono);">${fmtMinAbs(totalMin/validos.length)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Promedio por movimiento</div>
+      </div>
+      <div>
+        <div style="font-size:32px;font-weight:700;font-family:var(--mono);">${fmtMinAbs(totalMin)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Total acumulado</div>
+      </div>
+    </div>`;
+
+  const byMov = agrupar(validos, d=>d.movimiento);
+  const sortedMov = Object.entries(byMov).sort((a,b)=>(b[1].reduce((s,d)=>s+d.despachoMin,0)/b[1].length)-(a[1].reduce((s,d)=>s+d.despachoMin,0)/a[1].length));
+  let tblMov = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tipo</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">N</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Prom.</th>
+    </tr></thead><tbody>`;
+  for(const [mov, items] of sortedMov) {
+    const tot = items.reduce((s,d)=>s+d.despachoMin,0);
+    tblMov += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtMinAbs(tot/items.length)}</td>
+    </tr>`;
+  }
+  tblMov += `</tbody></table>`;
+  document.getElementById("tablaDocumentacionMov").innerHTML = sortedMov.length ? tblMov : `<div class="empty">Sin datos</div>`;
+
+  const sortedDetalle = [...validos].sort((a,b)=>b.despachoMin-a.despachoMin).slice(0, 30);
+  let tblDet = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Fecha</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Referencia</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Movimiento</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tiempo doc.</th>
+    </tr></thead><tbody>`;
+  sortedDetalle.forEach(d=>{
+    tblDet += `<tr>
+      <td class="td-mono" style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.fecha||"—"}</td>
+      <td class="td-mono" style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.referencia||"—"}</td>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${d.movimiento||"—"}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.cliente||"—"}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${fmtMinAbs(d.despachoMin)}</td>
+    </tr>`;
+  });
+  tblDet += `</tbody></table>`;
+  document.getElementById("tablaDocumentacionDetalle").innerHTML = sortedDetalle.length ? tblDet : `<div class="empty">Sin datos</div>`;
 }
 
 // ── PAUSAS (TIEMPO PERDIDO) ──────────────────────────────────
