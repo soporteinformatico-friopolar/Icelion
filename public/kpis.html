@@ -1726,13 +1726,13 @@ function renderHeatmapGrid(containerId, rowsLabels, colsLabels, matrix, rowHeade
   const showTotals       = opts.showTotals !== false;       // default: sí
   const showValues       = opts.showValues !== false;       // default: sí (mostrar número en la celda)
   const colorFn          = opts.colorFn || heatColor;
+  const cellW             = opts.cellW || 40;
   const globalMax = Math.max(1, ...matrix.flat());
   const rowMax    = matrix.map(row => Math.max(1, ...row));
   const rowTotals = matrix.map(row => row.reduce((a,b)=>a+b,0));
   const colTotals = colsLabels.map((_,ci) => matrix.reduce((s,row)=>s+row[ci],0));
   const grandTotal= rowTotals.reduce((a,b)=>a+b,0);
 
-  const cellW = 40;
   let html = `<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:10px;">`;
   html += `<tr><th style="padding:4px 6px;text-align:left;color:var(--muted);">${rowHeaderLabel}</th>` +
     colsLabels.map(c=>`<th style="padding:2px 4px;color:var(--muted);font-weight:600;min-width:${cellW}px;text-align:center;">${c}</th>`).join("") +
@@ -1811,21 +1811,27 @@ function renderFlujoSemanal(docs) {
     Día más ocupado en total: <strong>${diasLbl[diaMasOcupadoIdx]}</strong> (${totalesDia[diaMasOcupadoIdx]} movimientos)
   </div>`;
 
-  const barras = `<div style="margin-bottom:20px;">
+  const barras = `<div>
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Total de movimientos por día</div>
-    ${barSVGVert(diasLbl.map((d,i)=>({label:d, value:totalesDia[i]})))}
+    ${barSVGVert(diasLbl.map((d,i)=>({label:d, value:totalesDia[i]})), 320, 200)}
   </div>`;
 
-  el.innerHTML = insight + barras +
-    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora y día</div>` +
-    renderHeatmapGrid(
+  const horasDesc = [...horas].reverse(); // 17h arriba, 6h abajo
+  const heatmap = `<div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora y día</div>
+    ${renderHeatmapGrid(
       "distribFlujo",
-      horas.map(h=>`${h}h`),          // filas = hora (eje Y)
-      diasLbl,                         // columnas = día (eje X)
-      horas.map((_,hi) => diasNum.map((_,di) => matrix[di][hi])), // matriz transpuesta
+      horasDesc.map(h=>`${h}h`),       // filas = hora (eje Y), descendente: 17h arriba, 6h abajo
+      diasLbl,                          // columnas = día (eje X)
+      horasDesc.map(h => diasNum.map((_,di) => matrix[di][horas.indexOf(h)])),
       "Hora \\ Día",
-      { relativeRowScale:false, showValues:false, colorFn: heatColorSemaforo }
-    ) + leyendaSemaforo() +
+      { relativeRowScale:false, showValues:false, colorFn: heatColorSemaforo, cellW:28 }
+    )}
+    ${leyendaSemaforo()}
+  </div>`;
+
+  el.innerHTML = insight +
+    `<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">${barras}${heatmap}</div>` +
     `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–17:00) según hora planificada</div>`;
 }
 
