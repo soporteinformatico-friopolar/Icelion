@@ -1780,10 +1780,11 @@ function barHorizontalHTML(data) {
   return `<div style="display:flex;flex-direction:column;gap:6px;">` +
     data.map(d => {
       const pct = Math.round((d.value/max)*100);
+      const color = d.color || "var(--accent2)";
       return `<div style="display:flex;align-items:center;gap:8px;">
         <div style="width:80px;font-size:11px;font-weight:600;text-align:right;flex-shrink:0;">${d.label}</div>
         <div style="flex:1;background:var(--panel3);border-radius:4px;height:16px;position:relative;overflow:hidden;">
-          <div style="width:${pct}%;height:100%;background:var(--accent2);border-radius:4px;"></div>
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;"></div>
         </div>
         <div style="width:32px;font-size:11px;color:var(--muted);font-family:var(--mono);flex-shrink:0;">${d.value}</div>
       </div>`;
@@ -1889,16 +1890,21 @@ function renderOcupacionPuertas(docs) {
     ${bajaOcupacion.length ? `<br>⚠️ Poco o nada usados: <strong>${bajaOcupacion.map(d=>`Dock ${d}`).join(", ")}</strong> — posible capacidad ociosa` : ""}
   </div>`;
 
-  const ranking = docks.map((dk,i)=>({label:`Dock ${dk}`, value: totalesDock[i]})).sort((a,b)=>b.value-a.value);
-  const barras = `<div style="margin-bottom:20px;">
+  const ranking = docks.map((dk,i)=>({label:`Dock ${dk}`, value: totalesDock[i], color: PIE_COLORS[i % PIE_COLORS.length]})).sort((a,b)=>b.value-a.value);
+  const barras = `<div style="flex:1;min-width:320px;">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Ranking de uso por dock (total del período)</div>
     ${barHorizontalHTML(ranking)}
   </div>`;
 
-  el.innerHTML = insight + barras +
-    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por dock y hora</div>` +
-    renderHeatmapGrid("distribOcupPuertas", docks.map(d=>`Dock ${d}`), horas.map(h=>`${h}h`), matrix, "Dock \\ Hora") +
-    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos con dock y horario de asignación (6:00–20:00) · color relativo al máximo de cada dock</div>`;
+  const series = docks.map((dk,i) => ({ label: `Dock ${dk}`, color: PIE_COLORS[i % PIE_COLORS.length], values: matrix[i] }));
+  const detalle = `<div style="flex:1;min-width:320px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora, comparando los docks</div>
+    ${lineChartMultiSerie(horas, series, Math.max(1, ...matrix.flat()), 460, 220)}
+  </div>`;
+
+  el.innerHTML = insight +
+    `<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">${barras}${detalle}</div>` +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos con dock y horario de asignación (6:00–20:00)</div>`;
 }
 
 // ── DESVÍOS ───────────────────────────────────────────────────
