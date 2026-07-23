@@ -1818,13 +1818,13 @@ function renderFlujoSemanal(docs) {
 
   const maxCelda = Math.max(1, ...matrix.flat());
   const series = diasLbl.map((dl,di) => ({ label: dl, color: PIE_COLORS[di % PIE_COLORS.length], values: matrix[di] }));
-  const detalle = `<div>
+  const detalle = `<div style="flex:1;min-width:420px;">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora, comparando los 5 días</div>
-    ${lineChartMultiSerie(horas, series, maxCelda)}
+    ${lineChartMultiSerie(horas, series, maxCelda, 460, 220)}
   </div>`;
 
-  el.innerHTML = insight + barras +
-    `<div style="margin-top:20px;">${detalle}</div>` +
+  el.innerHTML = insight +
+    `<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">${barras}${detalle}</div>` +
     `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–17:00) según hora planificada</div>`;
 }
 
