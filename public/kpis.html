@@ -161,39 +161,48 @@
     <div class="filtros-group" style="max-width:340px;">
       <label>Categoría de KPI</label>
       <select class="form-input" id="catSelector" onchange="switchCat(this.value)">
+        <option value="productividad">Indicadores de Productividad</option>
         <option value="servicio">Nivel de Servicio y Cumplimiento</option>
+        <option value="costos">Costos Ocultos y Calidad del Proceso</option>
         <option value="planificacion">Planificación Efectiva</option>
-        <option value="costos">Costos Ocultos y Calidad</option>
         <option value="detalle">Detalle</option>
       </select>
     </div>
 
-    <div class="cat-group" data-cat="servicio" style="margin:0;">
+    <div class="cat-group" data-cat="productividad" style="margin:0;">
+    <div class="tabs-group-label" style="margin:0 0 6px;">Indicadores de Productividad</div>
+    <div class="tabs" style="margin-bottom:0;">
+      <button class="tab active" onclick="switchTab('productividadCarga',this)">Rendimiento de Carga/Descarga</button>
+      <button class="tab" onclick="switchTab('tiempoMov',this)">Tiempo Promedio de Operación</button>
+    </div>
+    </div>
+    <div class="cat-group" data-cat="servicio" style="display:none;margin:0;">
     <div class="tabs-group-label" style="margin:0 0 6px;">Nivel de Servicio y Cumplimiento</div>
     <div class="tabs" style="margin-bottom:0;">
-      <button class="tab active" onclick="switchTab('puntualidad',this)">Puntualidad</button>
-      <button class="tab" onclick="switchTab('permanencia',this)">Permanencia</button>
+      <button class="tab active" onclick="switchTab('puntualidad',this)">Puntualidad de Transporte</button>
+      <button class="tab" onclick="switchTab('permanencia',this)">Tiempo de Permanencia en Planta</button>
+      <button class="tab" onclick="switchTab('documentacion',this)">Tiempo de Documentación</button>
       <button class="tab" onclick="switchTab('porCliente',this)">Por cliente</button>
       <button class="tab" onclick="switchTab('porTransporte',this)">Por transporte</button>
+    </div>
+    </div>
+    <div class="cat-group" data-cat="costos" style="display:none;margin:0;">
+    <div class="tabs-group-label" style="margin:0 0 6px;">Costos Ocultos y Calidad del Proceso</div>
+    <div class="tabs" style="margin-bottom:0;">
+      <button class="tab active" onclick="switchTab('impactoTiemposMuertos',this)">Impacto de Tiempos Muertos</button>
+      <button class="tab" onclick="switchTab('frecuenciaDesvioCliente',this)">Frecuencia de Desvío por Cliente</button>
+      <button class="tab" onclick="switchTab('tasaReincidencia',this)">Tasa de Reincidencia de Desvío</button>
+      <button class="tab" onclick="switchTab('desvios',this)">Desvíos por Tipo</button>
+      <button class="tab" onclick="switchTab('horasHombre',this)">Horas Hombre</button>
+      <button class="tab" onclick="switchTab('pausas',this)">Pausas</button>
     </div>
     </div>
     <div class="cat-group" data-cat="planificacion" style="display:none;margin:0;">
     <div class="tabs-group-label" style="margin:0 0 6px;">Planificación Efectiva</div>
     <div class="tabs" style="margin-bottom:0;">
       <button class="tab active" onclick="switchTab('planificacion',this)">Planificación efectiva</button>
-      <button class="tab" onclick="switchTab('tiempoMov',this)">Tiempo mov.</button>
       <button class="tab" onclick="switchTab('flujoSemanal',this)">Flujo semanal</button>
       <button class="tab" onclick="switchTab('ocupacionPuertas',this)">Ocupación de puertas</button>
-    </div>
-    </div>
-    <div class="cat-group" data-cat="costos" style="display:none;margin:0;">
-    <div class="tabs-group-label" style="margin:0 0 6px;">Costos Ocultos y Calidad del Proceso</div>
-    <div class="tabs" style="margin-bottom:0;">
-      <button class="tab active" onclick="switchTab('desvios',this)">Desvíos</button>
-      <button class="tab" onclick="switchTab('horasHombre',this)">Horas Hombre</button>
-      <button class="tab" onclick="switchTab('productividadCarga',this)">Productividad de Carga</button>
-      <button class="tab" onclick="switchTab('pausas',this)">Pausas</button>
-      <button class="tab" onclick="switchTab('documentacion',this)">Documentación</button>
     </div>
     </div>
     <div class="cat-group" data-cat="detalle" style="display:none;margin:0;">
@@ -245,7 +254,7 @@
   </div>
 
   <!-- TAB: PUNTUALIDAD -->
-  <div class="tab-pane active" id="tab-puntualidad">
+  <div class="tab-pane" id="tab-puntualidad">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div class="section">
         <div class="section-header">
@@ -416,6 +425,79 @@
     </div>
   </div>
 
+  <!-- TAB: IMPACTO DE TIEMPOS MUERTOS -->
+  <div class="tab-pane" id="tab-impactoTiemposMuertos">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      Mide qué porcentaje del tiempo total del movimiento (desde <span class="td-mono">hora_inicio</span> hasta <span class="td-mono">hora_finalizado</span>) estuvo parado por una pausa. A diferencia del tab "Pausas" (que suma minutos absolutos), esto muestra el <strong>impacto relativo</strong>: un movimiento corto con una pausa larga pesa más que uno largo con una pausa corta.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Impacto promedio <span id="tImpactoCount"></span></div>
+        </div>
+        <div class="section-body">
+          <div id="resumenImpacto"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Por tipo de movimiento</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaImpactoMov"><div class="empty">—</div></div>
+        </div>
+      </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Movimientos más afectados (mayor % primero)</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaImpactoDetalle"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: FRECUENCIA DE DESVÍO POR CLIENTE -->
+  <div class="tab-pane" id="tab-frecuenciaDesvioCliente">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      Para cada cliente: cuántos de sus movimientos tuvieron al menos un desvío, sobre el total de movimientos de ese cliente en el período.
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Frecuencia de desvío por cliente <span id="tFrecDesvCount"></span></div>
+      </div>
+      <div class="section-body">
+        <div id="tablaFrecuenciaDesvioCliente"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: TASA DE REINCIDENCIA DE DESVÍO -->
+  <div class="tab-pane" id="tab-tasaReincidencia">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      % de clientes con al menos un desvío que tuvieron desvío en <strong>más de un</strong> movimiento (sea del tipo que sea) — es decir, clientes que repiten problema, no un caso aislado.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Tasa de reincidencia</div>
+        </div>
+        <div class="section-body">
+          <div id="resumenReincidencia"><div class="empty">Aplicá filtros y hacé click en Calcular.</div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Clientes reincidentes</div>
+        </div>
+        <div class="section-body">
+          <div id="tablaReincidencia"><div class="empty">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB: HORAS HOMBRE -->
   <div class="tab-pane" id="tab-horasHombre">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -447,7 +529,7 @@
   </div>
 
   <!-- TAB: PRODUCTIVIDAD DE CARGA -->
-  <div class="tab-pane" id="tab-productividadCarga">
+  <div class="tab-pane active" id="tab-productividadCarga">
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
       Analiza CARGA EXPO: relaciona cajas cargadas, tiempo de movimiento y operarios asignados, diferenciando PISO vs PALLET, para ver si sumar operarios rinde proporcionalmente o hay rendimientos decrecientes.
     </div>
@@ -1028,6 +1110,9 @@ function calcularKPIs(docs) {
   renderFlujoSemanal(enriched);
   renderOcupacionPuertas(enriched);
   renderDesvios(enriched);
+  renderImpactoTiemposMuertos(enriched);
+  renderFrecuenciaDesvioCliente(enriched);
+  renderTasaReincidencia(enriched);
   renderHorasHombre(enriched);
   renderProductividadCarga(enriched);
   renderPausas(enriched);
@@ -1720,7 +1805,151 @@ function renderDesvios(docs) {
     `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${total} desvíos registrados${fMov?` · Movimiento: ${fMov}`:""}${fCli?` · Cliente: ${fCli}`:""}${restoTotal>0?` · mostrando top 10, ${resto.length} tipos agrupados en "Otros"`:""}</div>`;
 }
 
-// ── CATEGORÍAS ────────────────────────────────────────────────
+// ── IMPACTO DE TIEMPOS MUERTOS ───────────────────────────────
+// % del tiempo total del movimiento (inicio→fin) que estuvo pausado.
+function renderImpactoTiemposMuertos(docs) {
+  const validos = docs.filter(d =>
+    MOVS_VALIDOS.has(d.movimiento) && d.cantidadPausas > 0 && d.tiempoMov && d.tiempoMov > 0
+  );
+  const elCount = document.getElementById("tImpactoCount");
+  if(elCount) elCount.textContent = `${validos.length} movs con pausas`;
+
+  const elResumen = document.getElementById("resumenImpacto");
+  if (!validos.length) {
+    elResumen.innerHTML = `<div class="empty">Sin movimientos con pausas y tiempo de movimiento en este filtro</div>`;
+    document.getElementById("tablaImpactoMov").innerHTML = `<div class="empty">—</div>`;
+    document.getElementById("tablaImpactoDetalle").innerHTML = `<div class="empty">—</div>`;
+    return;
+  }
+
+  const conImpacto = validos.map(d => ({ ...d, impactoPct: Math.min(100, (d.minutosPausados / d.tiempoMov) * 100) }));
+  const avgImpacto = conImpacto.reduce((s,d)=>s+d.impactoPct,0) / conImpacto.length;
+  elResumen.innerHTML = `
+    <div style="font-size:32px;font-weight:700;font-family:var(--mono);">${avgImpacto.toFixed(1)}%</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;">del tiempo total del movimiento se pierde en pausas, en promedio</div>`;
+
+  const byMov = agrupar(conImpacto, d=>d.movimiento);
+  const sortedMov = Object.entries(byMov).sort((a,b)=>(b[1].reduce((s,d)=>s+d.impactoPct,0)/b[1].length)-(a[1].reduce((s,d)=>s+d.impactoPct,0)/a[1].length));
+  let tblMov = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tipo</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">N</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Impacto prom.</th>
+    </tr></thead><tbody>`;
+  for(const [mov, items] of sortedMov) {
+    const avg = items.reduce((s,d)=>s+d.impactoPct,0)/items.length;
+    tblMov += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${items.length}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${avg.toFixed(1)}%</td>
+    </tr>`;
+  }
+  tblMov += `</tbody></table>`;
+  document.getElementById("tablaImpactoMov").innerHTML = sortedMov.length ? tblMov : `<div class="empty">Sin datos</div>`;
+
+  const sortedDetalle = [...conImpacto].sort((a,b)=>b.impactoPct-a.impactoPct).slice(0, 30);
+  let tblDet = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Fecha</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Referencia</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Movimiento</th>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Tiempo total</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Pausado</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Impacto</th>
+    </tr></thead><tbody>`;
+  sortedDetalle.forEach(d=>{
+    tblDet += `<tr>
+      <td class="td-mono" style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.fecha||"—"}</td>
+      <td class="td-mono" style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.referencia||"—"}</td>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${d.movimiento||"—"}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">${d.cliente||"—"}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtMinAbs(d.tiempoMov)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtMinAbs(d.minutosPausados)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${d.impactoPct.toFixed(1)}%</td>
+    </tr>`;
+  });
+  tblDet += `</tbody></table>`;
+  document.getElementById("tablaImpactoDetalle").innerHTML = sortedDetalle.length ? tblDet : `<div class="empty">Sin datos</div>`;
+}
+
+// ── FRECUENCIA DE DESVÍO POR CLIENTE ─────────────────────────
+function renderFrecuenciaDesvioCliente(docs) {
+  const elCount = document.getElementById("tFrecDesvCount");
+  const byCli = agrupar(docs.filter(d=>d.cliente), d=>d.cliente);
+  const filas = Object.entries(byCli).map(([cli, items]) => {
+    const conDesvio = items.filter(d=>d.tieneDesvio).length;
+    return { cli, total: items.length, conDesvio, pct: items.length ? (conDesvio/items.length)*100 : 0 };
+  }).filter(f => f.conDesvio > 0)
+    .sort((a,b)=>b.pct-a.pct);
+
+  if(elCount) elCount.textContent = `${filas.length} clientes con desvíos`;
+
+  if (!filas.length) {
+    document.getElementById("tablaFrecuenciaDesvioCliente").innerHTML = `<div class="empty">Sin desvíos registrados para este filtro</div>`;
+    return;
+  }
+
+  let tbl = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Movimientos totales</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Con desvío</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Frecuencia</th>
+    </tr></thead><tbody>`;
+  filas.forEach(f=>{
+    tbl += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${f.cli}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${f.total}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${f.conDesvio}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${f.pct.toFixed(1)}%</td>
+    </tr>`;
+  });
+  tbl += `</tbody></table>`;
+  document.getElementById("tablaFrecuenciaDesvioCliente").innerHTML = tbl;
+}
+
+// ── TASA DE REINCIDENCIA DE DESVÍO ───────────────────────────
+// % de clientes con desvío que repiten en MÁS DE UN movimiento (sea cual sea el tipo de desvío)
+function renderTasaReincidencia(docs) {
+  const byCli = agrupar(docs.filter(d=>d.cliente), d=>d.cliente);
+  const clientesConDesvio = Object.entries(byCli)
+    .map(([cli, items]) => ({ cli, movsConDesvio: items.filter(d=>d.tieneDesvio).length }))
+    .filter(f => f.movsConDesvio > 0);
+
+  const elResumen = document.getElementById("resumenReincidencia");
+  if (!clientesConDesvio.length) {
+    elResumen.innerHTML = `<div class="empty">Sin desvíos registrados para este filtro</div>`;
+    document.getElementById("tablaReincidencia").innerHTML = `<div class="empty">—</div>`;
+    return;
+  }
+
+  const reincidentes = clientesConDesvio.filter(f=>f.movsConDesvio > 1);
+  const tasa = (reincidentes.length / clientesConDesvio.length) * 100;
+
+  elResumen.innerHTML = `
+    <div style="font-size:32px;font-weight:700;font-family:var(--mono);">${tasa.toFixed(1)}%</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+      ${reincidentes.length} de ${clientesConDesvio.length} clientes con desvío repitieron en más de un movimiento
+    </div>`;
+
+  const sorted = [...reincidentes].sort((a,b)=>b.movsConDesvio-a.movsConDesvio);
+  let tbl = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Cliente</th>
+      <th style="text-align:right;padding:6px 8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);">Movimientos con desvío</th>
+    </tr></thead><tbody>`;
+  sorted.forEach(f=>{
+    tbl += `<tr>
+      <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${f.cli}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${f.movsConDesvio}</td>
+    </tr>`;
+  });
+  tbl += `</tbody></table>`;
+  document.getElementById("tablaReincidencia").innerHTML = sorted.length ? tbl : `<div class="empty">Sin clientes reincidentes</div>`;
+}
+
+
 window.switchCat = function(name) {
   document.querySelectorAll(".cat-group").forEach(g=>{
     g.style.display = (g.dataset.cat === name) ? "" : "none";
