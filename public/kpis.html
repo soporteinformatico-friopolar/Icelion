@@ -182,8 +182,6 @@
       <button class="tab active" onclick="switchTab('puntualidad',this)">Puntualidad de Transporte</button>
       <button class="tab" onclick="switchTab('permanencia',this)">Tiempo de Permanencia en Planta</button>
       <button class="tab" onclick="switchTab('documentacion',this)">Tiempo de Documentación</button>
-      <button class="tab" onclick="switchTab('porCliente',this)">Por cliente</button>
-      <button class="tab" onclick="switchTab('porTransporte',this)">Por transporte</button>
     </div>
     </div>
     <div class="cat-group" data-cat="costos" style="display:none;margin:0;">
@@ -272,6 +270,42 @@
           <div id="tablaPuntMov"><div class="empty">—</div></div>
         </div>
       </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Puntualidad y permanencia por cliente</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Cliente</th>
+              <th class="td-right">Movimientos</th>
+              <th class="td-right">A tiempo</th>
+              <th class="td-right">% Puntualidad</th>
+              <th class="td-right">Demora prom.</th>
+              <th class="td-right">Permanencia prom.</th>
+            </tr></thead>
+            <tbody id="tbodyCliente"><tr><td colspan="6" class="empty">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="section" style="grid-column:1 / -1;">
+        <div class="section-header">
+          <div class="section-title">Puntualidad y permanencia por transporte</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Transporte</th>
+              <th class="td-right">Movimientos</th>
+              <th class="td-right">A tiempo</th>
+              <th class="td-right">% Puntualidad</th>
+              <th class="td-right">Demora prom.</th>
+              <th class="td-right">Permanencia prom.</th>
+            </tr></thead>
+            <tbody id="tbodyTransporte"><tr><td colspan="6" class="empty">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -315,50 +349,6 @@
         <div class="section-body">
           <div id="tablaTiempoMov"><div class="empty">—</div></div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB: POR CLIENTE -->
-  <div class="tab-pane" id="tab-porCliente">
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Puntualidad y permanencia por cliente</div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Cliente</th>
-            <th class="td-right">Movimientos</th>
-            <th class="td-right">A tiempo</th>
-            <th class="td-right">% Puntualidad</th>
-            <th class="td-right">Demora prom.</th>
-            <th class="td-right">Permanencia prom.</th>
-          </tr></thead>
-          <tbody id="tbodyCliente"><tr><td colspan="6" class="empty">—</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB: POR TRANSPORTE -->
-  <div class="tab-pane" id="tab-porTransporte">
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Puntualidad y permanencia por transporte</div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            <th>Transporte</th>
-            <th class="td-right">Movimientos</th>
-            <th class="td-right">A tiempo</th>
-            <th class="td-right">% Puntualidad</th>
-            <th class="td-right">Demora prom.</th>
-            <th class="td-right">Permanencia prom.</th>
-          </tr></thead>
-          <tbody id="tbodyTransporte"><tr><td colspan="6" class="empty">—</td></tr></tbody>
-        </table>
       </div>
     </div>
   </div>
