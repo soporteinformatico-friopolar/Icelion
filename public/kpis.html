@@ -1702,9 +1702,30 @@ function heatColor(count, max) {
   return `rgb(${r},${g},${b})`;
 }
 
+// Escala tipo semáforo: verde (bajo) → amarillo (medio) → rojo (alto)
+function heatColorSemaforo(count, max) {
+  if(!count) return "var(--panel3)";
+  const pct = max ? count/max : 0;
+  let r, g, b=60;
+  if (pct <= 0.5) {
+    // verde -> amarillo
+    const t = pct / 0.5;
+    r = Math.round(74  + t*(250-74));
+    g = Math.round(222 + t*(204-222));
+  } else {
+    // amarillo -> rojo
+    const t = (pct-0.5) / 0.5;
+    r = Math.round(250 + t*(248-250));
+    g = Math.round(204 + t*(113-204));
+  }
+  return `rgb(${r},${g},${b})`;
+}
+
 function renderHeatmapGrid(containerId, rowsLabels, colsLabels, matrix, rowHeaderLabel, opts={}) {
   const relativeRowScale = opts.relativeRowScale !== false; // default: escala por fila
   const showTotals       = opts.showTotals !== false;       // default: sí
+  const showValues       = opts.showValues !== false;       // default: sí (mostrar número en la celda)
+  const colorFn          = opts.colorFn || heatColor;
   const globalMax = Math.max(1, ...matrix.flat());
   const rowMax    = matrix.map(row => Math.max(1, ...row));
   const rowTotals = matrix.map(row => row.reduce((a,b)=>a+b,0));
@@ -1722,8 +1743,8 @@ function renderHeatmapGrid(containerId, rowsLabels, colsLabels, matrix, rowHeade
     html += `<tr><td style="padding:4px 6px;color:var(--text);font-weight:600;white-space:nowrap;">${rl}</td>`;
     colsLabels.forEach((_, ci) => {
       const v = matrix[ri][ci];
-      const bg = heatColor(v, maxForRow);
-      html += `<td style="padding:1px;"><div title="${rl} · ${colsLabels[ci]} · ${v} mov." style="width:${cellW}px;height:26px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${v>maxForRow*0.55?'#0a0f16':'var(--muted)'};font-weight:700;">${v||""}</div></td>`;
+      const bg = colorFn(v, maxForRow);
+      html += `<td style="padding:1px;"><div title="${rl} · ${colsLabels[ci]} · ${v} mov." style="width:${cellW}px;height:26px;background:${bg};border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:${v>maxForRow*0.55?'#0a0f16':'var(--muted)'};font-weight:700;">${showValues ? (v||"") : ""}</div></td>`;
     });
     if (showTotals) {
       html += `<td style="padding:1px;border-left:2px solid var(--border);"><div style="width:${cellW}px;height:26px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);">${rowTotals[ri]}</div></td>`;
@@ -1740,6 +1761,17 @@ function renderHeatmapGrid(containerId, rowsLabels, colsLabels, matrix, rowHeade
   }
   html += `</table></div>`;
   return html;
+}
+
+// Referencia de escala verde→amarillo→rojo, para heatmaps sin números
+function leyendaSemaforo() {
+  return `<div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:10px;color:var(--muted);">
+    <span>Menos movimientos</span>
+    <div style="display:flex;height:10px;width:140px;border-radius:4px;overflow:hidden;">
+      ${Array.from({length:20},(_,i)=>i/19).map(t=>`<div style="flex:1;background:${heatColorSemaforo(t||0.001,1)};"></div>`).join("")}
+    </div>
+    <span>Más movimientos</span>
+  </div>`;
 }
 
 // Ranking horizontal simple (barras con % relativo al máximo)
@@ -1760,11 +1792,11 @@ function barHorizontalHTML(data) {
 
 function renderFlujoSemanal(docs) {
   const el = document.getElementById("distribFlujo");
-  const conD = docs.filter(d=>d.diaSemana!==null && d.horaEstBucket!==null && d.horaEstBucket>=6 && d.horaEstBucket<=20);
+  const conD = docs.filter(d=>d.diaSemana!==null && d.horaEstBucket!==null && d.horaEstBucket>=6 && d.horaEstBucket<=17);
   if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos de hora planificada</div>`; return; }
   const diasLbl = ["Lun","Mar","Mié","Jue","Vie"];
   const diasNum = [1,2,3,4,5];
-  const horas = Array.from({length:15}, (_,i)=>6+i); // 6..20
+  const horas = Array.from({length:12}, (_,i)=>6+i); // 6..17
   const matrix = diasNum.map(dia => horas.map(h =>
     conD.filter(d=>d.diaSemana===dia && d.horaEstBucket===h).length
   ));
@@ -1785,9 +1817,16 @@ function renderFlujoSemanal(docs) {
   </div>`;
 
   el.innerHTML = insight + barras +
-    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por día y hora</div>` +
-    renderHeatmapGrid("distribFlujo", diasLbl, horas.map(h=>`${h}h`), matrix, "Día \\ Hora") +
-    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–20:00) según hora planificada · color relativo al máximo de cada día</div>`;
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora y día</div>` +
+    renderHeatmapGrid(
+      "distribFlujo",
+      horas.map(h=>`${h}h`),          // filas = hora (eje Y)
+      diasLbl,                         // columnas = día (eje X)
+      horas.map((_,hi) => diasNum.map((_,di) => matrix[di][hi])), // matriz transpuesta
+      "Hora \\ Día",
+      { relativeRowScale:false, showValues:false, colorFn: heatColorSemaforo }
+    ) + leyendaSemaforo() +
+    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–17:00) según hora planificada</div>`;
 }
 
 function renderOcupacionPuertas(docs) {
