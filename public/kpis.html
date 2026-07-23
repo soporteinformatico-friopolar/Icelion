@@ -1816,23 +1816,42 @@ function renderFlujoSemanal(docs) {
     ${barSVGVert(diasLbl.map((d,i)=>({label:d, value:totalesDia[i]})), 320, 200)}
   </div>`;
 
-  const horasDesc = [...horas].reverse(); // 17h arriba, 6h abajo
-  const heatmap = `<div>
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora y día</div>
-    ${renderHeatmapGrid(
-      "distribFlujo",
-      horasDesc.map(h=>`${h}h`),       // filas = hora (eje Y), descendente: 17h arriba, 6h abajo
-      diasLbl,                          // columnas = día (eje X)
-      horasDesc.map(h => diasNum.map((_,di) => matrix[di][horas.indexOf(h)])),
-      "Hora \\ Día",
-      { relativeRowScale:false, showValues:false, colorFn: heatColorSemaforo, cellW:28 }
-    )}
-    ${leyendaSemaforo()}
+  const maxCelda = Math.max(1, ...matrix.flat());
+  const miniCharts = diasLbl.map((dl,di) => `
+    <div style="text-align:center;">
+      <div style="font-size:11px;font-weight:700;margin-bottom:4px;">${dl}</div>
+      ${miniBarChartHoraDia(horas, matrix[di], maxCelda)}
+    </div>`).join("");
+  const detalle = `<div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora, día por día (misma escala)</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">${miniCharts}</div>
   </div>`;
 
-  el.innerHTML = insight +
-    `<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">${barras}${heatmap}</div>` +
+  el.innerHTML = insight + barras +
+    `<div style="margin-top:20px;">${detalle}</div>` +
     `<div style="font-size:11px;color:var(--muted);margin-top:8px;">${conD.length} movimientos (lunes a viernes, 6:00–17:00) según hora planificada</div>`;
+}
+
+// Mini gráfico de barras (una serie de horas) para "small multiples" por día
+function miniBarChartHoraDia(horas, valores, max, width=170, height=140) {
+  const chartH = height - 26;
+  const barSlot = width / horas.length;
+  const barW = Math.max(4, barSlot - 3);
+  let bars = "";
+  horas.forEach((h,i) => {
+    const v = valores[i] || 0;
+    const x = i * barSlot;
+    const hgt = max ? (v/max)*chartH : 0;
+    const y = chartH - hgt;
+    bars += `<rect x="${x + (barSlot-barW)/2}" y="${y}" width="${barW}" height="${Math.max(hgt,0.5)}" fill="var(--accent2)" rx="2"/>`;
+    if (v>0) bars += `<text x="${x+barSlot/2}" y="${y-3}" text-anchor="middle" font-size="8" fill="var(--text)" font-family="var(--mono)">${v}</text>`;
+    const mostrarLabel = (h % 3 === 0);
+    if (mostrarLabel) bars += `<text x="${x+barSlot/2}" y="${chartH+13}" text-anchor="middle" font-size="8" fill="var(--muted)">${h}h</text>`;
+  });
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <line x1="0" y1="${chartH}" x2="${width}" y2="${chartH}" stroke="var(--border)" stroke-width="1"/>
+    ${bars}
+  </svg>`;
 }
 
 function renderOcupacionPuertas(docs) {
