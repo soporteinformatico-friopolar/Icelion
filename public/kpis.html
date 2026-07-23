@@ -1811,14 +1811,14 @@ function renderFlujoSemanal(docs) {
     Día más ocupado en total: <strong>${diasLbl[diaMasOcupadoIdx]}</strong> (${totalesDia[diaMasOcupadoIdx]} movimientos)
   </div>`;
 
-  const barras = `<div>
+  const barras = `<div style="flex:1;min-width:320px;">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Total de movimientos por día</div>
-    ${barSVGVert(diasLbl.map((d,i)=>({label:d, value:totalesDia[i]})), 320, 200)}
+    ${barSVGVert(diasLbl.map((d,i)=>({label:d, value:totalesDia[i]})), 460, 220)}
   </div>`;
 
   const maxCelda = Math.max(1, ...matrix.flat());
   const series = diasLbl.map((dl,di) => ({ label: dl, color: PIE_COLORS[di % PIE_COLORS.length], values: matrix[di] }));
-  const detalle = `<div style="flex:1;min-width:420px;">
+  const detalle = `<div style="flex:1;min-width:320px;">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">Detalle por hora, comparando los 5 días</div>
     ${lineChartMultiSerie(horas, series, maxCelda, 460, 220)}
   </div>`;
@@ -1852,10 +1852,7 @@ function lineChartMultiSerie(horas, series, maxVal, width=760, height=260) {
     return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>${circles}`;
   }).join("");
 
-  const legend = series.map(s => `
-    <span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:11px;">
-      <span style="width:10px;height:10px;border-radius:50%;background:${s.color};display:inline-block;"></span>${s.label}
-    </span>`).join("");
+  const legend = "";
 
   return `<svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}">${grid}${ejeX}${lineas}</svg>
     <div style="margin-top:6px;">${legend}</div>`;
