@@ -434,7 +434,7 @@
           <div id="tablaHorasHombreMov"><div class="empty">—</div></div>
         </div>
       </div>
-      <div class="section" style="grid-column:1 / -1;">
+      <div class="section">
         <div class="section-header">
           <div class="section-title">Por cliente</div>
         </div>
@@ -762,6 +762,12 @@ function fmtMinAbs(m) {
   const abs = Math.abs(Math.round(m));
   const h = Math.floor(abs / 60), min = abs % 60;
   return h > 0 ? `${h}h ${min}m` : `${min}m`;
+}
+
+// Convierte horas decimales (ej. 3.5) a formato "3h 30m"
+function fmtHoras(h) {
+  if(h === null || h === undefined || isNaN(h)) return "—";
+  return fmtMinAbs(h * 60);
 }
 
 function badgePunt(diffMin) {
@@ -1125,7 +1131,7 @@ function tablaProdHTML(stats) {
       <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${s.op}</td>
       <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${s.n}</td>
       <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${s.avgCajas.toFixed(0)}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${s.avgHoras.toFixed(2)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtHoras(s.avgHoras)}</td>
       <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${s.avgCxH.toFixed(1)}</td>
       <td style="text-align:right;padding:6px 8px;font-family:var(--mono);font-weight:700;border-bottom:1px solid var(--border);">${s.avgCxHH.toFixed(1)}</td>
     </tr>`;
@@ -1202,8 +1208,16 @@ function renderHorasHombre(docs) {
 
   const elResumen = document.getElementById("resumenHorasHombre");
   elResumen.innerHTML = validos.length
-    ? `<div style="font-size:32px;font-weight:700;font-family:var(--mono);">${totalHH.toFixed(1)} hs</div>
-       <div style="font-size:12px;color:var(--muted);margin-top:4px;">promedio ${(totalHH/validos.length).toFixed(2)} hs/movimiento</div>`
+    ? `<div style="display:flex;gap:28px;flex-wrap:wrap;">
+         <div>
+           <div style="font-size:32px;font-weight:700;font-family:var(--mono);">${fmtHoras(totalHH)}</div>
+           <div style="font-size:11px;color:var(--muted);margin-top:2px;">Total horas hombre acumuladas</div>
+         </div>
+         <div>
+           <div style="font-size:32px;font-weight:700;font-family:var(--mono);">${fmtHoras(totalHH/validos.length)}</div>
+           <div style="font-size:11px;color:var(--muted);margin-top:2px;">Promedio hs/movimiento</div>
+         </div>
+       </div>`
     : `<div class="empty">Sin datos de tiempo de movimiento + operarios</div>`;
 
   // Por tipo de movimiento
@@ -1219,8 +1233,8 @@ function renderHorasHombre(docs) {
     const tot = items.reduce((s,d)=>s+d.horasHombre,0);
     tblMov += `<tr>
       <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${mov}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${tot.toFixed(1)}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${(tot/items.length).toFixed(2)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtHoras(tot)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border);">${fmtHoras(tot/items.length)}</td>
     </tr>`;
   }
   tblMov += `</tbody></table>`;
@@ -1238,7 +1252,7 @@ function renderHorasHombre(docs) {
     const tot = items.reduce((s,d)=>s+d.horasHombre,0);
     tblCli += `<tr>
       <td style="padding:6px 8px;font-weight:600;border-bottom:1px solid var(--border);">${cli}</td>
-      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${tot.toFixed(1)}</td>
+      <td style="text-align:right;padding:6px 8px;font-family:var(--mono);border-bottom:1px solid var(--border);">${fmtHoras(tot)}</td>
     </tr>`;
   }
   tblCli += `</tbody></table>`;
