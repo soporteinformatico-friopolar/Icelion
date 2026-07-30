@@ -518,6 +518,15 @@
       <div class="form-grid">
         <div class="form-group"><label class="form-label">Cliente</label>
           <input type="text" class="form-input caps" id="fCliente" list="clienteList" placeholder="Nombre del cliente" autocomplete="off"></div>
+        <div class="form-group">
+          <label class="form-label">&nbsp;</label>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="estimarTiempoYOperarios()" style="width:100%;">⏱️ Estimar tiempo y operarios</button>
+        </div>
+        <div class="form-group span-all" id="cajaEstimador" style="display:none;">
+          <div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;">
+            <div id="estimadorContenido">—</div>
+          </div>
+        </div>
         <div class="form-group"><label class="form-label">Transporte</label>
           <input type="text" class="form-input caps" id="fTransporte"></div>
         <div class="form-group"><label class="form-label">Destino</label>
@@ -2495,6 +2504,104 @@ window.abrirReprogramar = function(id) {
 window.cerrarReprogramar = function() {
   document.getElementById("modalReprogramar").classList.add("hidden");
   reprIdActual = null;
+};
+
+// ── ESTIMADOR DE TIEMPO Y OPERARIOS ────────────────────────────
+// Busca movimientos históricos con el mismo Movimiento + Cliente, calcula
+// el tiempo promedio (hora_inicio → hora_finalizado) y sugiere la cantidad
+// de operarios que históricamente dio mejor rendimiento (cajas/hora-hombre).
+function difMinCiclo(a, b) {
+  const [ha,ma] = (a||"").split(":").map(Number);
+  const [hb,mb] = (b||"").split(":").map(Number);
+  if (isNaN(ha)||isNaN(ma)||isNaN(hb)||isNaN(mb)) return null;
+  let diff = (hb*60+mb) - (ha*60+ma);
+  if (diff < 0) diff += 1440; // cruzó medianoche
+  return diff;
+}
+function fmtMinEstim(m) {
+  if (m===null || isNaN(m)) return "—";
+  const abs = Math.round(m);
+  const h = Math.floor(abs/60), min = abs%60;
+  return h>0 ? `${h}h ${min}m` : `${min}m`;
+}
+
+window.estimarTiempoYOperarios = async function() {
+  const mov = document.getElementById("fMovimiento").value;
+  const cli = document.getElementById("fCliente").value.trim();
+  const caja = document.getElementById("cajaEstimador");
+  const cont = document.getElementById("estimadorContenido");
+
+  if (!mov || !cli) {
+    toast("err","Error","Elegí Movimiento y Cliente antes de estimar");
+    return;
+  }
+
+  caja.style.display = "";
+  cont.innerHTML = `<span class="spinner"></span> Buscando movimientos similares...`;
+
+  try {
+    const snap = await getDocs(query(
+      collection(db, COL),
+      where("planificacion.movimiento", "==", mov),
+      where("planificacion.cliente",    "==", cli),
+      orderBy("planificacion.fecha_prevista", "desc"),
+      limit(150)
+    ));
+
+    const docs = snap.docs.map(d => d.data());
+
+    // Tiempo de movimiento: hora_inicio → hora_finalizado
+    const conTiempo = docs
+      .map(d => ({
+        tiempoMov: difMinCiclo((d.planillero||{}).hora_inicio, (d.planillero||{}).hora_finalizado),
+        operarios: Number((d.planillero||{}).cantidad_operarios) || null,
+        cajas: (Array.isArray(d.detalles) ? d.detalles : [])
+          .filter(x => /caja/i.test(x.unidad||""))
+          .reduce((s,x)=>s+(parseFloat(x.cantidad)||0),0) || null
+      }))
+      .filter(d => d.tiempoMov !== null && d.tiempoMov > 0);
+
+    if (!conTiempo.length) {
+      cont.innerHTML = `Sin movimientos históricos de <strong>${mov}</strong> para <strong>${cli}</strong> con datos de tiempo. No se puede estimar todavía.`;
+      return;
+    }
+
+    const avgTiempo = conTiempo.reduce((s,d)=>s+d.tiempoMov,0) / conTiempo.length;
+
+    // Sugerencia de operarios: mejor cajas/hora-hombre por cantidad de operarios (min. 2 casos)
+    const conOperariosYCajas = conTiempo.filter(d => d.operarios && d.cajas);
+    const byOp = {};
+    conOperariosYCajas.forEach(d => {
+      const cajasPorHoraHombre = d.cajas / ((d.tiempoMov * d.operarios) / 60);
+      const key = String(d.operarios);
+      (byOp[key] = byOp[key] || []).push(cajasPorHoraHombre);
+    });
+    const gruposValidos = Object.entries(byOp)
+      .filter(([,vals]) => vals.length >= 2)
+      .map(([op,vals]) => ({ op, n: vals.length, avg: vals.reduce((a,b)=>a+b,0)/vals.length }))
+      .sort((a,b)=>b.avg-a.avg);
+
+    let sugerenciaOperarios = "";
+    if (gruposValidos.length) {
+      const mejor = gruposValidos[0];
+      sugerenciaOperarios = `
+        <div style="margin-top:8px;">
+          👷 <strong>Operarios sugeridos: ${mejor.op}</strong>
+          <span style="color:var(--muted);">(mejor rendimiento histórico: ${mejor.avg.toFixed(0)} cajas/hora-hombre, basado en ${mejor.n} movimientos)</span>
+        </div>`;
+    } else {
+      sugerenciaOperarios = `<div style="margin-top:8px;color:var(--muted);">Sin datos suficientes (cajas + operarios) para sugerir cantidad de operarios.</div>`;
+    }
+
+    cont.innerHTML = `
+      ⏱️ <strong>Tiempo estimado: ${fmtMinEstim(avgTiempo)}</strong>
+      <span style="color:var(--muted);">(promedio de ${conTiempo.length} movimiento${conTiempo.length!==1?"s":""} similar${conTiempo.length!==1?"es":""} de ${cli} en ${mov})</span>
+      ${sugerenciaOperarios}
+      <div style="margin-top:8px;font-size:10px;color:var(--muted);">⚠️ Estimación basada en el tiempo histórico bruto (incluye pausas si las hubo). No la tomes como garantía, es una referencia.</div>
+    `;
+  } catch(err) {
+    cont.innerHTML = `<span style="color:var(--err);">Error al estimar: ${err.message}</span>`;
+  }
 };
 
 window.confirmarReprogramar = async function() {
