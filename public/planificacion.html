@@ -847,12 +847,12 @@ function poblarClienteList() {
 }
 
 // ── CREACIÓN AUTOMÁTICA DE SERVICIOS ─────────────────────────
-async function crearServiciosAutomaticos(planData, nombre) {
-  const items = [];
+async function sincronizarServiciosAutomaticos(planData, nombre) {
+  const posibles = [];
 
   // 1. TERMOGRAFO PROPIO
   if (planData.termografo === "PROPIO") {
-    items.push({
+    posibles.push({
       servicio:      "TERMOGRAFO",
       cantidad:      "",
       origen_insumo: "FRIO POLAR",
@@ -866,7 +866,7 @@ async function crearServiciosAutomaticos(planData, nombre) {
 
   // 2. SOPORTE FOTOGRAFICO SI
   if (planData.soporte_foto === "SI") {
-    items.push({
+    posibles.push({
       servicio:      "SOPORTE FOTOGRAFICO",
       cantidad:      "1",
       origen_insumo: "FRIO POLAR",
@@ -878,10 +878,9 @@ async function crearServiciosAutomaticos(planData, nombre) {
     });
   }
 
-  // 3. ROTULO SI MASTER INSUMO FP — se detecta en los productos al guardar
-  // Se pasa desde afuera si corresponde
+  // 3. ROTULO INSUMO FP — se detecta en los productos al guardar (afuera)
   if (planData._rotulo_master_fp) {
-    items.push({
+    posibles.push({
       servicio:      "IMPRESION DE ETIQUETAS",
       cantidad:      "",
       origen_insumo: "FRIO POLAR",
@@ -893,31 +892,55 @@ async function crearServiciosAutomaticos(planData, nombre) {
     });
   }
 
-  if (!items.length) return;
+  if (!posibles.length) return;
 
   try {
-    await addDoc(collection(db, "servicios_adicionales"), {
-      nro_orden:          planData.referencia,
-      cliente:            planData.cliente,
-      fecha_pedido:       planData.fecha_prevista,
-      fecha_necesidad:    "",
-      fecha_finalizacion: "",
-      prioridad:          "ALTA",
-      estado:             "PENDIENTE",
-      observacion:        "",
-      foto_carpeta:       "",
-      items,
-      bloques:            [],
-      facturado:          null,
-      obs_comercial:      "",
-      obs_facturacion:    "",
-      creado_por:         nombre,
-      creado_en:          serverTimestamp(),
-      modificado_por:     nombre,
-      modificado_en:      serverTimestamp()
+    // Buscar si ya existe un servicio activo para esta orden (alta o edición)
+    const snap = await getDocs(query(
+      collection(db, "servicios_adicionales"),
+      where("nro_orden", "==", planData.referencia)
+    ));
+    const docActivo = snap.docs.find(d => !["FINALIZADO","CANCELADO"].includes(d.data().estado));
+
+    if (!docActivo) {
+      // No existe todavía: crear uno con todo lo que corresponda
+      await addDoc(collection(db, "servicios_adicionales"), {
+        nro_orden:          planData.referencia,
+        cliente:            planData.cliente,
+        fecha_pedido:       planData.fecha_prevista,
+        fecha_necesidad:    "",
+        fecha_finalizacion: "",
+        prioridad:          "ALTA",
+        estado:             "PENDIENTE",
+        observacion:        "",
+        foto_carpeta:       "",
+        items:              posibles,
+        bloques:            [],
+        facturado:          null,
+        obs_comercial:      "",
+        obs_facturacion:    "",
+        creado_por:         nombre,
+        creado_en:          serverTimestamp(),
+        modificado_por:     nombre,
+        modificado_en:      serverTimestamp()
+      });
+      return;
+    }
+
+    // Ya existe: agregar solo los ítems automáticos que todavía no estén (por nombre de servicio),
+    // para no duplicar si esta función corre de nuevo en otra edición.
+    const data = docActivo.data();
+    const yaTiene = new Set((data.items||[]).map(i=>i.servicio));
+    const faltantes = posibles.filter(p => !yaTiene.has(p.servicio));
+    if (!faltantes.length) return;
+
+    await updateDoc(doc(db, "servicios_adicionales", docActivo.id), {
+      items: [...(data.items||[]), ...faltantes],
+      modificado_por: nombre,
+      modificado_en:  serverTimestamp()
     });
   } catch(err) {
-    console.warn("No se pudo crear servicio automático:", err.message);
+    console.warn("No se pudo sincronizar servicios automáticos:", err.message);
   }
 }
 
@@ -2098,6 +2121,12 @@ document.getElementById("btnGuardarForm").addEventListener("click", async()=>{
         "auditoria.modificado_en":  serverTimestamp()
       });
       toast("ok","Actualizado","Movimiento guardado correctamente");
+      // Detectar rótulo INSUMO FP (también al editar, no solo al crear)
+      const _rotuloMasterEdit = detallesForm.some(d =>
+        (d.rotulo||"").toUpperCase().includes("INSUMO FP")
+      );
+      planData._rotulo_master_fp = _rotuloMasterEdit;
+      await sincronizarServiciosAutomaticos(planData, nombre);
     } else {
       await setDoc(doc(db,COL,uuid()),{
         estado,
@@ -2119,12 +2148,12 @@ document.getElementById("btnGuardarForm").addEventListener("click", async()=>{
         }
       });
       toast("ok","Creado","Movimiento creado correctamente");
-      // Detectar rótulo SI MASTER INSUMO FP en los productos
+      // Detectar rótulo INSUMO FP en los productos
       const _rotuloMaster = detallesForm.some(d =>
-        (d.rotulo||"").toUpperCase().includes("SI MASTER INSUMO FP")
+        (d.rotulo||"").toUpperCase().includes("INSUMO FP")
       );
       planData._rotulo_master_fp = _rotuloMaster;
-      await crearServiciosAutomaticos(planData, nombre);
+      await sincronizarServiciosAutomaticos(planData, nombre);
     }
     agregarClienteALista(planData.cliente);
     cargarDia(diaActual);
@@ -2177,6 +2206,12 @@ document.getElementById("btnGuardarRepetir").addEventListener("click", async()=>
       }
     });
     toast("ok","Guardado","Podés modificar y guardar el siguiente");
+    // Detectar rótulo INSUMO FP en los productos (Guardar y repetir)
+    const _rotuloMasterRep = detallesForm.some(d =>
+      (d.rotulo||"").toUpperCase().includes("INSUMO FP")
+    );
+    planData._rotulo_master_fp = _rotuloMasterRep;
+    await sincronizarServiciosAutomaticos(planData, nombre);
     cargarDia(diaActual);
     // Limpiar referencia y productos para el siguiente
     document.getElementById("fReferencia").value="";
@@ -2252,7 +2287,15 @@ function agregarGrupoElaboradorForm(comunes={},productos=[]) {
       <div class="form-group"><label class="form-label">Importador</label>
         <input type="text" class="form-input caps g-imp" value="${comunes.importador||''}"></div>
       <div class="form-group"><label class="form-label">Rótulo</label>
-        <input type="text" class="form-input caps g-rot" value="${comunes.rotulo||''}"></div>
+        <select class="form-input g-rot">
+          <option value="NO" ${comunes.rotulo==="NO"?"selected":""}>NO</option>
+          <option value="SI SIMPLE INSUMO FP" ${comunes.rotulo==="SI SIMPLE INSUMO FP"?"selected":""}>SI SIMPLE INSUMO FP</option>
+          <option value="SI SIMPLE INSUMO CLIENTE" ${comunes.rotulo==="SI SIMPLE INSUMO CLIENTE"?"selected":""}>SI SIMPLE INSUMO CLIENTE</option>
+          <option value="SI DOBLE INSUMO FP" ${comunes.rotulo==="SI DOBLE INSUMO FP"?"selected":""}>SI DOBLE INSUMO FP</option>
+          <option value="SI DOBLE INSUMO CLIENTE" ${comunes.rotulo==="SI DOBLE INSUMO CLIENTE"?"selected":""}>SI DOBLE INSUMO CLIENTE</option>
+          <option value="SI INTEGRAL INSUMO FP" ${comunes.rotulo==="SI INTEGRAL INSUMO FP"?"selected":""}>SI INTEGRAL INSUMO FP</option>
+          <option value="SI INTEGRAL INSUMO CLIENTE" ${comunes.rotulo==="SI INTEGRAL INSUMO CLIENTE"?"selected":""}>SI INTEGRAL INSUMO CLIENTE</option>
+        </select></div>
       <div class="form-group"><label class="form-label">Control</label>
         <input type="text" class="form-input caps g-ctrl" value="${comunes.control||''}"></div>
       <div class="form-group"><label class="form-label">Observaciones grupo</label>
@@ -2367,7 +2410,15 @@ function agregarGrupoElaborador(comunes={},productos=[]) {
       <div class="form-group"><label class="form-label">Importador</label>
         <input type="text" class="form-input caps g-imp" value="${comunes.importador||''}"></div>
       <div class="form-group"><label class="form-label">Rótulo</label>
-        <input type="text" class="form-input caps g-rot" value="${comunes.rotulo||''}"></div>
+        <select class="form-input g-rot">
+          <option value="NO" ${comunes.rotulo==="NO"?"selected":""}>NO</option>
+          <option value="SI SIMPLE INSUMO FP" ${comunes.rotulo==="SI SIMPLE INSUMO FP"?"selected":""}>SI SIMPLE INSUMO FP</option>
+          <option value="SI SIMPLE INSUMO CLIENTE" ${comunes.rotulo==="SI SIMPLE INSUMO CLIENTE"?"selected":""}>SI SIMPLE INSUMO CLIENTE</option>
+          <option value="SI DOBLE INSUMO FP" ${comunes.rotulo==="SI DOBLE INSUMO FP"?"selected":""}>SI DOBLE INSUMO FP</option>
+          <option value="SI DOBLE INSUMO CLIENTE" ${comunes.rotulo==="SI DOBLE INSUMO CLIENTE"?"selected":""}>SI DOBLE INSUMO CLIENTE</option>
+          <option value="SI INTEGRAL INSUMO FP" ${comunes.rotulo==="SI INTEGRAL INSUMO FP"?"selected":""}>SI INTEGRAL INSUMO FP</option>
+          <option value="SI INTEGRAL INSUMO CLIENTE" ${comunes.rotulo==="SI INTEGRAL INSUMO CLIENTE"?"selected":""}>SI INTEGRAL INSUMO CLIENTE</option>
+        </select></div>
       <div class="form-group"><label class="form-label">Control</label>
         <input type="text" class="form-input caps g-ctrl" value="${comunes.control||''}"></div>
       <div class="form-group"><label class="form-label">Observaciones grupo</label>
