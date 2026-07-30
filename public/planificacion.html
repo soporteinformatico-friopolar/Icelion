@@ -527,6 +527,9 @@
             <div id="estimadorContenido">—</div>
           </div>
         </div>
+        <div class="form-group span-all" style="margin-top:-8px;">
+          <div style="font-size:10px;color:var(--muted);">💡 Para una estimación más precisa (por volumen y piso/pallet), cargá primero los productos más abajo y después tocá "Estimar".</div>
+        </div>
         <div class="form-group"><label class="form-label">Transporte</label>
           <input type="text" class="form-input caps" id="fTransporte"></div>
         <div class="form-group"><label class="form-label">Destino</label>
@@ -2536,6 +2539,14 @@ window.estimarTiempoYOperarios = async function() {
     return;
   }
 
+  // Datos del pedido que se está cargando ahora mismo (piso/pallet + cajas planeadas)
+  const detallesActuales = (typeof leerProductosForm === "function") ? leerProductosForm() : [];
+  const tiposPisoActual = [...new Set(detallesActuales.map(x=>x.piso_o_pallet).filter(Boolean))];
+  const pisoOPalletActual = tiposPisoActual.length === 1 ? tiposPisoActual[0] : null; // null si está mixto o vacío
+  const cajasActuales = detallesActuales
+    .filter(x => /caja/i.test(x.unidad||""))
+    .reduce((s,x)=>s+(parseFloat(x.cantidad)||0), 0) || null;
+
   caja.style.display = "";
   cont.innerHTML = `<span class="spinner"></span> Buscando movimientos similares...`;
 
@@ -2548,28 +2559,52 @@ window.estimarTiempoYOperarios = async function() {
       limit(150)
     ));
 
-    const docs = snap.docs.map(d => d.data());
+    let docs = snap.docs.map(d => d.data());
 
-    // Tiempo de movimiento: hora_inicio → hora_finalizado
-    const conTiempo = docs
-      .map(d => ({
+    // Extraer piso/pallet y cajas de cada histórico
+    const procesar = (d) => {
+      const detalles = Array.isArray(d.detalles) ? d.detalles : [];
+      const tiposPiso = [...new Set(detalles.map(x=>x.piso_o_pallet).filter(Boolean))];
+      const pisoOPallet = tiposPiso.length === 1 ? tiposPiso[0] : (tiposPiso.length>1 ? "MIXTO" : null);
+      const cajas = detalles.filter(x=>/caja/i.test(x.unidad||"")).reduce((s,x)=>s+(parseFloat(x.cantidad)||0),0) || null;
+      return {
         tiempoMov: difMinCiclo((d.planillero||{}).hora_inicio, (d.planillero||{}).hora_finalizado),
         operarios: Number((d.planillero||{}).cantidad_operarios) || null,
-        cajas: (Array.isArray(d.detalles) ? d.detalles : [])
-          .filter(x => /caja/i.test(x.unidad||""))
-          .reduce((s,x)=>s+(parseFloat(x.cantidad)||0),0) || null
-      }))
-      .filter(d => d.tiempoMov !== null && d.tiempoMov > 0);
+        pisoOPallet, cajas
+      };
+    };
+    let procesados = docs.map(procesar).filter(d => d.tiempoMov !== null && d.tiempoMov > 0);
 
-    if (!conTiempo.length) {
+    if (!procesados.length) {
       cont.innerHTML = `Sin movimientos históricos de <strong>${mov}</strong> para <strong>${cli}</strong> con datos de tiempo. No se puede estimar todavía.`;
       return;
     }
 
-    const avgTiempo = conTiempo.reduce((s,d)=>s+d.tiempoMov,0) / conTiempo.length;
+    // Si esta orden tiene piso/pallet definido, filtrar históricos al mismo tipo
+    // (si eso deja muy pocos casos, se cae al conjunto general con aviso)
+    let segmento = procesados;
+    let segmentadoPorPiso = false;
+    if (pisoOPalletActual) {
+      const filtrado = procesados.filter(d => d.pisoOPallet === pisoOPalletActual);
+      if (filtrado.length >= 3) { segmento = filtrado; segmentadoPorPiso = true; }
+    }
+
+    // Estimación de tiempo: si hay cajas planeadas Y datos de cajas históricos,
+    // usar una tasa (minutos por caja) y escalarla a la cantidad de este pedido.
+    // Si no, promedio simple del tiempo histórico.
+    const conCajas = segmento.filter(d => d.cajas);
+    let avgTiempo, metodoUsado;
+    if (cajasActuales && conCajas.length >= 3) {
+      const tasaProm = conCajas.reduce((s,d)=>s + (d.tiempoMov / d.cajas), 0) / conCajas.length; // min/caja
+      avgTiempo = tasaProm * cajasActuales;
+      metodoUsado = `escalado a ${cajasActuales} cajas planificadas (${tasaProm.toFixed(2)} min/caja histórico)`;
+    } else {
+      avgTiempo = segmento.reduce((s,d)=>s+d.tiempoMov,0) / segmento.length;
+      metodoUsado = cajasActuales ? `promedio simple (pocos históricos con dato de cajas para escalar por volumen)` : `promedio simple`;
+    }
 
     // Sugerencia de operarios: mejor cajas/hora-hombre por cantidad de operarios (min. 2 casos)
-    const conOperariosYCajas = conTiempo.filter(d => d.operarios && d.cajas);
+    const conOperariosYCajas = segmento.filter(d => d.operarios && d.cajas);
     const byOp = {};
     conOperariosYCajas.forEach(d => {
       const cajasPorHoraHombre = d.cajas / ((d.tiempoMov * d.operarios) / 60);
@@ -2593,11 +2628,17 @@ window.estimarTiempoYOperarios = async function() {
       sugerenciaOperarios = `<div style="margin-top:8px;color:var(--muted);">Sin datos suficientes (cajas + operarios) para sugerir cantidad de operarios.</div>`;
     }
 
+    const chips = [
+      `${segmento.length} movimiento${segmento.length!==1?"s":""} similar${segmento.length!==1?"es":""}`,
+      segmentadoPorPiso ? `filtrado por ${pisoOPalletActual}` : (pisoOPalletActual ? `sin suficientes históricos de ${pisoOPalletActual}, se usó el total` : null),
+    ].filter(Boolean).join(" · ");
+
     cont.innerHTML = `
       ⏱️ <strong>Tiempo estimado: ${fmtMinEstim(avgTiempo)}</strong>
-      <span style="color:var(--muted);">(promedio de ${conTiempo.length} movimiento${conTiempo.length!==1?"s":""} similar${conTiempo.length!==1?"es":""} de ${cli} en ${mov})</span>
+      <span style="color:var(--muted);">(${chips})</span>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px;">Método: ${metodoUsado}</div>
       ${sugerenciaOperarios}
-      <div style="margin-top:8px;font-size:10px;color:var(--muted);">⚠️ Estimación basada en el tiempo histórico bruto (incluye pausas si las hubo). No la tomes como garantía, es una referencia.</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--muted);">⚠️ Estimación basada en tiempo histórico bruto (puede incluir pausas). Es una referencia, no una garantía.</div>
     `;
   } catch(err) {
     cont.innerHTML = `<span style="color:var(--err);">Error al estimar: ${err.message}</span>`;
