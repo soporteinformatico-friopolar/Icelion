@@ -1007,6 +1007,8 @@ function calcularKPIs(docs) {
     const diffPlan = (p.hora_estipulada && pll.hora_inicio)
       ? difMin(p.hora_estipulada, pll.hora_inicio) : null;
 
+    const horaDockAsig = sv.hora_ingreso || "";
+    const dockNum = sv.dock || "";
 
     // Hora planificada en bucket (0-23) para heatmaps
     const horaEstBucket = p.hora_estipulada ? Math.floor(toMin(p.hora_estipulada)/60) : null;
