@@ -848,6 +848,37 @@ function poblarClienteList() {
   dl.innerHTML = clientesLista.map(c => `<option value="${c}">`).join("");
 }
 
+// ── LISTA DE EMPAQUES ─────────────────────────────────────────
+const EMPAQUES_FIJOS = [
+  "BOLSA AL PESO","CAJA AL PESO","1X5","1X6","1X10","2X10","1X11","1X12","3X6","3X7","4X4.536"
+];
+let empaquesDinamicos = [];
+
+async function cargarListaEmpaques() {
+  try {
+    const snap = await getDoc(doc(db, "listas", "empaques"));
+    empaquesDinamicos = snap.exists() ? (snap.data().items || []) : [];
+  } catch(e) { console.warn("No se pudo cargar lista empaques", e); }
+}
+
+function listaEmpaques() {
+  const todos = [...EMPAQUES_FIJOS];
+  empaquesDinamicos.forEach(e => { if (!todos.includes(e)) todos.push(e); });
+  return todos;
+}
+
+function opcionesEmpaque(sel) {
+  const s = (sel||"").toUpperCase().trim();
+  let html = `<option value=""${!s ? ' selected' : ''}>—</option>`;
+  listaEmpaques().forEach(e => {
+    html += `<option value="${e}"${e === s ? ' selected' : ''}>${e}</option>`;
+  });
+  if (s && !listaEmpaques().includes(s)) {
+    html += `<option value="${s}" selected>${s}</option>`;
+  }
+  return html;
+}
+
 // ── CREACIÓN AUTOMÁTICA DE SERVICIOS ─────────────────────────
 async function sincronizarServiciosAutomaticos(planData, nombre) {
   const posibles = [];
@@ -959,6 +990,7 @@ async function agregarClienteALista(cliente) {
 }
 
 cargarListaClientes();
+cargarListaEmpaques();
 
 // ── HELPERS ─────────────────────────────────────────────────
 document.querySelectorAll(".caps").forEach(caps);
@@ -2454,8 +2486,8 @@ function agregarFilaProducto(cont,p={}) {
       <input type="text" list="unidadList" class="form-input caps p-uni" value="${p.unidad||''}"></div>
     <div class="form-group" style="min-width:70px;"><label class="form-label">Calibre</label>
       <input type="text" class="form-input caps p-cal" value="${p.calibre||''}"></div>
-    <div class="form-group" style="min-width:70px;"><label class="form-label">Empaque</label>
-      <input type="text" class="form-input caps p-emp" value="${p.empaque||''}"></div>
+    <div class="form-group" style="min-width:120px;"><label class="form-label">Empaque</label>
+      <select class="form-input p-emp">${opcionesEmpaque(p.empaque)}</select></div>
     <div class="form-group" style="min-width:70px;"><label class="form-label">Total KG</label>
       <input type="number" class="form-input p-kg" value="${p.total_kg||''}"></div>
     <div class="form-group" style="min-width:80px;"><label class="form-label">Neto/Bruto</label>
