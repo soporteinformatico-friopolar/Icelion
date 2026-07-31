@@ -903,13 +903,13 @@ function pieSVG(slices, size=180) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`;
 }
 
-function pieHTML(slices, total, tablaLateral=null) {
+function pieHTML(slices, total, tablaLateral=null, size=180) {
   const legend = slices.filter(s=>s.value>0).map(s=>{
     const pct = total ? Math.round(s.value/total*100) : 0;
     return `<div class="pie-legend-item"><div class="pie-dot" style="background:${s.color}"></div><span class="pie-leg-label">${s.label}</span><span class="pie-leg-val">${s.value} (${pct}%)</span></div>`;
   }).join("");
   const tablaHtml = tablaLateral ? `<div style="flex:1;min-width:180px;">${tablaLateral}</div>` : "";
-  return `<div class="pie-wrap">${pieSVG(slices)}<div class="pie-legend">${legend}</div>${tablaHtml}</div>`;
+  return `<div class="pie-wrap">${pieSVG(slices, size)}<div class="pie-legend">${legend}</div>${tablaHtml}</div>`;
 }
 
 // ── CÁLCULO PRINCIPAL ─────────────────────────────────────────
@@ -976,17 +976,37 @@ function calcularKPIs(docs) {
       return m >= 0 ? m : m + 1440;
     })();
 
-    // Planificación efectiva
+    // Planificación efectiva (nueva lógica)
+    const estadoDoc = (d.data.estado || "").toUpperCase();
+    let efectividad = null;
+    let efectividadSub = null;
+
+    if (estadoDoc === "CANCELADO") {
+      efectividad = "NO EFECTIVO";
+      efectividadSub = "CANCELADO";
+    } else if (estadoDoc === "AGREGADO NO PLANIFICADO" || estadoDoc === "NO PLANIFICADO") {
+      efectividad = "NO EFECTIVO";
+      efectividadSub = "AGREGADO NO PLANIFICADO";
+    } else if (p.hora_estipulada && pll.hora_inicio) {
+      const dMin = difMin(p.hora_estipulada, pll.hora_inicio);
+      if (dMin !== null) {
+        if (dMin > 5) {
+          efectividad = "NO EFECTIVO";
+          efectividadSub = "DEMORADO";
+        } else if (dMin < -5) {
+          efectividad = "COMPENSATORIO";
+          efectividadSub = "COMPENSATORIO";
+        } else {
+          efectividad = "EFECTIVO";
+          efectividadSub = "EFECTIVO";
+        }
+      }
+    }
+
+    // Planificación efectiva original (diffPlan)
     const diffPlan = (p.hora_estipulada && pll.hora_inicio)
       ? difMin(p.hora_estipulada, pll.hora_inicio) : null;
 
-    // Efectiva (nueva definición): dock asignado <= hora planificada
-    const horaDockAsig = sv.hora_ingreso || "";
-    const dockNum = sv.dock || "";
-    const esEfectiva = (p.hora_estipulada && horaDockAsig)
-      ? (toMin(horaDockAsig) !== null && toMin(p.hora_estipulada) !== null
-          ? toMin(horaDockAsig) <= toMin(p.hora_estipulada) : null)
-      : null;
 
     // Hora planificada en bucket (0-23) para heatmaps
     const horaEstBucket = p.hora_estipulada ? Math.floor(toMin(p.hora_estipulada)/60) : null;
@@ -1065,7 +1085,7 @@ function calcularKPIs(docs) {
     const diaSemana = fechaObj ? fechaObj.getDay() : null;
 
     return { ...d, diff, permAbs, diffPlan, despachoMin, tiempoMov, horasHombre, operarios, cajas, cajasPorHora, cajasPorHoraHombre, pisoOPallet, rotuloTipo, minutosPausados, cantidadPausas, pausasDetalle, tieneDesvio, listaDesvios, listaSoluciones, diaSemana, arriboFueAyer,
-      esEfectiva, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
+      efectividad, efectividadSub, dockNum, horaDockAsig, horaEstBucket, horaDockBucket,
       cliente:    p.cliente    || "—",
       movimiento: p.movimiento || "—",
       transporte: p.transporte || "—",
@@ -1677,18 +1697,99 @@ function agrupar(arr, keyFn) {
 // ── PLANIFICACIÓN EFECTIVA ───────────────────────────────────
 function renderPlanificacion(docs) {
   const el = document.getElementById("distribPlanif");
-  const conD = docs.filter(d=>d.esEfectiva!==null);
-  if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos de dock asignado / hora planificada</div>`; return; }
-  const efectivos = conD.filter(d=>d.esEfectiva).length;
-  const noEfectivos = conD.length - efectivos;
-  const slices = [
-    { label:"Efectiva",    value:efectivos,   color:"#4ade80" },
-    { label:"No efectiva", value:noEfectivos, color:"#f87171" },
-  ];
-  el.innerHTML = pieHTML(slices, conD.length) +
-    `<div style="font-size:11px;color:var(--muted);margin-top:8px;">
-      Efectiva: dock asignado a hora ≤ hora planificada · ${conD.length} movimientos con datos de dock
-    </div>`;
+  const conD = docs.filter(d => d.efectividad !== null);
+  if(!conD.length){ el.innerHTML=`<div class="empty">Sin datos suficientes para calcular planificación efectiva</div>`; return; }
+
+  function getStats(ds) {
+    const total = ds.length;
+    const ef = ds.filter(d => d.efectividad === "EFECTIVO").length;
+    const co = ds.filter(d => d.efectividad === "COMPENSATORIO").length;
+    const no = ds.filter(d => d.efectividad === "NO EFECTIVO").length;
+    
+    const canc = ds.filter(d => d.efectividadSub === "CANCELADO").length;
+    const dem = ds.filter(d => d.efectividadSub === "DEMORADO").length;
+    const anp = ds.filter(d => d.efectividadSub === "AGREGADO NO PLANIFICADO").length;
+
+    return { total, ef, co, no, canc, dem, anp };
+  }
+
+  function getPieHTMLLocal(stats, size=180) {
+    const slices = [
+      { label:"Efectivo", value: stats.ef, color: "#22c55e" },
+      { label:"Compensatorio", value: stats.co, color: "#fde047" },
+      { label:"No efectivo", value: stats.no, color: "#9f1239" }
+    ];
+    return pieHTML(slices, stats.total, null, size);
+  }
+
+  const sGen = getStats(conD);
+  const sDescargas = getStats(conD.filter(d => d.movimiento === "DESCARGA"));
+  const sCargasExpo = getStats(conD.filter(d => d.movimiento === "CARGA EXPO"));
+  const sCargasMI = getStats(conD.filter(d => d.movimiento === "CARGA MI" || d.movimiento === "CARGA MERCADO INTERNO")); 
+
+  const pct = (val, tot) => tot ? Math.round(val/tot*100) : 0;
+
+  const htmlDetalle = `
+    <ul style="list-style:none;padding:0;font-size:13px;">
+      <li style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;">
+          <span style="display:inline-block;width:14px;height:14px;background:#22c55e;border-radius:50%;margin-right:8px;"></span>
+          <strong style="width:115px;">Efectivo:</strong> 
+          <span>${sGen.ef} (${pct(sGen.ef, sGen.total)}%)</span>
+        </div>
+      </li>
+      <li style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;">
+          <span style="display:inline-block;width:14px;height:14px;background:#fde047;border-radius:50%;margin-right:8px;"></span>
+          <strong style="width:115px;">Compensatorio:</strong> 
+          <span>${sGen.co} (${pct(sGen.co, sGen.total)}%)</span>
+        </div>
+      </li>
+      <li style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;">
+          <span style="display:inline-block;width:14px;height:14px;background:#9f1239;border-radius:50%;margin-right:8px;"></span>
+          <strong style="width:115px;">No Efectivo:</strong> 
+          <span>${sGen.no} (${pct(sGen.no, sGen.total)}%)</span>
+        </div>
+        <ul style="list-style:none;padding-left:36px;margin-top:6px;color:var(--text);font-size:12px;display:flex;flex-direction:column;gap:4px;">
+          <li><span style="display:inline-block;width:110px;">• Cancelados:</span> ${sGen.canc} (${pct(sGen.canc, sGen.total)}%)</li>
+          <li><span style="display:inline-block;width:110px;">• Demorados:</span> ${sGen.dem} (${pct(sGen.dem, sGen.total)}%)</li>
+          <li><span style="display:inline-block;width:110px;">• Agregados NP:</span> ${sGen.anp} (${pct(sGen.anp, sGen.total)}%)</li>
+        </ul>
+      </li>
+    </ul>
+    <div style="margin-top:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;">
+      Total analizado: ${sGen.total} movimientos. (Tolerancia: ±5 min de lo planificado)
+    </div>
+  `;
+
+  el.innerHTML = `
+    <div style="display:flex;gap:32px;align-items:stretch;flex-wrap:wrap;margin-bottom:10px;">
+      <div style="flex:1;min-width:300px;display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:16px;font-weight:bold;margin-bottom:16px;color:var(--text);letter-spacing:.5px;">GENERAL</div>
+        ${getPieHTMLLocal(sGen, 220)}
+      </div>
+      <div style="flex:1;min-width:300px;background:var(--panel2);padding:20px;border-radius:12px;border:1px solid var(--border);">
+        <div style="font-size:14px;font-weight:bold;margin-bottom:16px;color:var(--text);text-transform:uppercase;letter-spacing:.5px;">Detalle de Efectividad</div>
+        ${htmlDetalle}
+      </div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--border);margin:24px 0;">
+    <div style="display:flex;gap:20px;justify-content:space-around;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:180px;">
+        <div style="font-size:12px;font-weight:bold;margin-bottom:16px;color:var(--muted);letter-spacing:.5px;">DESCARGAS</div>
+        ${getPieHTMLLocal(sDescargas, 140)}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:180px;">
+        <div style="font-size:12px;font-weight:bold;margin-bottom:16px;color:var(--muted);letter-spacing:.5px;">CARGAS EXPO</div>
+        ${getPieHTMLLocal(sCargasExpo, 140)}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:180px;">
+        <div style="font-size:12px;font-weight:bold;margin-bottom:16px;color:var(--muted);letter-spacing:.5px;">CARGAS MI</div>
+        ${getPieHTMLLocal(sCargasMI, 140)}
+      </div>
+    </div>
+  `;
 }
 
 // ── FLUJO SEMANAL (heatmap) ───────────────────────────────────
