@@ -533,7 +533,7 @@ initSesion();
 
 // ── HELPERS ─────────────────────────────────────────────────
 
-const ESTADOS_PENDIENTES=["PLANIFICADO","AGREGADO","SIN IDENTIFICAR"];
+const ESTADOS_PENDIENTES=["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO","SIN IDENTIFICAR"];
 const ESTADOS_ACTIVOS=["ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO","CANCELA MOVIMIENTO","CANCELADO","LIBERADO"];
 
 // ── ESTADO ────────────────────────────────────────────────────
@@ -783,6 +783,13 @@ window.cerrarModalSrv = function() {
   srvActual = null;
 };
 
+// Los AGREGADO PLANIFICADO / NO PLANIFICADO se ven acá siempre como "AGREGADO"
+// (la distinción es solo para planificación).
+function badgeEstadoVisor(est) {
+  const mostrar = ["AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(est) ? "AGREGADO" : est;
+  return badgeEstado(mostrar);
+}
+
 // ── CARGAR DÍA ────────────────────────────────────────────────
 let _unsubDataentry=null;
 function cargarDia(fecha) {
@@ -956,7 +963,7 @@ function renderTabla(docs) {
       <td>${badgeMov(p.movimiento)}</td>
       <td class="td-mono">${pat}</td>
       <td>${sv.dock||"—"}</td>
-      <td>${badgeEstado(est)}</td>
+      <td>${badgeEstadoVisor(est)}</td>
       <td style="text-align:center;"><button class="btn-notas ${tienePendientes(d.data()) ? 'pendiente tiene-notas' : (getNotas(d.data()).length ? 'tiene-notas' : 'sin-notas')}" onclick="event.stopPropagation();abrirNotas('${id}')" title="Notas del movimiento">📝</button></td>
       <td style="text-align:center;">${tieneFoto
         ? `<a href="${p.foto_carpeta}" target="_blank" onclick="event.stopPropagation()" class="btn-link-icon activo" title="Abrir carpeta de fotos">📁</a>`

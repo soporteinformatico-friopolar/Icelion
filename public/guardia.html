@@ -584,7 +584,7 @@ import { addDoc, collection, doc, getDoc, getDocs, onSnapshot, orderBy, query, s
 import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, fmtFecha, fmtTimestamp, badgeEstado, badgeMov, caps, uuid } from "./js/utils.js";
 import { guardarConAuditoria } from "./js/auditoria.js";
 
-const ESTADOS_PENDIENTES = ["PLANIFICADO","AGREGADO","SIN IDENTIFICAR"];
+const ESTADOS_PENDIENTES = ["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO","SIN IDENTIFICAR"];
 const ESTADOS_ENPLANTA   = ["ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO",
                              "INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO",
                              "CANCELA MOVIMIENTO","CANCELADO","LIBERADO"];
@@ -623,10 +623,18 @@ function calcularPenalidad(horaEst, horaReal) {
   return (hR * 60 + mR) > (hE * 60 + mE);
 }
 
+// Los AGREGADO PLANIFICADO / NO PLANIFICADO se ven acá siempre como "AGREGADO"
+// (la distinción es solo para planificación).
+function badgeEstadoVisor(est) {
+  const mostrar = ["AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(est) ? "AGREGADO" : est;
+  return badgeEstado(mostrar);
+}
+
 // ── BADGE ESTADO ──────────────────────────────────────────────
 function estadoClass(e) {
   const map={
     "PLANIFICADO":"st-planificado","AGREGADO":"st-agregado",
+    "AGREGADO PLANIFICADO":"st-agregado","AGREGADO NO PLANIFICADO":"st-agregado",
     "SIN IDENTIFICAR":"st-sinidentif","ARRIBADO":"st-arribado",
     "EN ESPERA":"st-enespera","DOCK ASIGNADO":"st-dockasignado",
     "ATRACADO":"st-atracado","INICIO MOVIMIENTO":"st-iniciomov",
@@ -988,7 +996,7 @@ function renderPendientes() {
       <td class="td-mono">${p.contenedor||"—"}</td>
       <td class="td-mono">${p.patente_tractor||"—"}</td>
       <td class="td-mono">${p.patente_semi||"—"}</td>
-      <td>${badgeEstado(est)}</td>
+      <td>${badgeEstadoVisor(est)}</td>
       <td style="text-align:center;">
         <button class="btn-notas ${tienePendientes(data) ? 'pendiente tiene-notas' : (getNotas(data).length ? 'tiene-notas' : 'sin-notas')}"
           onclick="event.stopPropagation();abrirNotas('${id}')"
@@ -1040,7 +1048,7 @@ function renderEnPlanta() {
       <td class="td-mono">${g.patente_tractor||p.patente_tractor||"—"}</td>
       <td class="td-mono">${g.patente_semi||p.patente_semi||"—"}</td>
       <td class="td-mono">${data.supervisor?.dock||"—"}</td>
-      <td>${badgeEstado(est)}</td>
+      <td>${badgeEstadoVisor(est)}</td>
       <td>${horaEgreso}</td>
       <td style="text-align:center;"><button class="btn-notas ${tienePendientes(d.data()) ? 'pendiente tiene-notas' : (getNotas(d.data()).length ? 'tiene-notas' : 'sin-notas')}" onclick="event.stopPropagation();abrirNotas('${d.id}')" title="Notas del movimiento">📝</button></td>
     </tr>`;

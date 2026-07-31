@@ -1034,6 +1034,13 @@ import { collection, getDocs, limit, onSnapshot, orderBy, query, where }
   from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { initTema, initSesion, toast, hoy, sumarDias, fmtLabel, badgeEstado, badgeMov } from "./js/utils.js";
 
+// AGREGADO PLANIFICADO / NO PLANIFICADO se ven acá siempre como "AGREGADO"
+// (la distinción es solo para planificación).
+function badgeEstadoVisor(est) {
+  const mostrar = ["AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(est) ? "AGREGADO" : est;
+  return badgeEstado(mostrar);
+}
+
 initTema();
 initSesion();
 
@@ -1080,6 +1087,8 @@ window.imprimirMovimientos = function() {
     return `<span class="schip"><span class="schip-label">${lbl}: </span>${String(val).trim()}</span>`;
   }
   function badgePrint(e) {
+    // AGREGADO PLANIFICADO / NO PLANIFICADO se ven acá siempre como "AGREGADO"
+    const mostrar = ["AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(e) ? "AGREGADO" : e;
     const m={
       "PLANIFICADO":"#f1f5f9|#374151|#94a3b8","AGREGADO":"#e2e8f0|#1e293b|#64748b",
       "ARRIBADO":"#dcfce7|#166534|#86efac","SIN IDENTIFICAR":"#f3e8ff|#7e22ce|#d8b4fe",
@@ -1089,8 +1098,8 @@ window.imprimirMovimientos = function() {
       "LIBERADO":"#ede9fe|#6d28d9|#c4b5fd","CANCELADO":"#fee2e2|#991b1b|#fca5a5",
       "CANCELA MOVIMIENTO":"#fee2e2|#991b1b|#fca5a5"
     };
-    const [bg,color,border] = (m[e]||"#f1f5f9|#374151|#94a3b8").split("|");
-    return `<span style="display:inline-block;padding:1px 5px;border-radius:999px;font-size:7px;font-weight:700;border:1px solid ${border};background:${bg};color:${color};">${e||"—"}</span>`;
+    const [bg,color,border] = (m[mostrar]||"#f1f5f9|#374151|#94a3b8").split("|");
+    return `<span style="display:inline-block;padding:1px 5px;border-radius:999px;font-size:7px;font-weight:700;border:1px solid ${border};background:${bg};color:${color};">${mostrar||"—"}</span>`;
   }
 
   const ESTADOS_EXCLUIR_PRINT = new Set(["CANCELADO","CANCELA MOVIMIENTO","VINCULADO","SIN IDENTIFICAR"]);
@@ -1288,7 +1297,11 @@ function aplicarFiltros() {
 
   let filtered = docsCache.filter(d => !["VINCULADO","SIN IDENTIFICAR"].includes(d.data().estado||""));
 
-  if (fEst) filtered = filtered.filter(d => d.data().estado === fEst);
+  if (fEst) filtered = filtered.filter(d => {
+    const e = d.data().estado;
+    if (fEst === "AGREGADO") return ["AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(e);
+    return e === fEst;
+  });
   if (fMov) filtered = filtered.filter(d => (d.data().planificacion?.movimiento||"").toUpperCase().includes(fMov.toUpperCase()));
 
   const esHoy = diaActual === hoy();
@@ -1444,7 +1457,7 @@ function renderCards(docs, hacerScroll) {
         <div class="card-hora">${horaStr}</div>
         <div class="card-hora-sub">Hora est.</div>
         <div class="card-estado-under">
-          ${badgeEstado(est)}
+          ${badgeEstadoVisor(est)}
         </div>
       </div>
 

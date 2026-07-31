@@ -386,9 +386,9 @@ function buildAuditEntry(nombre) {
 }
 
 // ── ESTADOS ───────────────────────────────────────────────────
-const ESTADOS_PLANIFICADOS = ["PLANIFICADO","AGREGADO"];
+const ESTADOS_PLANIFICADOS = ["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"];
 const ESTADOS_ARRIBADOS  = ["ARRIBADO","DOCK ASIGNADO"];
-const ORDEN_ESTADOS = ["PLANIFICADO","AGREGADO","ARRIBADO","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO","LIBERADO"];
+const ORDEN_ESTADOS = ["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO","ARRIBADO","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO","LIBERADO"];
 const ESTADOS_PLANTA    = ["ATRACADO", "INICIO MOVIMIENTO", "PAUSADO", "FIN MOVIMIENTO"];
 const OCULTOS           = ["VINCULADO","SIN IDENTIFICAR"];
 const ESTADOS_CANCELADOS = ["CANCELADO","CANCELA MOVIMIENTO"];
@@ -447,7 +447,9 @@ const ESTADO_CLS = {
   "LIBERADO":"badge-liberado","VINCULADO":"badge-cancelado",
 };
 function badgeEst(e) {
-  return `<span class="badge ${ESTADO_CLS[e]||"badge-planificado"}">${e||"—"}</span>`;
+  // AGREGADO PLANIFICADO / NO PLANIFICADO se ven acá siempre como "AGREGADO"
+  const mostrar = ["AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(e) ? "AGREGADO" : e;
+  return `<span class="badge ${ESTADO_CLS[mostrar]||"badge-planificado"}">${mostrar||"—"}</span>`;
 }
 
 // ── CARGA ─────────────────────────────────────────────────────

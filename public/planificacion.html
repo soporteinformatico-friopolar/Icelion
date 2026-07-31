@@ -399,7 +399,8 @@
     <select class="estado-select" id="filtroEstado">
       <option value="">Todos los estados</option>
       <option value="PLANIFICADO">Planificado</option>
-      <option value="AGREGADO">Agregado</option>
+      <option value="AGREGADO PLANIFICADO">Agregado Planificado</option>
+      <option value="AGREGADO NO PLANIFICADO">Agregado No Planificado</option>
       <option value="SIN IDENTIFICAR">Sin Identificar</option>
       <option value="ARRIBADO">Arribado</option>
       <option value="EN ESPERA">En Espera</option>
@@ -470,7 +471,8 @@
         <div class="form-group"><label class="form-label">Estado *</label>
           <select class="form-input" id="fEstado">
             <option value="PLANIFICADO">PLANIFICADO</option>
-            <option value="AGREGADO">AGREGADO</option>
+            <option value="AGREGADO PLANIFICADO">AGREGADO PLANIFICADO</option>
+            <option value="AGREGADO NO PLANIFICADO">AGREGADO NO PLANIFICADO</option>
             <option value="SIN IDENTIFICAR">SIN IDENTIFICAR</option>
             <option value="ARRIBADO">ARRIBADO</option>
             <option value="EN ESPERA">EN ESPERA</option>
@@ -1021,7 +1023,7 @@ let modoSearch = false;
 let textoBusquedaActual = "";
 let tabActual  = "pendientes"; // "pendientes" | "activos"
 
-const ESTADOS_PENDIENTES = ["PLANIFICADO","AGREGADO","SIN IDENTIFICAR"];
+const ESTADOS_PENDIENTES = ["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO","SIN IDENTIFICAR"];
 const ESTADOS_ACTIVOS    = ["ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO",
                             "INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO",
                             "CANCELA MOVIMIENTO","CANCELADO","LIBERADO"];
@@ -1198,7 +1200,7 @@ function renderTabla(docs, esSearch) {
       <td>${p.movimiento||"—"}</td>
       <td class="td-truncate-sm" title="${p.transporte||""}">${p.transporte||"—"}</td>
       <td class="td-truncate-sm" title="${destinoStr}">${destinoStr.length>14?destinoStr.slice(0,13)+"…":destinoStr}</td>
-      <td>${badgeEstado(est)}</td>
+      <td>${badgeEstadoPlan(est)}</td>
       <td class="td-ref">${p.referencia||"—"}</td>
       ${(()=>{
   const det=data.detalles||[];
@@ -1228,7 +1230,7 @@ function renderTabla(docs, esSearch) {
         <div class="td-acciones">
           <button class="btn btn-ghost btn-sm"  onclick="editarMov('${id}')">Editar</button>
           <button class="btn btn-danger btn-sm" onclick="confirmarCancelar('${id}')">Cancelar</button>
-          ${["PLANIFICADO","AGREGADO","ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO"].includes(est) ? `<button class="btn btn-warn btn-sm" onclick="abrirReprogramar('${id}')" title="Reprogramar">📅 Reprogramar</button>` : ""}
+          ${["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO","ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO"].includes(est) ? `<button class="btn btn-warn btn-sm" onclick="abrirReprogramar('${id}')" title="Reprogramar">📅 Reprogramar</button>` : ""}
           ${mostrarEliminar ? `<button class="btn btn-danger btn-sm" onclick="eliminarMovimiento('${id}')" title="Eliminar permanentemente">🗑</button>` : ""}
         </div>
       </td>
@@ -1453,7 +1455,7 @@ async function cargarMovsParaAsignar() {
     orderBy("planificacion.hora_estipulada", "asc"),
     limit(50)
   ));
-  const movs = snap.docs.filter(d => !d.data().registro_espontaneo && d.id !== espIdActual && ["PLANIFICADO","AGREGADO"].includes(d.data().estado||"PLANIFICADO"));
+  const movs = snap.docs.filter(d => !d.data().registro_espontaneo && d.id !== espIdActual && ["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(d.data().estado||"PLANIFICADO"));
   if (!movs.length) {
     lista.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:8px;">No hay movimientos planificados para este día</div>`;
     return;
@@ -1786,7 +1788,7 @@ function chequearNoArribo() {
     const est  = data.planificacion?.hora_estipulada;
     const estado = data.estado || "PLANIFICADO";
     if (!est) return;
-    if (!["PLANIFICADO", "AGREGADO"].includes(estado)) return;
+    if (!["PLANIFICADO", "AGREGADO PLANIFICADO", "AGREGADO NO PLANIFICADO"].includes(estado)) return;
     if (notifNoArriboEnviadas.has(d.id)) return;
 
     const [h, m] = est.split(":").map(Number);
@@ -2105,7 +2107,7 @@ document.getElementById("btnGuardarForm").addEventListener("click", async()=>{
         };
       });
       const penActualEdit = snapData.penalidades?.lista || [];
-      const esAgregadoNuevo = estado === "AGREGADO" && !penActualEdit.includes("MOVIMIENTO AGREGADO");
+      const esAgregadoNuevo = estado === "AGREGADO NO PLANIFICADO" && !penActualEdit.includes("MOVIMIENTO AGREGADO");
       await updateDoc(doc(db,COL,docId),{
         estado,
         planificacion: planData,
@@ -2133,8 +2135,8 @@ document.getElementById("btnGuardarForm").addEventListener("click", async()=>{
         id_planilla:"",
         registro_espontaneo: false,
         requiere_verificacion: false,
-        penalizado: estado === "AGREGADO",
-        penalidades: { lista: estado === "AGREGADO" ? ["MOVIMIENTO AGREGADO"] : [], extra_costos: [] },
+        penalizado: estado === "AGREGADO NO PLANIFICADO",
+        penalidades: { lista: estado === "AGREGADO NO PLANIFICADO" ? ["MOVIMIENTO AGREGADO"] : [], extra_costos: [] },
         planificacion: planData,
         alerta_cambio: _alertaCambioVal,
         guardia:{patente_tractor: planData.patente_tractor||"", patente_semi: planData.patente_semi||""}, supervisor:{}, supervisor_web:{},
@@ -2194,8 +2196,8 @@ document.getElementById("btnGuardarRepetir").addEventListener("click", async()=>
     const detallesForm = leerProductosForm();
     await setDoc(doc(db,COL,uuid()),{
       estado, id_planilla:"", registro_espontaneo:false, requiere_verificacion:false,
-      penalizado: estado === "AGREGADO",
-      penalidades: { lista: estado === "AGREGADO" ? ["MOVIMIENTO AGREGADO"] : [], extra_costos: [] },
+      penalizado: estado === "AGREGADO NO PLANIFICADO",
+      penalidades: { lista: estado === "AGREGADO NO PLANIFICADO" ? ["MOVIMIENTO AGREGADO"] : [], extra_costos: [] },
       planificacion: planData,
       guardia:{}, supervisor:{}, supervisor_web:{},
       playero:{}, planillero:{}, calidad:{}, calidad_desvios:{},
@@ -2564,6 +2566,19 @@ window.cerrarReprogramar = function() {
 // Busca movimientos históricos con el mismo Movimiento + Cliente, calcula
 // el tiempo promedio (hora_inicio → hora_finalizado) y sugiere la cantidad
 // de operarios que históricamente dio mejor rendimiento (cajas/hora-hombre).
+// Badge de estado local: distingue AGREGADO PLANIFICADO / NO PLANIFICADO con su
+// propio color (badgeEstado de utils.js no los conoce todavía). El resto de los
+// estados delega normalmente a badgeEstado.
+function badgeEstadoPlan(est) {
+  if (est === "AGREGADO PLANIFICADO") {
+    return `<span class="badge" style="background:rgba(96,165,250,.15);color:#60a5fa;">AGREGADO PLANIFICADO</span>`;
+  }
+  if (est === "AGREGADO NO PLANIFICADO") {
+    return `<span class="badge" style="background:rgba(248,113,113,.15);color:#f87171;">AGREGADO NO PLANIFICADO</span>`;
+  }
+  return badgeEstado(est);
+}
+
 function difMinCiclo(a, b) {
   const [ha,ma] = (a||"").split(":").map(Number);
   const [hb,mb] = (b||"").split(":").map(Number);

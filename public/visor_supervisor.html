@@ -470,7 +470,7 @@ initTema();
 initSesion();
 
 // ── ESTADOS ────────────────────────────────────────────────────
-const ESTADOS_PENDIENTES  = ["PLANIFICADO","AGREGADO"];
+const ESTADOS_PENDIENTES  = ["PLANIFICADO","AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"];
 const ESTADOS_PLANTA      = ["ARRIBADO","EN ESPERA","DOCK ASIGNADO","ATRACADO","INICIO MOVIMIENTO","PAUSADO","FIN MOVIMIENTO"];
 const ESTADOS_LIBERADO    = ["LIBERADO"];
 const ESTADOS_CANCELADOS  = ["CANCELADO","CANCELA MOVIMIENTO"];
@@ -725,6 +725,8 @@ function filtrar(docs) {
 
 // ── HELPERS ────────────────────────────────────────────────────
 function badgeEstadoLocal(e) {
+  // AGREGADO PLANIFICADO / NO PLANIFICADO se ven acá siempre como "AGREGADO"
+  const mostrar = ["AGREGADO PLANIFICADO","AGREGADO NO PLANIFICADO"].includes(e) ? "AGREGADO" : e;
   const map = {
     "PLANIFICADO":"badge-planificado","AGREGADO":"badge-agregado",
     "SIN IDENTIFICAR":"badge-sinidentif","ARRIBADO":"badge-arribado",
@@ -734,7 +736,7 @@ function badgeEstadoLocal(e) {
     "CANCELA MOVIMIENTO":"badge-cancelado","CANCELADO":"badge-cancelado",
     "LIBERADO":"badge-liberado"
   };
-  return `<span class="badge ${map[e]||"badge-planificado"}">${e||"—"}</span>`;
+  return `<span class="badge ${map[mostrar]||"badge-planificado"}">${mostrar||"—"}</span>`;
 }
 
 function chip(label, val) {
