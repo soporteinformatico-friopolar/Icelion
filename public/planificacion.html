@@ -667,6 +667,7 @@
 </div>
 
 <datalist id="clienteList"></datalist>
+<datalist id="calibreList"></datalist>
 <datalist id="unidadList">
   <option value="PALLET"><option value="SEMI"><option value="CAJAS">
   <option value="KG"><option value="BOLSA">
@@ -877,6 +878,21 @@ function opcionesEmpaque(sel) {
     html += `<option value="${s}" selected>${s}</option>`;
   }
   return html;
+// ── LISTA DE CALIBRES ─────────────────────────────────────────
+let calibresLista = [];
+
+async function cargarListaCalibres() {
+  try {
+    const snap = await getDoc(doc(db, "listas", "calibres"));
+    calibresLista = snap.exists() ? (snap.data().items || []) : [];
+    poblarCalibreList();
+  } catch(e) { console.warn("No se pudo cargar lista calibres", e); }
+}
+
+function poblarCalibreList() {
+  const dl = document.getElementById("calibreList");
+  if (!dl) return;
+  dl.innerHTML = calibresLista.map(c => `<option value="${c}">`).join("");
 }
 
 // ── CREACIÓN AUTOMÁTICA DE SERVICIOS ─────────────────────────
@@ -991,6 +1007,7 @@ async function agregarClienteALista(cliente) {
 
 cargarListaClientes();
 cargarListaEmpaques();
+cargarListaCalibres();
 
 // ── HELPERS ─────────────────────────────────────────────────
 document.querySelectorAll(".caps").forEach(caps);
@@ -2485,7 +2502,7 @@ function agregarFilaProducto(cont,p={}) {
     <div class="form-group" style="min-width:85px;"><label class="form-label">Unidad</label>
       <input type="text" list="unidadList" class="form-input caps p-uni" value="${p.unidad||''}"></div>
     <div class="form-group" style="min-width:70px;"><label class="form-label">Calibre</label>
-      <input type="text" class="form-input caps p-cal" value="${p.calibre||''}"></div>
+      <input type="text" list="calibreList" class="form-input caps p-cal" value="${p.calibre||''}"></div>
     <div class="form-group" style="min-width:120px;"><label class="form-label">Empaque</label>
       <select class="form-input p-emp">${opcionesEmpaque(p.empaque)}</select></div>
     <div class="form-group" style="min-width:70px;"><label class="form-label">Total KG</label>
